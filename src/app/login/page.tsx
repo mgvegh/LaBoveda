@@ -164,7 +164,7 @@ export default function LoginPage() {
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <>
-                {isLogin ? "Desbloquear Bóveda" : "Crear Bóveda Segura"}
+                {isLogin ? "Abrir Bóveda" : "Crear Bóveda Segura"}
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </>
             )}
