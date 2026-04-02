@@ -26,6 +26,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initSession = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.warn("Supabase auth error (posible token expirado), cerrando sesión:", error.message);
+        await supabase.auth.signOut(); // Limpia la memoria local del token corrupto
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);

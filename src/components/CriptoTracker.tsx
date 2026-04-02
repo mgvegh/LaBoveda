@@ -235,7 +235,7 @@ export default function CriptoTracker() {
           onClick={() => setActiveStrategy("AV_ETH")}
           className={clsx("px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap", isAV ? "bg-purple-500/20 text-purple-400 shadow-sm" : "text-gray-400 hover:text-white")}
         >
-          Estrategia AV ETH (Short)
+          Estrategia Anti-Vitalik (Short)
         </button>
       </div>
 
@@ -243,7 +243,7 @@ export default function CriptoTracker() {
         <div className={clsx("glass-panel p-6 rounded-2xl md:col-span-2 shadow-lg", isAV ? "border-purple-500/10 shadow-purple-500/5" : "border-orange-500/10 shadow-orange-500/5")}>
            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
              <Crosshair className={clsx("w-5 h-5", isAV ? "text-purple-400" : "text-orange-400")} /> 
-             Parámetros ({isAV ? "AV ETH" : "MS BTC"})
+             Parámetros ({isAV ? "Anti-Vitalik" : "MS BTC"})
            </h2>
            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className={clsx("glass p-4 rounded-xl text-center", isAV ? "border-purple-500/10" : "border-orange-500/10")}>

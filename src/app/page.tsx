@@ -17,20 +17,18 @@ export default function Home() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl mt-10">
-        <Link href="/cripto" className="group glass-panel rounded-3xl p-8 hover:-translate-y-1 transition-all duration-300 border-orange-500/10 hover:border-orange-500/30">
+        <Link href="/cedears" className="group glass-panel rounded-3xl p-8 hover:-translate-y-1 transition-all duration-300 border-blue-500/10 hover:border-blue-500/30">
           <div className="flex items-center gap-4 mb-6">
-            <div className="p-4 bg-gradient-to-br from-orange-500/20 to-purple-500/20 rounded-2xl text-orange-400 group-hover:scale-110 transition-transform duration-300 shadow-inner flex items-center -space-x-2">
-              <Bitcoin className="w-8 h-8 relative z-10" />
-              <svg viewBox="0 0 32 32" className="w-8 h-8 fill-current text-purple-400"><path d="M15.925 23.969l-9.819-5.794L16 32l9.894-13.825-9.969 5.794zM16.075 0L6.181 16.481l9.819 5.806 9.894-5.806L16.075 0z"/></svg>
+            <div className="p-4 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-2xl text-blue-400 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 shadow-inner">
+              <Briefcase className="w-8 h-8" />
             </div>
-            <h2 className="text-2xl font-semibold tracking-tight text-gray-100">Estrategias Cripto</h2>
+            <h2 className="text-2xl font-semibold tracking-tight text-gray-100">Portfolio CEDEARs</h2>
           </div>
           <p className="text-gray-400 mb-8 line-clamp-3 leading-relaxed">
-            Bitácora interactiva para tu estrategia "Michael Saylor" o "Estrategia AV". Controla con exactitud tus balas, registra caídas y toma decisiones precisas y sin emociones en cada trade.
+            Gestiona tus compras cronológicas de CEDEARs y acciones. Observa el valor total actualizado conectando a cotizaciones online de Byma.
           </p>
-          <div className="w-full flex items-center justify-between text-orange-400 text-sm font-semibold group-hover:text-amber-300 transition-colors">
-            <span>Ver Panel de Estrategias</span>
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 border border-orange-500/30 rounded-full p-1 transition-transform" />
+          <div className="flex items-center text-blue-400 font-medium group-hover:text-blue-300">
+            Ver Portfolio <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1.5 transition-transform" />
           </div>
         </Link>
         
@@ -50,18 +48,20 @@ export default function Home() {
           </div>
         </Link>
 
-        <Link href="/cedears" className="group glass-panel rounded-3xl p-8 hover:-translate-y-1 transition-all duration-300 border-blue-500/10 hover:border-blue-500/30">
+        <Link href="/cripto" className="group glass-panel rounded-3xl p-8 hover:-translate-y-1 transition-all duration-300 border-orange-500/10 hover:border-orange-500/30">
           <div className="flex items-center gap-4 mb-6">
-            <div className="p-4 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-2xl text-blue-400 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 shadow-inner">
-              <Briefcase className="w-8 h-8" />
+            <div className="p-4 bg-gradient-to-br from-orange-500/20 to-purple-500/20 rounded-2xl text-orange-400 group-hover:scale-110 transition-transform duration-300 shadow-inner flex items-center -space-x-2">
+              <Bitcoin className="w-8 h-8 relative z-10" />
+              <svg viewBox="0 0 32 32" className="w-8 h-8 fill-current text-purple-400"><path d="M15.925 23.969l-9.819-5.794L16 32l9.894-13.825-9.969 5.794zM16.075 0L6.181 16.481l9.819 5.806 9.894-5.806L16.075 0z"/></svg>
             </div>
-            <h2 className="text-2xl font-semibold tracking-tight text-gray-100">Portfolio CEDEARs</h2>
+            <h2 className="text-2xl font-semibold tracking-tight text-gray-100">Estrategias Cripto</h2>
           </div>
           <p className="text-gray-400 mb-8 line-clamp-3 leading-relaxed">
-            Gestiona tus compras cronológicas de CEDEARs y acciones. Observa el valor total actualizado conectando a cotizaciones online de Byma.
+            Bitácora interactiva para tu estrategia "Michael Saylor" o "Estrategia Anti-Vitalik". Controla con exactitud tus balas, registra caídas y toma decisiones precisas y sin emociones en cada trade.
           </p>
-          <div className="flex items-center text-blue-400 font-medium group-hover:text-blue-300">
-            Ver Portfolio <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1.5 transition-transform" />
+          <div className="w-full flex items-center justify-between text-orange-400 text-sm font-semibold group-hover:text-amber-300 transition-colors">
+            <span>Ver Panel de Estrategias</span>
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 border border-orange-500/30 rounded-full p-1 transition-transform" />
           </div>
         </Link>
       </div>

@@ -346,7 +346,7 @@ export default function CedearsTracker() {
                   {positions.map(p => (
                     <tr key={p.ticker} className="hover:bg-white/5 transition-colors group">
                       <td className="py-3 px-2">
-                        <div className="font-bold text-gray-200">{p.ticker}</div>
+                        <div className="font-bold text-gray-200">{p.ticker.replace('.BA', '')}</div>
                         <div className="text-xs text-gray-500 lg:hidden">${p.avgPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })}/u avg</div>
                       </td>
                       <td className="py-3 px-2 text-right text-gray-300 font-medium">{(p.totalQty).toLocaleString()}</td>
@@ -387,7 +387,7 @@ export default function CedearsTracker() {
                  {purchases.map(p => (
                    <div key={p.id} className="flex justify-between items-center text-xs bg-black/20 p-2 rounded-md">
                      <span className="text-gray-400 w-24">{p.date}</span>
-                     <span className="font-bold text-blue-300 w-24">{p.ticker}</span>
+                     <span className="font-bold text-blue-300 w-24">{p.ticker.replace('.BA', '')}</span>
                      <span className="text-gray-400">{p.quantity} x ${p.purchasePrice}</span>
                      <button onClick={() => removePurchase(p.id)} className="text-gray-500 hover:text-red-400 transition-colors p-1" title="Eliminar registro">
                        <Trash2 className="w-4 h-4" />
