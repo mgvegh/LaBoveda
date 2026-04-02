@@ -55,6 +55,7 @@ const VaultWheel = ({ loading }: { loading: boolean }) => (
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +76,11 @@ export default function LoginPage() {
         });
         if (signInError) throw signInError;
       } else {
+        if (password !== confirmPassword) {
+          setError("Las contraseñas no coinciden.");
+          setLoading(false);
+          return;
+        }
         const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
@@ -155,6 +161,26 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {!isLogin && (
+            <div className="animate-in slide-in-from-top-2 duration-300">
+              <label className="block text-xs font-medium text-gray-400 mb-1 ml-1 uppercase tracking-wider">
+                Confirmar Contraseña
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <input
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  minLength={6}
+                />
+              </div>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading}
@@ -176,6 +202,7 @@ export default function LoginPage() {
             onClick={() => {
               setIsLogin(!isLogin);
               setError(null);
+              setConfirmPassword("");
             }}
             type="button"
             className="text-gray-400 hover:text-emerald-400 transition-colors"
