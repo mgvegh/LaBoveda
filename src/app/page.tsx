@@ -27,7 +27,9 @@ export default function Home() {
           <p className="text-gray-400 mb-8 leading-relaxed">
             Gestiona tus compras cronológicas de CEDEARs y acciones. Observa el valor total actualizado conectando a cotizaciones online de Byma.
           </p>
-
+          <div className="flex items-center text-blue-400 font-medium group-hover:text-blue-300">
+            Ver Portfolio <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1.5 transition-transform" />
+          </div>
         </Link>
         
         <Link href="/portfolio-cripto" className="group glass-panel rounded-3xl p-8 hover:-translate-y-1 transition-all duration-300 border-teal-500/10 hover:border-teal-500/30">
@@ -40,7 +42,10 @@ export default function Home() {
           <p className="text-gray-400 mb-8 leading-relaxed">
             Gestión a largo plazo de tus tenencias en Spot (HOLD). Monitorea el rendimiento de tus dólares invertidos en Criptomonedas de manera consolidada.
           </p>
-
+          <div className="w-full flex items-center justify-between text-teal-400 text-sm font-semibold group-hover:text-teal-300 transition-colors">
+            <span>Ver Billetera Cripto</span>
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 border border-teal-500/30 rounded-full p-1 transition-transform" />
+          </div>
         </Link>
 
         <Link href="/cripto" className="group glass-panel rounded-3xl p-8 hover:-translate-y-1 transition-all duration-300 border-orange-500/10 hover:border-orange-500/30">
@@ -54,7 +59,10 @@ export default function Home() {
           <p className="text-gray-400 mb-8 leading-relaxed">
             Bitácora interactiva para tu estrategia "Michael Saylor" o "Estrategia Anti-Vitalik". Controla con exactitud tus balas, registra caídas y toma decisiones precisas y sin emociones en cada trade.
           </p>
-
+          <div className="w-full flex items-center justify-between text-orange-400 text-sm font-semibold group-hover:text-amber-300 transition-colors">
+            <span>Ver Panel de Estrategias</span>
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 border border-orange-500/30 rounded-full p-1 transition-transform" />
+          </div>
         </Link>
       </div>
 

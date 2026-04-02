@@ -27,47 +27,51 @@ export default function Navbar() {
             <span className="font-bold tracking-wide text-gray-100 hidden sm:inline text-lg">La Bóveda</span>
           </Link>
           <div className="flex items-center space-x-1 sm:space-x-2">
-            <Link 
-              href="/cedears" 
-              className={clsx(
-                "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl transition-all",
-                pathname === "/cedears" 
-                  ? "bg-blue-500/15 text-blue-400 border border-blue-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
-                  : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
-              )}
-            >
-              <Briefcase className="w-5 h-5 sm:w-4 sm:h-4" />
-              <span className="hidden lg:inline">Portfolio CEDEARs</span>
-            </Link>
-            
-            <Link 
-              href="/portfolio-cripto" 
-              className={clsx(
-                "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl transition-all",
-                pathname === "/portfolio-cripto" 
-                  ? "bg-teal-500/15 text-teal-400 border border-teal-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
-                  : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
-              )}
-            >
-              <Wallet className="w-5 h-5 sm:w-4 sm:h-4" />
-              <span className="hidden lg:inline">Portfolio Cripto</span>
-            </Link>
+            {pathname !== "/login" && (
+              <>
+                <Link 
+                  href="/cedears" 
+                  className={clsx(
+                    "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl transition-all",
+                    pathname === "/cedears" 
+                      ? "bg-blue-500/15 text-blue-400 border border-blue-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
+                      : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
+                  )}
+                >
+                  <Briefcase className="w-5 h-5 sm:w-4 sm:h-4" />
+                  <span className="hidden lg:inline">Portfolio CEDEARs</span>
+                </Link>
+                
+                <Link 
+                  href="/portfolio-cripto" 
+                  className={clsx(
+                    "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl transition-all",
+                    pathname === "/portfolio-cripto" 
+                      ? "bg-teal-500/15 text-teal-400 border border-teal-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
+                      : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
+                  )}
+                >
+                  <Wallet className="w-5 h-5 sm:w-4 sm:h-4" />
+                  <span className="hidden lg:inline">Portfolio Cripto</span>
+                </Link>
 
-            <Link 
-              href="/cripto" 
-              className={clsx(
-                "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl transition-all",
-                pathname === "/cripto" 
-                  ? "bg-orange-500/15 text-orange-400 border border-orange-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
-                  : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
-              )}
-            >
-              <div className="flex -space-x-1 items-center">
-                 <Bitcoin className="w-5 h-5 sm:w-4 sm:h-4 relative z-10" />
-                 <svg viewBox="0 0 32 32" className="w-5 h-5 sm:w-4 sm:h-4 fill-current text-purple-400"><path d="M15.925 23.969l-9.819-5.794L16 32l9.894-13.825-9.969 5.794zM16.075 0L6.181 16.481l9.819 5.806 9.894-5.806L16.075 0z"/></svg>
-              </div>
-              <span className="hidden lg:inline">Estrategias Cripto</span>
-            </Link>
+                <Link 
+                  href="/cripto" 
+                  className={clsx(
+                    "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl transition-all",
+                    pathname === "/cripto" 
+                      ? "bg-orange-500/15 text-orange-400 border border-orange-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
+                      : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
+                  )}
+                >
+                  <div className="flex -space-x-1 items-center">
+                    <Bitcoin className="w-5 h-5 sm:w-4 sm:h-4 relative z-10" />
+                    <svg viewBox="0 0 32 32" className="w-5 h-5 sm:w-4 sm:h-4 fill-current text-purple-400"><path d="M15.925 23.969l-9.819-5.794L16 32l9.894-13.825-9.969 5.794zM16.075 0L6.181 16.481l9.819 5.806 9.894-5.806L16.075 0z"/></svg>
+                  </div>
+                  <span className="hidden lg:inline">Estrategias Cripto</span>
+                </Link>
+              </>
+            )}
             
             {session && (
               <ProfileButton />
