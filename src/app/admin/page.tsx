@@ -30,6 +30,8 @@ type UserRequest = {
   type: string;
   message: string;
   created_at: string;
+  response?: string;
+  status?: string;
 };
 
 export default function AdminPage() {
@@ -39,6 +41,9 @@ export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRequestsLoading, setIsRequestsLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [isSavingResponse, setIsSavingResponse] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
@@ -50,6 +55,7 @@ export default function AdminPage() {
       
       if (error) {
         console.error("Error fetching admin data:", error);
+        // Silently fail or handled by UI
       } else if (rpcData) {
         setData(rpcData);
       }
@@ -74,6 +80,31 @@ export default function AdminPage() {
     fetchAdminData();
     fetchRequests();
   }, [user]);
+
+  const handleSaveResponse = async (id: string) => {
+    if (!replyText.trim()) return;
+    setIsSavingResponse(true);
+    
+    const { error } = await supabase
+      .from('user_requests')
+      .update({ 
+        response: replyText,
+        status: 'resuelto'
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error("Error saving response:", error);
+      alert("No se pudo guardar la respuesta.");
+    } else {
+      setRequests(prev => prev.map(r => 
+        r.id === id ? { ...r, response: replyText, status: 'resuelto' } : r
+      ));
+      setReplyingTo(null);
+      setReplyText("");
+    }
+    setIsSavingResponse(false);
+  };
 
   const filteredUsers = useMemo(() => {
     return data.filter(u => 
@@ -235,7 +266,7 @@ export default function AdminPage() {
       </div>
 
       {/* User Requests Section */}
-      <div className="glass-panel rounded-3xl overflow-hidden border-orange-500/10 shadow-lg shadow-orange-500/5">
+      <div className="bg-zinc-950 rounded-3xl overflow-hidden border border-orange-500/10 shadow-2xl">
         <div className="p-6 border-b border-white/5 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-gray-200">Buzón de Solicitudes</h2>
@@ -284,9 +315,62 @@ export default function AdminPage() {
                       <p className="text-sm text-gray-300 leading-relaxed max-w-2xl">
                         {req.message}
                       </p>
+                      
+                      {/* Mostrar Respuesta si existe */}
+                      {req.response && (
+                        <div className="mt-4 p-4 bg-orange-500/5 border border-orange-500/20 rounded-2xl">
+                           <p className="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-1">Tu Respuesta:</p>
+                           <p className="text-sm text-gray-400 italic">"{req.response}"</p>
+                        </div>
+                      )}
+
+                      {/* Editor de Respuesta */}
+                      {replyingTo === req.id ? (
+                        <div className="mt-4 space-y-3 animate-in slide-in-from-top-2 duration-300">
+                          <textarea
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                            placeholder="Escribe tu respuesta aquí..."
+                            className="w-full bg-black border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-orange-500/50 resize-none min-h-[100px]"
+                          />
+                          <div className="flex gap-2">
+                             <button
+                               onClick={() => handleSaveResponse(req.id)}
+                               disabled={isSavingResponse}
+                               className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold rounded-lg transition-all disabled:opacity-50"
+                             >
+                               {isSavingResponse ? "Guardando..." : "Guardar Respuesta"}
+                             </button>
+                             <button
+                               onClick={() => {
+                                 setReplyingTo(null);
+                                 setReplyText("");
+                               }}
+                               className="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-400 text-xs font-bold rounded-lg transition-all"
+                             >
+                               Cancelar
+                             </button>
+                          </div>
+                        </div>
+                      ) : (
+                        !req.response && (
+                          <button 
+                            onClick={() => {
+                              setReplyingTo(req.id);
+                              setReplyText("");
+                            }}
+                            className="mt-4 text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-orange-400 transition-colors flex items-center gap-1.5"
+                          >
+                            <MessageSquare className="w-3 h-3" /> Responder a solicitud
+                          </button>
+                        )
+                      )}
                     </td>
                     <td className="px-6 py-4 text-right align-top text-xs text-gray-500 tabular-nums">
-                      {new Date(req.created_at).toLocaleDateString()}
+                      <div>{new Date(req.created_at).toLocaleDateString()}</div>
+                      {req.status === 'resuelto' && (
+                        <div className="mt-2 text-[8px] font-bold text-emerald-400 uppercase px-1.5 py-0.5 bg-emerald-500/10 rounded-full inline-block">Resuelto</div>
+                      )}
                     </td>
                   </tr>
                 ))}

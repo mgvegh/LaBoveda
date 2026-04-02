@@ -50,7 +50,11 @@ export default function ContactModal({ isOpen, onClose }: { isOpen: boolean; onC
 
     } catch (err: any) {
       console.error(err);
-      setError("No se pudo enviar tu solicitud. ¿Ya creaste la tabla 'user_requests' en Supabase?");
+      if (err.code === '42P01') {
+        setError("La tabla 'user_requests' no existe en la base de datos de Supabase. Por favor, ejecuta el script setup_admin.sql.");
+      } else {
+        setError("Hubo un problema al enviar tu solicitud. Intenta nuevamente.");
+      }
     } finally {
       setIsSending(false);
     }
