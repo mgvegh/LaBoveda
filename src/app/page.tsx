@@ -6,7 +6,7 @@ export default function Home() {
     <div className="flex flex-col gap-8 items-center justify-center min-h-[85vh]">
       <div className="text-center space-y-6 max-w-3xl">
         <div className="inline-flex items-center justify-center p-2 bg-orange-500/10 rounded-full mb-4">
-          <span className="px-3 py-1 text-sm font-medium text-orange-400 bg-orange-500/10 rounded-full">Prototipo 1.1</span>
+          <span className="px-3 py-1 text-sm font-medium text-orange-400 bg-orange-500/10 rounded-full">Versión 1.1</span>
         </div>
         <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-400 to-blue-400">
           Tu centro de control financiero

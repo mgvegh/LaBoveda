@@ -10,7 +10,8 @@ import {
   ArrowLeft, 
   ExternalLink, 
   BarChart3,
-  Loader2
+  Loader2,
+  MessageSquare
 } from "lucide-react";
 import Link from "next/link";
 import clsx from "clsx";
@@ -23,10 +24,20 @@ type AdminUserData = {
   total_profit: number;
 };
 
+type UserRequest = {
+  id: string;
+  email: string;
+  type: string;
+  message: string;
+  created_at: string;
+};
+
 export default function AdminPage() {
   const { user } = useAuth();
   const [data, setData] = useState<AdminUserData[]>([]);
+  const [requests, setRequests] = useState<UserRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRequestsLoading, setIsRequestsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const supabase = createClient();
 
@@ -45,7 +56,23 @@ export default function AdminPage() {
       setIsLoading(false);
     };
 
+    const fetchRequests = async () => {
+      setIsRequestsLoading(true);
+      const { data: reqData, error } = await supabase
+        .from('user_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error("Error fetching user requests:", error);
+      } else if (reqData) {
+        setRequests(reqData);
+      }
+      setIsRequestsLoading(false);
+    };
+
     fetchAdminData();
+    fetchRequests();
   }, [user]);
 
   const filteredUsers = useMemo(() => {
@@ -204,6 +231,68 @@ export default function AdminPage() {
         </div>
         <div className="p-4 bg-white/[0.01] border-t border-white/5 text-center">
             <p className="text-[10px] text-gray-600 uppercase tracking-widest font-bold">Respetando privacidad: Activos específicos no visibles para administración</p>
+        </div>
+      </div>
+
+      {/* User Requests Section */}
+      <div className="glass-panel rounded-3xl overflow-hidden border-orange-500/10 shadow-lg shadow-orange-500/5">
+        <div className="p-6 border-b border-white/5 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-gray-200">Buzón de Solicitudes</h2>
+            <p className="text-sm text-gray-500 mt-1">Bugs reportados y sugerencias de adiciones de los usuarios.</p>
+          </div>
+          <div className="p-3 bg-orange-500/10 rounded-2xl text-orange-400">
+            <MessageSquare className="w-6 h-6" />
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          {isRequestsLoading ? (
+             <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+             </div>
+          ) : requests.length === 0 ? (
+             <div className="text-center py-12 text-gray-500">No hay solicitudes pendientes en el buzón.</div>
+          ) : (
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="text-xs uppercase tracking-wider text-gray-500 border-b border-white/5">
+                  <th className="px-6 py-4 font-semibold w-64">De / Email</th>
+                  <th className="px-6 py-4 font-semibold w-32">Tipo</th>
+                  <th className="px-6 py-4 font-semibold">Mensaje / Detalle</th>
+                  <th className="px-6 py-4 font-semibold text-right w-32">Fecha</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {requests.map(req => (
+                  <tr key={req.id} className="hover:bg-white/[0.02] transition-colors group">
+                    <td className="px-6 py-4 align-top">
+                      <div className="font-bold text-gray-200">{req.email.split('@')[0]}</div>
+                      <div className="text-xs text-gray-500">{req.email}</div>
+                    </td>
+                    <td className="px-6 py-4 align-top">
+                      <span className={clsx(
+                        "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest",
+                        req.type === 'bug' ? "bg-red-500/20 text-red-400" : 
+                        req.type === 'solicitud' ? "bg-blue-500/20 text-blue-400" : 
+                        "bg-gray-500/20 text-gray-400"
+                      )}>
+                        {req.type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 align-top">
+                      <p className="text-sm text-gray-300 leading-relaxed max-w-2xl">
+                        {req.message}
+                      </p>
+                    </td>
+                    <td className="px-6 py-4 text-right align-top text-xs text-gray-500 tabular-nums">
+                      {new Date(req.created_at).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 

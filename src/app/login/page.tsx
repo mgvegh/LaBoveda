@@ -109,7 +109,7 @@ export default function LoginPage() {
             Bóveda de Inversiones
           </h1>
           <p className="text-gray-400 text-sm">
-            {isLogin ? "Iniciá sesión para sincronizar tus portafolios." : "Creá tu cuenta maestra para guardar tus activos."}
+            {isLogin ? "Iniciá sesión para sincronizar tus portafolios." : "Creá tu cuenta para guardar tus activos."}
           </p>
         </div>
 
@@ -164,7 +164,7 @@ export default function LoginPage() {
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <>
-                {isLogin ? "Abrir Bóveda" : "Crear Bóveda Segura"}
+                {isLogin ? "Abrir Bóveda" : "Crear Bóveda"}
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </>
             )}

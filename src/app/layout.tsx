@@ -24,6 +24,7 @@ export const metadata: Metadata = {
 
 import Navbar from "@/components/Navbar";
 import { AuthProvider } from "@/components/AuthProvider";
+import Footer from "@/components/Footer";
 
 export default function RootLayout({
   children,
@@ -38,6 +39,7 @@ export default function RootLayout({
           <main className="flex-1 w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {children}
           </main>
+          <Footer />
         </AuthProvider>
       </body>
     </html>
