@@ -70,11 +70,11 @@ export default function Navbar() {
                   </div>
                   <span className="hidden lg:inline">Estrategias Cripto</span>
                 </Link>
+
+                {session && (
+                  <ProfileButton />
+                )}
               </>
-            )}
-            
-            {session && (
-              <ProfileButton />
             )}
             
           </div>

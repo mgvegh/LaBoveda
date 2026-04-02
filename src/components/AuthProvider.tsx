@@ -36,9 +36,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null);
       setIsLoading(false);
       
-      // Basic Route Protection
       if (!session && pathname !== "/login") {
         router.push("/login");
+      } else if (session && pathname === "/login") {
+        router.push("/");
       }
     };
 
@@ -50,6 +51,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (!session && pathname !== "/login") {
          router.push("/login");
+      } else if (session && pathname === "/login") {
+         router.push("/");
       }
     });
 
@@ -58,6 +61,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    setSession(null);
+    setUser(null);
     router.push("/login");
   };
 
