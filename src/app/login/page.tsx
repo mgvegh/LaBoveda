@@ -4,6 +4,53 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { Lock, Mail, Loader2, ArrowRight } from "lucide-react";
+import { clsx } from "clsx";
+
+const VaultWheel = ({ loading }: { loading: boolean }) => (
+  <div className={clsx(
+    "relative w-24 h-24 flex items-center justify-center transition-all duration-700",
+    loading ? "scale-110" : "scale-100"
+  )}>
+    {/* Fondo con brillo suave */}
+    <div className={clsx(
+      "absolute inset-0 rounded-full border-4 border-emerald-500/10 transition-shadow duration-500",
+      loading ? "shadow-[0_0_30px_rgba(16,185,129,0.3)]" : "shadow-none"
+    )} />
+    
+    {/* Rayos exteriores estáticos (marco de la puerta) */}
+    <div className="absolute inset-0 opacity-20">
+       <svg viewBox="0 0 100 100" className="w-full h-full text-emerald-500">
+         <circle cx="50" cy="50" r="48" stroke="currentColor" strokeWidth="1" fill="none" strokeDasharray="4 4" />
+       </svg>
+    </div>
+
+    {/* La rueda central que gira */}
+    <div className={clsx(
+      "relative w-20 h-20 transition-transform duration-[2000ms] ease-in-out",
+      loading ? "rotate-[360deg]" : "rotate-0"
+    )}>
+      <svg viewBox="0 0 100 100" className="w-full h-full text-emerald-400 drop-shadow-[0_0_12px_rgba(16,185,129,0.4)]">
+        {/* Aro dentado principal */}
+        <circle cx="50" cy="50" r="32" stroke="currentColor" strokeWidth="6" fill="none" />
+        <circle cx="50" cy="50" r="24" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.5" />
+        
+        {/* Centro de la rueda */}
+        <circle cx="50" cy="50" r="10" fill="currentColor" />
+        <circle cx="50" cy="50" r="4" fill="black" opacity="0.3" />
+        
+        {/* Manijas de la boveda (8 brazos) */}
+        {[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => (
+          <g key={angle} transform={`rotate(${angle}, 50, 50)`}>
+            {/* Brazo */}
+            <rect x="47" y="5" width="6" height="20" rx="3" fill="currentColor" />
+            {/* Pomo de la punta */}
+            <circle cx="50" cy="8" r="4" fill="currentColor" />
+          </g>
+        ))}
+      </svg>
+    </div>
+  </div>
+);
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -44,7 +91,8 @@ export default function LoginPage() {
     } catch (err: any) {
       setError(err.message || "Error al autenticar");
     } finally {
-      setLoading(false);
+      // Dejamos el loading un poco más para que se vea el giro si es muy rápido
+      setTimeout(() => setLoading(false), 800);
     }
   };
 
@@ -53,9 +101,9 @@ export default function LoginPage() {
       <div className="w-full max-w-md glass-panel p-8 rounded-3xl border-emerald-500/10 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none" />
         
-        <div className="text-center mb-8 relative z-10">
-          <div className="bg-gradient-to-br from-emerald-500/20 to-teal-500/20 w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center border border-emerald-500/20 shadow-inner">
-            <Lock className="w-8 h-8 text-emerald-400" />
+        <div className="text-center mb-8 relative z-10 flex flex-col items-center">
+          <div className="mb-6">
+            <VaultWheel loading={loading} />
           </div>
           <h1 className="text-2xl font-bold text-white mb-2">
             Bóveda de Inversiones

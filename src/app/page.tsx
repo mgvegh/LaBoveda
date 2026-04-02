@@ -24,7 +24,7 @@ export default function Home() {
             </div>
             <h2 className="text-2xl font-semibold tracking-tight text-gray-100">Portfolio CEDEARs</h2>
           </div>
-          <p className="text-gray-400 mb-8 line-clamp-3 leading-relaxed">
+          <p className="text-gray-400 mb-8 leading-relaxed">
             Gestiona tus compras cronológicas de CEDEARs y acciones. Observa el valor total actualizado conectando a cotizaciones online de Byma.
           </p>
           <div className="flex items-center text-blue-400 font-medium group-hover:text-blue-300">
@@ -39,7 +39,7 @@ export default function Home() {
             </div>
             <h2 className="text-2xl font-semibold tracking-tight text-gray-100">Portfolio Cripto</h2>
           </div>
-          <p className="text-gray-400 mb-8 line-clamp-3 leading-relaxed">
+          <p className="text-gray-400 mb-8 leading-relaxed">
             Gestión a largo plazo de tus tenencias en Spot (HOLD). Monitorea el rendimiento de tus dólares invertidos en Criptomonedas de manera consolidada.
           </p>
           <div className="w-full flex items-center justify-between text-teal-400 text-sm font-semibold group-hover:text-teal-300 transition-colors">
@@ -56,7 +56,7 @@ export default function Home() {
             </div>
             <h2 className="text-2xl font-semibold tracking-tight text-gray-100">Estrategias Cripto</h2>
           </div>
-          <p className="text-gray-400 mb-8 line-clamp-3 leading-relaxed">
+          <p className="text-gray-400 mb-8 leading-relaxed">
             Bitácora interactiva para tu estrategia "Michael Saylor" o "Estrategia Anti-Vitalik". Controla con exactitud tus balas, registra caídas y toma decisiones precisas y sin emociones en cada trade.
           </p>
           <div className="w-full flex items-center justify-between text-orange-400 text-sm font-semibold group-hover:text-amber-300 transition-colors">

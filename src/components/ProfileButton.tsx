@@ -229,7 +229,7 @@ export default function ProfileButton() {
               onClick={signOut}
               className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
             >
-              <LogOut className="w-4 h-4" /> Cerrar Bóveda
+              <LogOut className="w-4 h-4" /> Cerrar Sesión
             </button>
           </div>
         </div>
