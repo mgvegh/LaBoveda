@@ -13,8 +13,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Inversiones App",
-  description: "Tracker de CEDEARs y Estrategia Cripto",
+  title: "La Bóveda",
+  description: "Protección y gestión de activos financieros: CEDEARs y Cripto.",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
+  manifest: "/manifest.json",
 };
 
 import Navbar from "@/components/Navbar";
