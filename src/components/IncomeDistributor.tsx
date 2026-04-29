@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Trash2, RefreshCw, DollarSign, TrendingUp, Settings, ChevronDown, ChevronUp, ArrowRightLeft, Landmark } from "lucide-react";
-import clsx from "clsx";
+import { Plus, Trash2, RefreshCw, DollarSign, TrendingUp, Landmark, ArrowRightLeft, ListChecks, Coins } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -13,7 +12,7 @@ type Category = {
   id: string;
   name: string;
   type: CategoryType;
-  value: number; // USD amount | ARS amount | percentage (0-100)
+  value: number; 
   color: string;
   icon: string;
 };
@@ -47,9 +46,7 @@ export default function IncomeDistributor() {
   const [totalIncome, setTotalIncome] = useState<string>("");
   const [usdRate, setUsdRate] = useState<number>(0);
   const [isFetchingRate, setIsFetchingRate] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   
-  // New entry states
   const [newCatName, setNewCatName] = useState("");
   const [newCatType, setNewCatType] = useState<CategoryType>("percentage");
   const [newCatValue, setNewCatValue] = useState("");
@@ -60,7 +57,6 @@ export default function IncomeDistributor() {
   const { user } = useAuth();
   const getDocRef = () => user ? doc(db, "users", user.uid, "income_config", "data") : null;
 
-  // Fetch USD Oficial rate via DolarApi
   const fetchUsdRate = async () => {
     setIsFetchingRate(true);
     try {
@@ -69,9 +65,7 @@ export default function IncomeDistributor() {
         const data = await res.json();
         if (data.venta) setUsdRate(Math.round(data.venta));
       }
-    } catch (err) { 
-      console.error("Error fetching rate:", err);
-    }
+    } catch (err) { console.error("Error fetching rate:", err); }
     setIsFetchingRate(false);
   };
 
@@ -89,7 +83,6 @@ export default function IncomeDistributor() {
     });
   }, [user]); // eslint-disable-line
 
-  // Persist config on change
   useEffect(() => {
     if (!isClient || !user) return;
     const docRef = getDocRef();
@@ -98,20 +91,17 @@ export default function IncomeDistributor() {
     return () => clearTimeout(id);
   }, [config, isClient, user]); // eslint-disable-line
 
-  // ─── Calculation ──────────────────────────────────────────────────────────
   const income = parseFloat(totalIncome) || 0;
 
   const result = useMemo(() => {
     if (income <= 0 || usdRate <= 0) return null;
 
-    // 1. GASTOS FIJOS (Obligaciones que se restan del total)
     const totalExpensesARS = config.expenses.reduce((acc, e) => {
       return acc + (e.currency === "USD" ? e.amount * usdRate : e.amount);
     }, 0);
 
     const afterExpenses = Math.max(0, income - totalExpensesARS);
 
-    // 2. CATEGORÍAS FIJAS (Mínimos en ARS o USD que se restan después de los gastos)
     const fixedAllocations = config.categories
       .filter(c => c.type !== "percentage")
       .map(c => ({
@@ -122,13 +112,11 @@ export default function IncomeDistributor() {
     const totalFixedAllocations = fixedAllocations.reduce((acc, c) => acc + c.amountARS, 0);
     const afterFixed = Math.max(0, afterExpenses - totalFixedAllocations);
 
-    // 3. CATEGORÍAS PORCENTUALES (Se distribuyen sobre lo que queda)
     const percentageCategories = config.categories.filter(c => c.type === "percentage");
     const totalPercentDefined = percentageCategories.reduce((acc, c) => acc + c.value, 0);
 
     const allocations = config.categories.map(cat => {
       if (cat.type === "percentage") {
-        // We use the relative weight if the user defined more or less than 100% total
         const weight = totalPercentDefined > 0 ? (cat.value / totalPercentDefined) : 0;
         const amount = weight * afterFixed;
         return { ...cat, amountARS: amount, pctOfTotal: income > 0 ? (amount / income) * 100 : 0 };
@@ -145,7 +133,6 @@ export default function IncomeDistributor() {
     return { allocations, totalExpensesARS, unallocated, afterExpenses };
   }, [income, config, usdRate]);
 
-  // ─── Config actions ───────────────────────────────────────────────────────
   const addCategory = () => {
     if (!newCatName || !newCatValue) return;
     const idx = config.categories.length;
@@ -173,264 +160,232 @@ export default function IncomeDistributor() {
 
   return (
     <div className="space-y-6">
-      {/* Step 1: Income and Rate */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border-violet-500/20 shadow-lg shadow-violet-500/5">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <div>
-              <h2 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
-                <Landmark className="w-5 h-5 text-violet-400" />
-                1. Ingreso del Mes
-              </h2>
-              <p className="text-sm text-gray-400">¿Cuánta plata entró hoy a tu cuenta?</p>
-            </div>
-            <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl px-3 py-2 h-fit">
-              <span className="text-xs text-gray-400 uppercase tracking-wide">Dólar Oficial</span>
-              {isFetchingRate ? <RefreshCw className="w-4 h-4 text-violet-400 animate-spin" /> : (
-                <span className="text-white font-bold">{usdRate > 0 ? `$${usdRate.toLocaleString('es-AR')}` : "—"}</span>
-              )}
-              <button onClick={fetchUsdRate} className="text-gray-500 hover:text-violet-400 transition-colors ml-1">
-                <RefreshCw className="w-3.5 h-3.5" />
-              </button>
-            </div>
+      {/* 1. INPUT DE INGRESO */}
+      <div className="glass-panel p-6 rounded-2xl border-violet-500/20 shadow-lg shadow-violet-500/5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
+              <Landmark className="w-5 h-5 text-violet-400" />
+              1. Ingreso del Mes
+            </h2>
+            <p className="text-sm text-gray-400">¿Cuánta plata entró hoy a tu cuenta?</p>
           </div>
-
-          <div className="relative max-w-md">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-gray-500">$</span>
-            <input
-              type="number"
-              placeholder="Ej: 2.500.000"
-              value={totalIncome}
-              onChange={e => setTotalIncome(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-2xl pl-10 pr-4 py-4 text-3xl font-bold text-white focus:outline-none focus:border-violet-500 transition-colors shadow-inner"
-            />
-          </div>
-          {usdRate > 0 && income > 0 && (
-            <p className="text-sm text-gray-500 mt-3 flex items-center gap-2">
-              <ArrowRightLeft className="w-4 h-4" />
-              Tu ingreso equivale a <strong>USD {(income / usdRate).toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong>
-            </p>
-          )}
-        </div>
-
-        <div className="glass-panel p-6 rounded-2xl border-white/5 flex flex-col justify-center">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Configuración</h3>
-            <button onClick={() => setShowSettings(s => !s)} className={clsx("p-2 rounded-xl transition-colors", showSettings ? "bg-violet-500/20 text-violet-400" : "bg-white/5 text-gray-400 hover:text-white")}>
-              <Settings className="w-5 h-5" />
+          <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl px-3 py-2 h-fit">
+            <span className="text-xs text-gray-400 uppercase tracking-wide">Dólar Oficial</span>
+            {isFetchingRate ? <RefreshCw className="w-4 h-4 text-violet-400 animate-spin" /> : (
+              <span className="text-white font-bold">{usdRate > 0 ? `$${usdRate.toLocaleString('es-AR')}` : "—"}</span>
+            )}
+            <button onClick={fetchUsdRate} className="text-gray-500 hover:text-violet-400 transition-colors ml-1">
+              <RefreshCw className="w-3.5 h-3.5" />
             </button>
           </div>
-          <p className="text-xs text-gray-500 leading-relaxed">
-            Ajustá tus <strong>Gastos Fijos</strong> (obligaciones) y tus <strong>Categorías</strong> (metas de ahorro e inversión) para automatizar tu distribución mensual.
-          </p>
         </div>
+
+        <div className="relative max-w-md">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-gray-500">$</span>
+          <input
+            type="number"
+            placeholder="Ej: 2.500.000"
+            value={totalIncome}
+            onChange={e => setTotalIncome(e.target.value)}
+            className="w-full bg-black/40 border border-white/10 rounded-2xl pl-10 pr-4 py-4 text-3xl font-bold text-white focus:outline-none focus:border-violet-500 transition-colors shadow-inner"
+          />
+        </div>
+        {usdRate > 0 && income > 0 && (
+          <p className="text-sm text-gray-500 mt-3 flex items-center gap-2">
+            <ArrowRightLeft className="w-4 h-4" />
+            Equivale a <strong>USD {(income / usdRate).toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong>
+          </p>
+        )}
       </div>
 
-      {/* Step 2: Analysis */}
+      {/* 2. HOJA DE RUTA (SALIDAS) */}
       {result && income > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* Column: The Plan (Left) */}
           <div className="lg:col-span-2 space-y-6">
-            
-            {/* Summary List: What to do with the money */}
             <div className="glass-panel overflow-hidden rounded-2xl border-emerald-500/20">
-              <div className="bg-emerald-500/10 px-6 py-4 border-b border-emerald-500/10">
+              <div className="bg-emerald-500/10 px-6 py-4 border-b border-emerald-500/10 flex justify-between items-center">
                 <h3 className="font-bold text-emerald-400 flex items-center gap-2">
-                  <CheckCircleIcon /> Hoja de Ruta: ¿Qué hacer con los Pesos?
+                  <ListChecks className="w-5 h-5" /> Salidas Programadas
                 </h3>
+                <span className="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded-full font-mono uppercase">Resumen en Pesos</span>
               </div>
+              
               <div className="divide-y divide-white/5">
-                {/* Fixed Expenses Section */}
-                {config.expenses.length > 0 && (
-                  <div className="p-6 bg-black/20">
-                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Obligaciones (Separá esto ya)</h4>
-                    <div className="space-y-3">
-                      {config.expenses.map(e => {
-                        const amount = e.currency === "USD" ? e.amount * usdRate : e.amount;
-                        return (
-                          <div key={e.id} className="flex justify-between items-center">
-                            <span className="text-gray-300 text-sm">{e.name}</span>
-                            <span className="text-red-400 font-mono font-bold">
-                              ${amount.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
-                            </span>
-                          </div>
-                        );
-                      })}
-                      <div className="pt-2 border-t border-white/5 flex justify-between items-center font-bold">
-                        <span className="text-gray-400 text-xs">TOTAL GASTOS</span>
-                        <span className="text-white">${result.totalExpensesARS.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
+                {/* Gastos Fijos (Como parte de las Salidas) */}
+                {config.expenses.map(e => {
+                  const amount = e.currency === "USD" ? e.amount * usdRate : e.amount;
+                  return (
+                    <div key={e.id} className="p-4 flex justify-between items-center hover:bg-white/5 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400"><DollarSign className="w-4 h-4" /></div>
+                        <span className="text-gray-300 text-sm font-medium">{e.name}</span>
+                      </div>
+                      <span className="text-red-400 font-mono font-bold">
+                        ${amount.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                      </span>
+                    </div>
+                  );
+                })}
+
+                {/* Distribución (Como parte de las Salidas) */}
+                {result.allocations.map(a => (
+                  <div key={a.id} className="p-4 flex justify-between items-center hover:bg-white/5 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-lg">{a.icon}</div>
+                      <div>
+                        <div className="text-sm font-bold text-white">{a.name}</div>
+                        <div className="text-[10px] text-gray-500 uppercase tracking-tighter">
+                          {a.type === "fixed_usd" ? `${a.value} USD fijo` : a.type === "fixed_ars" ? `${a.value} ARS fijo` : `${a.value}% del resto`}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xl font-mono font-black text-white">
+                        ${a.amountARS.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                      </div>
+                      <div className="text-[10px] text-gray-500">
+                        {a.pctOfTotal.toFixed(1)}% del total
                       </div>
                     </div>
                   </div>
-                )}
+                ))}
+              </div>
 
-                {/* Allocation Section */}
-                <div className="p-6">
-                  <h4 className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-4">Distribución (Inversión y Ahorro)</h4>
-                  <div className="space-y-4">
-                    {result.allocations.map(a => (
-                      <div key={a.id} className="flex justify-between items-center p-3 rounded-xl bg-white/5 border border-white/5">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">{a.icon}</span>
-                          <div>
-                            <div className="text-sm font-bold text-white">{a.name}</div>
-                            <div className="text-[10px] text-gray-500 uppercase tracking-tighter">
-                              {a.type === "fixed_usd" ? `${a.value} USD fijo` : a.type === "fixed_ars" ? `${a.value} ARS fijo` : `${a.value}% del remanente`}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-xl font-mono font-black text-white">
-                            ${a.amountARS.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
-                          </div>
-                          <div className="text-[10px] text-gray-500">
-                            {a.pctOfTotal.toFixed(1)}% del total cobrado
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+              {/* Total Summary Row */}
+              <div className="p-6 bg-black/40 border-t border-white/10 flex justify-between items-center">
+                <span className="text-gray-400 font-bold uppercase text-xs tracking-widest">Total Salidas</span>
+                <span className="text-2xl font-black text-white">
+                  ${(result.totalExpensesARS + result.allocations.reduce((a,c) => a + c.amountARS, 0)).toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                </span>
+              </div>
+            </div>
+
+            {/* Sobras / Unallocated */}
+            {result.unallocated > 100 ? (
+              <div className="glass-panel p-6 rounded-2xl border-amber-500/20 bg-amber-500/5 animate-pulse">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-amber-500/20 rounded-xl text-amber-400"><TrendingUp className="w-6 h-6" /></div>
+                    <div>
+                      <h4 className="font-bold text-amber-400">¡Te sobra plata!</h4>
+                      <p className="text-xs text-amber-500/70">Tenés <strong>${result.unallocated.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</strong> sin asignar.</p>
+                    </div>
+                  </div>
+                  <div className="text-2xl font-black text-amber-400">
+                    +${result.unallocated.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Visual Breakdown */}
-            <div className="glass-panel p-6 rounded-2xl border-white/5">
-              <h3 className="text-sm font-bold text-gray-400 uppercase mb-4">Breakdown Visual</h3>
-              <div className="flex h-8 rounded-xl overflow-hidden gap-1 mb-4 shadow-inner bg-black/40 p-1">
-                {result.allocations.map(a => (
-                  <div
-                    key={a.id}
-                    style={{ width: `${Math.max(0, a.pctOfTotal)}%`, backgroundColor: a.color }}
-                    className="transition-all duration-500 first:rounded-l-lg last:rounded-r-lg"
-                    title={`${a.name}: ${a.pctOfTotal.toFixed(1)}%`}
-                  />
-                ))}
-                {result.totalExpensesARS > 0 && (
-                  <div 
-                    style={{ width: `${(result.totalExpensesARS / income) * 100}%`, backgroundColor: "#374151" }} 
-                    className="rounded-r-lg transition-all duration-500 opacity-50" 
-                    title="Gastos fijos" 
-                  />
-                )}
+            ) : (
+              <div className="glass-panel p-4 rounded-xl border-white/5 text-center text-xs text-gray-500">
+                Ingreso 100% distribuido. ¡Buen trabajo!
               </div>
-              <div className="flex flex-wrap gap-4 text-xs text-gray-500">
-                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-gray-600" /> Gastos Fijos</div>
-                {result.allocations.map(a => (
-                  <div key={a.id} className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: a.color }} /> {a.name}
-                  </div>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* Column: Stats & Alerts (Right) */}
           <div className="space-y-6">
-            <div className="glass-panel p-6 rounded-2xl border-violet-500/20 bg-gradient-to-br from-violet-500/5 to-transparent">
-              <h3 className="text-xs font-bold text-gray-500 uppercase mb-4">Disponibilidad</h3>
-              <div className="space-y-4">
-                <div>
-                  <div className="text-gray-400 text-sm mb-1">Cobraste</div>
-                  <div className="text-2xl font-bold text-white">${income.toLocaleString('es-AR')}</div>
-                </div>
-                <div>
-                  <div className="text-gray-400 text-sm mb-1">Restante tras Gastos</div>
-                  <div className="text-2xl font-bold text-violet-400">${result.afterExpenses.toLocaleString('es-AR')}</div>
-                </div>
-                {result.unallocated > 100 && (
-                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm">
-                    <TrendingUp className="w-4 h-4 mb-1" />
-                    Te sobran <strong>${result.unallocated.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</strong> sin destino. Podés subir el porcentaje de ahorro o inversiones.
-                  </div>
-                )}
-              </div>
-            </div>
-
             <div className="glass-panel p-6 rounded-2xl border-blue-500/20">
               <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Tip del Mes</h3>
               <p className="text-sm text-gray-300 leading-relaxed">
                 Si te sobra plata sin asignar, priorizá siempre la categoría de <strong>Inversiones</strong>. 
-                Recordá que el dólar MEP de <strong>${usdRate}</strong> es solo una referencia para el cálculo.
+                Recordá que el dólar Oficial de <strong>${usdRate}</strong> es solo una referencia para el cálculo.
               </p>
+            </div>
+            
+            <div className="glass-panel p-6 rounded-2xl border-white/5">
+              <h3 className="text-xs font-bold text-gray-500 uppercase mb-4">Breakdown %</h3>
+              <div className="flex h-3 rounded-full overflow-hidden gap-0.5 bg-white/5 mb-4">
+                {result.allocations.map(a => (
+                  <div key={a.id} style={{ width: `${Math.max(0, a.pctOfTotal)}%`, backgroundColor: a.color }} />
+                ))}
+                {result.totalExpensesARS > 0 && (
+                  <div style={{ width: `${(result.totalExpensesARS / income) * 100}%`, backgroundColor: "#374151" }} />
+                )}
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-[10px] text-gray-500">
+                  <span>SALIDAS FIJAS</span>
+                  <span>{((result.totalExpensesARS / income) * 100).toFixed(1)}%</span>
+                </div>
+                <div className="flex items-center justify-between text-[10px] text-gray-500">
+                  <span>DISTRIBUCIÓN</span>
+                  <span>{((result.allocations.reduce((a,c) => a + c.pctOfTotal, 0))).toFixed(1)}%</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Settings panel (Managed at the bottom for clarity) */}
-      {showSettings && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-white/5 animate-in fade-in slide-in-from-top-4 duration-300">
-          
-          {/* Categories Manager */}
-          <div className="glass-panel p-6 rounded-2xl border-violet-500/10">
-            <h3 className="text-base font-semibold text-violet-400 mb-4 flex items-center gap-2">
-              <Settings className="w-4 h-4" /> Configurar Categorías
-            </h3>
-            <div className="space-y-3 mb-4">
+      {/* 3. GESTIÓN DE SALIDAS (SIEMPRE VISIBLE) */}
+      <div className="pt-10 border-t border-white/10">
+        <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+          <Coins className="w-5 h-5 text-amber-400" />
+          Configurar Salidas
+        </h3>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Gastos Fijos Manager */}
+          <div className="glass-panel p-6 rounded-2xl border-white/5">
+            <h4 className="text-sm font-bold text-red-400 mb-4 uppercase tracking-widest">Gastos Fijos (Obligaciones)</h4>
+            <div className="space-y-3 mb-6">
+              {config.expenses.length === 0 && <p className="text-gray-500 text-xs py-4 text-center">No hay gastos configurados.</p>}
+              {config.expenses.map(e => (
+                <div key={e.id} className="flex items-center gap-3 text-sm bg-black/20 p-3 rounded-xl border border-white/5 group">
+                  <span className="text-gray-300 flex-1 truncate font-medium">{e.name}</span>
+                  <span className="text-red-400 font-mono font-bold">${e.amount.toLocaleString('es-AR')} {e.currency}</span>
+                  <button onClick={() => removeExpense(e.id)} className="text-gray-600 hover:text-red-400 transition-colors p-1 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-5 gap-2 bg-black/40 p-3 rounded-xl border border-white/5">
+              <input type="text" placeholder="Ej: Alquiler" value={newExpName} onChange={e => setNewExpName(e.target.value)} className="col-span-2 bg-transparent text-white text-sm focus:outline-none" />
+              <input type="number" placeholder="Monto" value={newExpAmount} onChange={e => setNewExpAmount(e.target.value)} className="bg-transparent text-white text-sm focus:outline-none" />
+              <select value={newExpCurrency} onChange={e => setNewExpCurrency(e.target.value as "ARS" | "USD")} className="bg-transparent text-white text-xs focus:outline-none cursor-pointer">
+                <option value="ARS" className="bg-[#09090b]">ARS</option>
+                <option value="USD" className="bg-[#09090b]">USD</option>
+              </select>
+              <button onClick={addExpense} className="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white rounded-lg flex items-center justify-center transition-all py-1"><Plus className="w-5 h-5" /></button>
+            </div>
+          </div>
+
+          {/* Categorías Manager */}
+          <div className="glass-panel p-6 rounded-2xl border-white/5">
+            <h4 className="text-sm font-bold text-violet-400 mb-4 uppercase tracking-widest">Reglas de Distribución</h4>
+            <div className="space-y-3 mb-6">
               {config.categories.map(c => (
-                <div key={c.id} className="flex items-center gap-3 text-sm bg-black/20 p-2 rounded-xl border border-white/5">
+                <div key={c.id} className="flex items-center gap-3 text-sm bg-black/20 p-3 rounded-xl border border-white/5 group">
                   <div className="w-8 h-8 flex items-center justify-center bg-white/5 rounded-lg text-lg">{c.icon}</div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-gray-200 truncate font-medium">{c.name}</div>
-                    <div className="text-[10px] text-gray-500">{c.type === "fixed_usd" ? "USD Fijo" : c.type === "fixed_ars" ? "ARS Fijo" : "% del Resto"}</div>
+                    <div className="text-gray-200 truncate font-bold">{c.name}</div>
+                    <div className="text-[10px] text-gray-500 uppercase">{c.type === "fixed_usd" ? "USD Fijo" : c.type === "fixed_ars" ? "ARS Fijo" : "% del Resto"}</div>
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <input
                       type="number"
                       value={c.value}
                       onChange={e => updateCategoryValue(c.id, parseFloat(e.target.value) || 0)}
-                      className="w-16 bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-white text-center text-xs focus:outline-none focus:border-violet-500"
+                      className="w-16 bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white text-center font-bold text-xs focus:outline-none focus:border-violet-500"
                     />
-                    <button onClick={() => removeCategory(c.id)} className="text-gray-600 hover:text-red-400 transition-colors p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => removeCategory(c.id)} className="text-gray-600 hover:text-red-400 transition-colors p-1 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
               ))}
             </div>
-            <div className="space-y-2">
-              <div className="grid grid-cols-5 gap-2">
-                <input type="text" placeholder="Nombre" value={newCatName} onChange={e => setNewCatName(e.target.value)} className="col-span-2 bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-violet-500" />
-                <select value={newCatType} onChange={e => setNewCatType(e.target.value as CategoryType)} className="bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-violet-500">
-                  <option value="percentage">%</option>
-                  <option value="fixed_usd">USD</option>
-                  <option value="fixed_ars">ARS</option>
-                </select>
-                <input type="number" placeholder="Val" value={newCatValue} onChange={e => setNewCatValue(e.target.value)} className="bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-violet-500" />
-                <button onClick={addCategory} className="bg-violet-600 hover:bg-violet-500 text-white rounded-lg flex items-center justify-center transition-colors"><Plus className="w-4 h-4" /></button>
-              </div>
-            </div>
-          </div>
-
-          {/* Expenses Manager */}
-          <div className="glass-panel p-6 rounded-2xl border-red-500/10">
-            <h3 className="text-base font-semibold text-red-400 mb-4 flex items-center gap-2">
-              <DollarSign className="w-4 h-4" /> Gastos Fijos (Salida Directa)
-            </h3>
-            <div className="space-y-3 mb-4">
-              {config.expenses.length === 0 && <p className="text-gray-500 text-xs py-4 text-center">No hay gastos fijos. ¡Qué suerte!</p>}
-              {config.expenses.map(e => (
-                <div key={e.id} className="flex items-center gap-3 text-sm bg-black/20 p-2 rounded-xl border border-white/5">
-                  <span className="text-gray-300 flex-1 truncate">{e.name}</span>
-                  <span className="text-red-400 font-mono font-medium">${e.amount.toLocaleString('es-AR')} {e.currency}</span>
-                  <button onClick={() => removeExpense(e.id)} className="text-gray-600 hover:text-red-400 transition-colors p-1"><Trash2 className="w-3.5 h-3.5" /></button>
-                </div>
-              ))}
-            </div>
-            <div className="space-y-2">
-              <div className="grid grid-cols-5 gap-2">
-                <input type="text" placeholder="Ej: Alquiler" value={newExpName} onChange={e => setNewExpName(e.target.value)} className="col-span-2 bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-red-500" />
-                <input type="number" placeholder="Monto" value={newExpAmount} onChange={e => setNewExpAmount(e.target.value)} className="bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-red-500" />
-                <select value={newExpCurrency} onChange={e => setNewExpCurrency(e.target.value as "ARS" | "USD")} className="bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-red-500">
-                  <option value="ARS">ARS</option>
-                  <option value="USD">USD</option>
-                </select>
-                <button onClick={addExpense} className="bg-red-600 hover:bg-red-500 text-white rounded-lg flex items-center justify-center transition-colors"><Plus className="w-4 h-4" /></button>
-              </div>
+            <div className="grid grid-cols-5 gap-2 bg-black/40 p-3 rounded-xl border border-white/5">
+              <input type="text" placeholder="Nombre" value={newCatName} onChange={e => setNewCatName(e.target.value)} className="col-span-2 bg-transparent text-white text-sm focus:outline-none" />
+              <select value={newCatType} onChange={e => setNewCatType(e.target.value as CategoryType)} className="bg-transparent text-white text-xs focus:outline-none cursor-pointer">
+                <option value="percentage" className="bg-[#09090b]">%</option>
+                <option value="fixed_usd" className="bg-[#09090b]">USD</option>
+                <option value="fixed_ars" className="bg-[#09090b]">ARS</option>
+              </select>
+              <input type="number" placeholder="Val" value={newCatValue} onChange={e => setNewCatValue(e.target.value)} className="bg-transparent text-white text-sm focus:outline-none" />
+              <button onClick={addCategory} className="bg-violet-600/20 hover:bg-violet-600 text-violet-400 hover:text-white rounded-lg flex items-center justify-center transition-all py-1"><Plus className="w-5 h-5" /></button>
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
