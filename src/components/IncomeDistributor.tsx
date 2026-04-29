@@ -48,8 +48,9 @@ export default function IncomeDistributor() {
   const [isFetchingRate, setIsFetchingRate] = useState(false);
   
   const [newCatName, setNewCatName] = useState("");
-  const [newCatType, setNewCatType] = useState<string>("percentage");
+  const [newCatType, setNewCatType] = useState<string>("fixed_usd");
   const [newCatValue, setNewCatValue] = useState("");
+  const [absorbCategory, setAbsorbCategory] = useState("");
 
   const { user } = useAuth();
   const getDocRef = () => user ? doc(db, "users", user.uid, "income_config", "data") : null;
@@ -133,6 +134,23 @@ export default function IncomeDistributor() {
   const removeCategory = (id: string) => setConfig(prev => ({ ...prev, categories: prev.categories.filter(c => c.id !== id) }));
   const updateCategoryValue = (id: string, value: number) => setConfig(prev => ({ ...prev, categories: prev.categories.map(c => c.id === id ? { ...c, value } : c) }));
 
+  const handleAbsorbRemainder = () => {
+    if (!absorbCategory || !result || result.unallocated <= 0) return;
+    const cat = config.categories.find(c => c.id === absorbCategory);
+    if (!cat) return;
+    
+    let amountToAdd = result.unallocated;
+    if (cat.type === "fixed_usd") amountToAdd = amountToAdd / usdRate;
+    
+    setConfig(prev => ({
+      ...prev,
+      categories: prev.categories.map(c => 
+        c.id === absorbCategory ? { ...c, value: Math.round((c.value + amountToAdd) * 100) / 100 } : c
+      )
+    }));
+    setAbsorbCategory("");
+  };
+
   const removeExpense = (id: string) => setConfig(prev => ({ ...prev, expenses: prev.expenses.filter(e => e.id !== id) }));
 
   if (!isClient) return null;
@@ -145,7 +163,7 @@ export default function IncomeDistributor() {
           <div>
             <h2 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
               <Landmark className="w-5 h-5 text-violet-400" />
-              1. Ingreso del Mes
+              Ingreso del Mes
             </h2>
             <p className="text-sm text-gray-400">¿Cuánta plata entró hoy a tu cuenta?</p>
           </div>
@@ -249,6 +267,16 @@ export default function IncomeDistributor() {
                     <div>
                       <h4 className="font-bold text-amber-400">¡Te sobra plata!</h4>
                       <p className="text-xs text-amber-500/70">Tenés <strong>${result.unallocated.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</strong> sin asignar.</p>
+                      
+                      <div className="mt-4 flex items-center gap-2">
+                        <select value={absorbCategory} onChange={e => setAbsorbCategory(e.target.value)} className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-2 py-1 text-amber-400 text-xs focus:outline-none">
+                          <option value="">Sumar a una salida...</option>
+                          {config.categories.filter(c => c.type !== "percentage").map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                        <button onClick={handleAbsorbRemainder} disabled={!absorbCategory} className="bg-amber-500 disabled:opacity-50 hover:bg-amber-400 text-black px-3 py-1 rounded-lg text-xs font-bold transition-colors">
+                          Asignar Resto
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <div className="text-2xl font-black text-amber-400">
@@ -304,7 +332,7 @@ export default function IncomeDistributor() {
           Configurar Salidas
         </h3>
         
-        <div className="glass-panel p-6 rounded-2xl border-white/5 max-w-4xl">
+        <div className="glass-panel p-6 rounded-2xl border-white/5 w-full">
           <div className="space-y-3 mb-6">
             {config.expenses.length === 0 && config.categories.length === 0 && (
               <p className="text-gray-500 text-xs py-4 text-center">No hay salidas configuradas.</p>
@@ -319,7 +347,7 @@ export default function IncomeDistributor() {
                   <div className="text-[10px] text-gray-500 uppercase">Gasto Fijo</div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-20 text-right text-red-400 font-mono font-bold">${e.amount.toLocaleString('es-AR')} {e.currency}</div>
+                  <div className="w-32 text-right text-red-400 font-mono font-bold">${e.amount.toLocaleString('es-AR')} {e.currency}</div>
                   <button onClick={() => removeExpense(e.id)} className="text-gray-600 hover:text-red-400 transition-colors p-1 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
@@ -338,7 +366,7 @@ export default function IncomeDistributor() {
                     type="number"
                     value={c.value}
                     onChange={e => updateCategoryValue(c.id, parseFloat(e.target.value) || 0)}
-                    className="w-20 bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white text-center font-bold text-xs focus:outline-none focus:border-violet-500"
+                    className="w-32 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-center font-bold text-xs focus:outline-none focus:border-violet-500"
                   />
                   <button onClick={() => removeCategory(c.id)} className="text-gray-600 hover:text-red-400 transition-colors p-1 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
                 </div>
@@ -350,35 +378,25 @@ export default function IncomeDistributor() {
             <input type="text" placeholder="Nombre" value={newCatName} onChange={e => setNewCatName(e.target.value)} className="col-span-1 sm:col-span-2 bg-transparent text-white text-sm focus:outline-none px-2" />
             <select 
               value={newCatType} 
-              onChange={e => setNewCatType(e.target.value as CategoryType | "expense_ars" | "expense_usd")} 
+              onChange={e => setNewCatType(e.target.value)} 
               className="col-span-1 sm:col-span-2 bg-transparent text-white text-xs focus:outline-none cursor-pointer"
             >
-              <optgroup label="Distribución">
-                <option value="percentage" className="bg-[#09090b]">% del remanente</option>
-                <option value="fixed_usd" className="bg-[#09090b]">USD Fijo (Inversión)</option>
-                <option value="fixed_ars" className="bg-[#09090b]">ARS Fijo (Inversión)</option>
-              </optgroup>
-              <optgroup label="Gastos Fijos (Obligaciones)">
-                <option value="expense_ars" className="bg-[#09090b]">Gasto ARS Fijo</option>
-                <option value="expense_usd" className="bg-[#09090b]">Gasto USD Fijo</option>
-              </optgroup>
+              <option value="fixed_usd" className="bg-[#09090b]">USD FIJO</option>
+              <option value="fixed_ars" className="bg-[#09090b]">ARS FIJO</option>
+              <option value="percentage" className="bg-[#09090b]">% DEL REMANENTE</option>
             </select>
             <input type="number" placeholder="Monto / %" value={newCatValue} onChange={e => setNewCatValue(e.target.value)} className="col-span-1 bg-transparent text-white text-sm focus:outline-none px-2 text-center" />
             <button 
               onClick={() => {
                 if (!newCatName || !newCatValue) return;
-                if (newCatType === "expense_ars" || newCatType === "expense_usd") {
-                  setConfig(prev => ({ ...prev, expenses: [...prev.expenses, { id: uid(), name: newCatName, amount: parseFloat(newCatValue), currency: newCatType === "expense_ars" ? "ARS" : "USD" }] }));
-                } else {
-                  const idx = config.categories.length;
-                  setConfig(prev => ({
-                    ...prev,
-                    categories: [...prev.categories, {
-                      id: uid(), name: newCatName, type: newCatType as CategoryType,
-                      value: parseFloat(newCatValue), color: DEFAULT_COLORS[idx % DEFAULT_COLORS.length], icon: "💰"
-                    }]
-                  }));
-                }
+                const idx = config.categories.length;
+                setConfig(prev => ({
+                  ...prev,
+                  categories: [...prev.categories, {
+                    id: uid(), name: newCatName, type: newCatType as CategoryType,
+                    value: parseFloat(newCatValue), color: DEFAULT_COLORS[idx % DEFAULT_COLORS.length], icon: "💰"
+                  }]
+                }));
                 setNewCatName(""); setNewCatValue("");
               }} 
               className="col-span-1 bg-violet-600/20 hover:bg-violet-600 text-violet-400 hover:text-white rounded-lg flex items-center justify-center transition-all py-2"
