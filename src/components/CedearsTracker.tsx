@@ -72,13 +72,8 @@ const extractTicker = (instrumento: string): string | null => {
 };
 
 const isCedearRow = (row: Record<string, string>): boolean => {
-  const tipo = (row["tipoOperacion"] || "").toLowerCase();
   const inst = (row["instrumento"] || "").toLowerCase();
-  const mercado = (row["mercado"] || "").toUpperCase();
-  const isTrade = tipo.includes("compra") || tipo.includes("venta") || tipo.includes("canje") || tipo.includes("split") || tipo.includes("transferencia") || tipo.includes("recepcion");
-  const isCedear = inst.includes("cedear");
-  const isByma = mercado === "BYMA";
-  return isTrade && isCedear && isByma;
+  return inst.includes("cedear");
 };
 
 const parseCocosCSV = (text: string): Omit<Purchase, "id">[] => {
@@ -137,6 +132,8 @@ export default function CedearsTracker() {
   const [qtyInput, setQtyInput] = useState("");
   const [priceInput, setPriceInput] = useState("");
   const [dateInput, setDateInput] = useState(new Date().toISOString().split("T")[0]);
+  const [importStartDate, setImportStartDate] = useState("");
+  const [importEndDate, setImportEndDate] = useState("");
 
   const { user } = useAuth();
 
@@ -298,6 +295,9 @@ export default function CedearsTracker() {
         for (const row of rows) {
           if (row.nroTicket && existingTickets.has(row.nroTicket)) { skipped++; continue; }
           
+          if (importStartDate && row.date < importStartDate) { skipped++; continue; }
+          if (importEndDate && row.date > importEndDate) { skipped++; continue; }
+
           if (!minDate || row.date < minDate) minDate = row.date;
           if (!maxDate || row.date > maxDate) maxDate = row.date;
           rowCount++;
@@ -423,13 +423,24 @@ export default function CedearsTracker() {
       </div>
 
       {/* CSV Import */}
-      <div
-        className={clsx("relative border-2 border-dashed rounded-2xl p-6 transition-all cursor-pointer", isDragging ? "border-blue-400 bg-blue-500/10" : "border-white/10 hover:border-blue-500/40 hover:bg-white/5")}
-        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={onDrop}
-        onClick={() => fileInputRef.current?.click()}
-      >
+      <div className="glass-panel p-6 rounded-2xl border-white/5 space-y-4">
+        <div className="flex flex-col sm:flex-row items-end gap-4 bg-black/20 p-4 rounded-xl border border-white/5">
+          <div className="flex-1 w-full">
+            <label className="block text-[10px] text-gray-400 mb-1 uppercase tracking-wider">Desde Fecha (Opcional)</label>
+            <input type="date" value={importStartDate} onChange={e => setImportStartDate(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+          </div>
+          <div className="flex-1 w-full">
+            <label className="block text-[10px] text-gray-400 mb-1 uppercase tracking-wider">Hasta Fecha (Opcional)</label>
+            <input type="date" value={importEndDate} onChange={e => setImportEndDate(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+          </div>
+        </div>
+        <div
+          className={clsx("relative border-2 border-dashed rounded-2xl p-6 transition-all cursor-pointer", isDragging ? "border-blue-400 bg-blue-500/10" : "border-white/10 hover:border-blue-500/40 hover:bg-white/5")}
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={onDrop}
+          onClick={() => fileInputRef.current?.click()}
+        >
         <input ref={fileInputRef} type="file" accept=".csv" multiple className="hidden" onChange={onFileChange} />
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <div className={clsx("p-3 rounded-xl", isDragging ? "bg-blue-500/20" : "bg-blue-500/10")}>
@@ -459,37 +470,7 @@ export default function CedearsTracker() {
           )}
         </div>
       </div>
-
-      {/* Imported CSVs List */}
-      {csvImports.length > 0 && (
-        <div className="glass-panel p-6 rounded-2xl border-blue-500/10">
-          <h3 className="text-sm font-semibold text-gray-200 mb-4">Archivos CSV Importados</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...csvImports].sort((a,b) => new Date(b.importedAt).getTime() - new Date(a.importedAt).getTime()).map(imp => (
-              <div key={imp.id} className="bg-black/30 border border-white/5 rounded-xl p-4 flex justify-between items-start group">
-                <div>
-                  <div className="font-medium text-blue-300 text-sm truncate max-w-[200px]" title={imp.filename}>
-                    {imp.filename}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {new Date(imp.periodStart).toLocaleDateString('es-AR')} - {new Date(imp.periodEnd).toLocaleDateString('es-AR')}
-                  </div>
-                  <div className="text-[10px] text-gray-600 mt-2 font-mono uppercase">
-                    {imp.rowCount} movimientos
-                  </div>
-                </div>
-                <button 
-                  onClick={() => removeCsvImport(imp.id)} 
-                  className="text-gray-600 hover:text-red-400 p-1.5 bg-black/40 rounded-lg opacity-0 sm:opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all"
-                  title="Eliminar archivo y sus movimientos"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+    </div>
 
       {/* Main grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -521,6 +502,39 @@ export default function CedearsTracker() {
               <Plus className="w-4 h-4" /> Registrar
             </button>
           </form>
+
+          {/* Imported CSVs List */}
+          {csvImports.length > 0 && (
+            <div className="pt-6 border-t border-white/10 mt-6">
+              <h3 className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider">CSVs Importados</h3>
+              <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                {[...csvImports].sort((a,b) => new Date(b.importedAt).getTime() - new Date(a.importedAt).getTime()).map(imp => (
+                  <div key={imp.id} className="bg-black/20 border border-white/5 rounded-lg p-2.5 flex justify-between items-center group text-xs hover:bg-white/5 transition-colors">
+                    <div className="min-w-0 flex-1 pr-2">
+                      <div className="font-medium text-blue-300 truncate" title={imp.filename}>
+                        {imp.filename}
+                      </div>
+                      <div className="text-[10px] text-gray-500 mt-0.5">
+                        {new Date(imp.periodStart).toLocaleDateString('es-AR')} - {new Date(imp.periodEnd).toLocaleDateString('es-AR')}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[10px] text-gray-600 bg-white/5 px-1.5 py-0.5 rounded font-mono">
+                        {imp.rowCount}
+                      </span>
+                      <button 
+                        onClick={() => removeCsvImport(imp.id)} 
+                        className="text-gray-600 hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-all"
+                        title="Eliminar importación"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Positions table */}
