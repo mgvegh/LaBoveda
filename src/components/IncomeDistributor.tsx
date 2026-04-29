@@ -168,11 +168,17 @@ export default function IncomeDistributor() {
             <p className="text-sm text-gray-400">¿Cuánta plata entró hoy a tu cuenta?</p>
           </div>
           <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl px-3 py-2 h-fit">
-            <span className="text-xs text-gray-400 uppercase tracking-wide">Dólar Oficial</span>
-            {isFetchingRate ? <RefreshCw className="w-4 h-4 text-violet-400 animate-spin" /> : (
-              <span className="text-white font-bold">{usdRate > 0 ? `$${usdRate.toLocaleString('es-AR')}` : "—"}</span>
-            )}
-            <button onClick={fetchUsdRate} className="text-gray-500 hover:text-violet-400 transition-colors ml-1">
+            <span className="text-xs text-gray-400 uppercase tracking-wide">Valor USD</span>
+            <div className="flex items-center gap-1">
+              <span className="text-gray-500 font-bold">$</span>
+              <input 
+                type="number" 
+                value={usdRate || ""} 
+                onChange={(e) => setUsdRate(Number(e.target.value))}
+                className="w-16 bg-transparent text-white font-bold focus:outline-none"
+              />
+            </div>
+            <button onClick={fetchUsdRate} className={`text-gray-500 hover:text-violet-400 transition-colors ml-1 ${isFetchingRate ? "animate-spin text-violet-400" : ""}`} title="Actualizar Oficial">
               <RefreshCw className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -296,7 +302,7 @@ export default function IncomeDistributor() {
               <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Tip del Mes</h3>
               <p className="text-sm text-gray-300 leading-relaxed">
                 Si te sobra plata sin asignar, priorizá siempre la categoría de <strong>Inversiones</strong>. 
-                Recordá que el dólar Oficial de <strong>${usdRate}</strong> es solo una referencia para el cálculo.
+                Recordá que el valor del dólar de <strong>${usdRate}</strong> es editable y sirve como referencia para el cálculo.
               </p>
             </div>
             
