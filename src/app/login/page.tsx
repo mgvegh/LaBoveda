@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase";
+import { useAuth } from "@/components/AuthProvider";
 import { useRouter } from "next/navigation";
 import { Lock, Mail, Loader2, ArrowRight } from "lucide-react";
 import { clsx } from "clsx";
@@ -30,20 +30,13 @@ const VaultWheel = ({ loading }: { loading: boolean }) => (
       loading ? "rotate-[360deg]" : "rotate-0"
     )}>
       <svg viewBox="0 0 100 100" className="w-full h-full text-emerald-400 drop-shadow-[0_0_12px_rgba(16,185,129,0.4)]">
-        {/* Aro dentado principal */}
         <circle cx="50" cy="50" r="32" stroke="currentColor" strokeWidth="6" fill="none" />
         <circle cx="50" cy="50" r="24" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.5" />
-        
-        {/* Centro de la rueda */}
         <circle cx="50" cy="50" r="10" fill="currentColor" />
         <circle cx="50" cy="50" r="4" fill="black" opacity="0.3" />
-        
-        {/* Manijas de la boveda (8 brazos) */}
         {[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => (
           <g key={angle} transform={`rotate(${angle}, 50, 50)`}>
-            {/* Brazo */}
             <rect x="47" y="5" width="6" height="20" rx="3" fill="currentColor" />
-            {/* Pomo de la punta */}
             <circle cx="50" cy="8" r="4" fill="currentColor" />
           </g>
         ))}
@@ -60,8 +53,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
+  const { signIn, signUp } = useAuth();
   const router = useRouter();
-  const supabase = createClient();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,34 +63,33 @@ export default function LoginPage() {
 
     try {
       if (isLogin) {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (signInError) throw signInError;
+        await signIn(email, password);
       } else {
         if (password !== confirmPassword) {
           setError("Las contraseñas no coinciden.");
           setLoading(false);
           return;
         }
-        const { error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-        });
-        if (signUpError) throw signUpError;
-        alert("¡Cuenta creada! Ya podés inicar sesión (si no te llegó mail de confirmación, entrá directo).");
+        await signUp(email, password);
+        alert("¡Cuenta creada! Ya podés iniciar sesión.");
         setIsLogin(true);
         setLoading(false);
         return;
       }
-
       router.push("/");
-      router.refresh(); // Refresca el estado de sesión global
-    } catch (err: any) {
-      setError(err.message || "Error al autenticar");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Error al autenticar";
+      // Mensajes de Firebase en español
+      if (message.includes("invalid-credential") || message.includes("wrong-password") || message.includes("user-not-found")) {
+        setError("Credenciales inválidas. Revisa tu correo o contraseña.");
+      } else if (message.includes("email-already-in-use")) {
+        setError("Ya existe una cuenta con ese correo.");
+      } else if (message.includes("weak-password")) {
+        setError("La contraseña debe tener al menos 6 caracteres.");
+      } else {
+        setError(message);
+      }
     } finally {
-      // Dejamos el loading un poco más para que se vea el giro si es muy rápido
       setTimeout(() => setLoading(false), 800);
     }
   };
@@ -122,7 +114,7 @@ export default function LoginPage() {
         <form onSubmit={handleAuth} className="space-y-4 relative z-10">
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm px-4 py-3 rounded-xl">
-              {error === "Invalid login credentials" ? "Credenciales inválidas. Revisa tu correo o contraseña." : error}
+              {error}
             </div>
           )}
 

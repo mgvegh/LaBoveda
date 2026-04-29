@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bitcoin, LineChart, Wallet, Briefcase, LogOut } from "lucide-react";
+import { Bitcoin, Wallet, Briefcase, PiggyBank } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -10,7 +10,7 @@ import ProfileButton from "@/components/ProfileButton";
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { session } = useAuth();
+  const { user } = useAuth();
 
   return (
     <nav className="sticky top-0 z-50 bg-[#09090b] border-b border-white/5 w-full">
@@ -71,7 +71,20 @@ export default function Navbar() {
                   <span className="hidden lg:inline">Estrategias Cripto</span>
                 </Link>
 
-                {session && (
+                <Link 
+                  href="/ingresos" 
+                  className={clsx(
+                    "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl transition-all",
+                    pathname === "/ingresos" 
+                      ? "bg-violet-500/15 text-violet-400 border border-violet-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
+                      : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
+                  )}
+                >
+                  <PiggyBank className="w-5 h-5 sm:w-4 sm:h-4" />
+                  <span className="hidden lg:inline">Ingresos</span>
+                </Link>
+
+                {user && (
                   <ProfileButton />
                 )}
               </>
