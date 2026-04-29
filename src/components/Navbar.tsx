@@ -30,6 +30,19 @@ export default function Navbar() {
             {pathname !== "/login" && (
               <>
                 <Link 
+                  href="/ingresos" 
+                  className={clsx(
+                    "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl transition-all",
+                    pathname === "/ingresos" 
+                      ? "bg-violet-500/15 text-violet-400 border border-violet-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
+                      : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
+                  )}
+                >
+                  <PiggyBank className="w-5 h-5 sm:w-4 sm:h-4" />
+                  <span className="hidden lg:inline">Ingresos</span>
+                </Link>
+
+                <Link 
                   href="/cedears" 
                   className={clsx(
                     "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl transition-all",
@@ -69,19 +82,6 @@ export default function Navbar() {
                     <svg viewBox="0 0 32 32" className="w-5 h-5 sm:w-4 sm:h-4 fill-current text-purple-400"><path d="M15.925 23.969l-9.819-5.794L16 32l9.894-13.825-9.969 5.794zM16.075 0L6.181 16.481l9.819 5.806 9.894-5.806L16.075 0z"/></svg>
                   </div>
                   <span className="hidden lg:inline">Estrategias Cripto</span>
-                </Link>
-
-                <Link 
-                  href="/ingresos" 
-                  className={clsx(
-                    "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl transition-all",
-                    pathname === "/ingresos" 
-                      ? "bg-violet-500/15 text-violet-400 border border-violet-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
-                      : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
-                  )}
-                >
-                  <PiggyBank className="w-5 h-5 sm:w-4 sm:h-4" />
-                  <span className="hidden lg:inline">Ingresos</span>
                 </Link>
 
                 {user && (

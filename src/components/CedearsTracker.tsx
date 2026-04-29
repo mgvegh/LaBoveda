@@ -65,7 +65,7 @@ const isCedearRow = (row: Record<string, string>): boolean => {
   const tipo = (row["tipoOperacion"] || "").toLowerCase();
   const inst = (row["instrumento"] || "").toLowerCase();
   const mercado = (row["mercado"] || "").toUpperCase();
-  const isTrade = tipo === "compra" || tipo === "compra dolar mep" || tipo === "venta" || tipo === "venta dolar mep";
+  const isTrade = tipo.includes("compra") || tipo.includes("venta") || tipo.includes("canje") || tipo.includes("split") || tipo.includes("transferencia") || tipo.includes("recepcion");
   const isCedear = inst.includes("cedear");
   const isByma = mercado === "BYMA";
   return isTrade && isCedear && isByma;
@@ -97,7 +97,7 @@ const parseCocosCSV = (text: string): Omit<Purchase, "id">[] => {
     const currency = (row["moneda"] || "ARS").toUpperCase();
     const nroTicket = row["nroTicket"];
 
-    if (quantity === 0 || price <= 0) continue;
+    if (quantity === 0) continue;
 
     result.push({
       ticker: ticker + ".BA",
@@ -481,15 +481,18 @@ export default function CedearsTracker() {
             <div className="mt-8 pt-6 border-t border-white/10">
               <h3 className="text-sm font-medium text-gray-400 mb-3">Historial de Compras Individuales</h3>
               <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
-                {purchases.map(p => (
-                  <div key={p.id} className="flex justify-between items-center text-xs bg-black/20 p-2 rounded-md">
-                    <span className="text-gray-400 w-24">{p.date}</span>
-                    <span className="font-bold text-blue-300 w-24">{p.ticker.replace('.BA', '')}</span>
-                    <span className="text-gray-400">{p.quantity} x ${p.purchasePrice.toLocaleString('es-AR')}</span>
-                    {p.nroTicket && <span className="text-gray-600 text-[10px] hidden sm:block">CSV</span>}
-                    <button onClick={() => removePurchase(p.id)} className="text-gray-500 hover:text-red-400 transition-colors p-1" title="Eliminar registro">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                {[...purchases].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(p => (
+                  <div key={p.id} className="grid grid-cols-5 items-center text-xs bg-black/20 p-3 rounded-xl border border-white/5 hover:bg-white/5 transition-colors group">
+                    <div className="text-gray-400">{new Date(p.date).toLocaleDateString('es-AR')}</div>
+                    <div className="font-bold text-blue-300">{p.ticker.replace('.BA', '')}</div>
+                    <div className="text-gray-300 text-center">{p.quantity > 0 ? "+" : ""}{p.quantity}</div>
+                    <div className="text-gray-400 text-right">${p.purchasePrice.toLocaleString('es-AR')}</div>
+                    <div className="flex justify-end items-center gap-2">
+                      {p.nroTicket && <span className="bg-white/10 text-gray-400 px-1.5 py-0.5 rounded text-[10px] hidden sm:block">CSV</span>}
+                      <button onClick={() => removePurchase(p.id)} className="text-gray-500 hover:text-red-400 transition-colors p-1 opacity-0 sm:opacity-100 lg:opacity-0 lg:group-hover:opacity-100" title="Eliminar registro">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

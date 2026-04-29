@@ -27,6 +27,7 @@ type Expense = {
 type IncomeConfig = {
   categories: Category[];
   expenses: Expense[];
+  lastIncome?: string;
 };
 
 // ─── Defaults ───────────────────────────────────────────────────────────────
@@ -77,6 +78,7 @@ export default function IncomeDistributor() {
       if (snap.exists()) {
         const data = snap.data() as IncomeConfig;
         if (data.categories?.length) setConfig(data);
+        if (data.lastIncome) setTotalIncome(data.lastIncome);
       }
     });
   }, [user]); // eslint-disable-line
@@ -85,9 +87,9 @@ export default function IncomeDistributor() {
     if (!isClient || !user) return;
     const docRef = getDocRef();
     if (!docRef) return;
-    const id = setTimeout(() => setDoc(docRef, config, { merge: true }), 800);
+    const id = setTimeout(() => setDoc(docRef, { ...config, lastIncome: totalIncome }, { merge: true }), 800);
     return () => clearTimeout(id);
-  }, [config, isClient, user]); // eslint-disable-line
+  }, [config, totalIncome, isClient, user]); // eslint-disable-line
 
   const income = parseFloat(totalIncome) || 0;
 
