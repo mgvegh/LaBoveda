@@ -48,11 +48,8 @@ export default function IncomeDistributor() {
   const [isFetchingRate, setIsFetchingRate] = useState(false);
   
   const [newCatName, setNewCatName] = useState("");
-  const [newCatType, setNewCatType] = useState<CategoryType>("percentage");
+  const [newCatType, setNewCatType] = useState<string>("percentage");
   const [newCatValue, setNewCatValue] = useState("");
-  const [newExpName, setNewExpName] = useState("");
-  const [newExpAmount, setNewExpAmount] = useState("");
-  const [newExpCurrency, setNewExpCurrency] = useState<"ARS" | "USD">("ARS");
 
   const { user } = useAuth();
   const getDocRef = () => user ? doc(db, "users", user.uid, "income_config", "data") : null;
@@ -133,27 +130,9 @@ export default function IncomeDistributor() {
     return { allocations, totalExpensesARS, unallocated, afterExpenses };
   }, [income, config, usdRate]);
 
-  const addCategory = () => {
-    if (!newCatName || !newCatValue) return;
-    const idx = config.categories.length;
-    setConfig(prev => ({
-      ...prev,
-      categories: [...prev.categories, {
-        id: uid(), name: newCatName, type: newCatType,
-        value: parseFloat(newCatValue), color: DEFAULT_COLORS[idx % DEFAULT_COLORS.length], icon: "💰"
-      }]
-    }));
-    setNewCatName(""); setNewCatValue("");
-  };
-
   const removeCategory = (id: string) => setConfig(prev => ({ ...prev, categories: prev.categories.filter(c => c.id !== id) }));
   const updateCategoryValue = (id: string, value: number) => setConfig(prev => ({ ...prev, categories: prev.categories.map(c => c.id === id ? { ...c, value } : c) }));
 
-  const addExpense = () => {
-    if (!newExpName || !newExpAmount) return;
-    setConfig(prev => ({ ...prev, expenses: [...prev.expenses, { id: uid(), name: newExpName, amount: parseFloat(newExpAmount), currency: newExpCurrency }] }));
-    setNewExpName(""); setNewExpAmount("");
-  };
   const removeExpense = (id: string) => setConfig(prev => ({ ...prev, expenses: prev.expenses.filter(e => e.id !== id) }));
 
   if (!isClient) return null;
@@ -325,64 +304,87 @@ export default function IncomeDistributor() {
           Configurar Salidas
         </h3>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Gastos Fijos Manager */}
-          <div className="glass-panel p-6 rounded-2xl border-white/5">
-            <h4 className="text-sm font-bold text-red-400 mb-4 uppercase tracking-widest">Gastos Fijos (Obligaciones)</h4>
-            <div className="space-y-3 mb-6">
-              {config.expenses.length === 0 && <p className="text-gray-500 text-xs py-4 text-center">No hay gastos configurados.</p>}
-              {config.expenses.map(e => (
-                <div key={e.id} className="flex items-center gap-3 text-sm bg-black/20 p-3 rounded-xl border border-white/5 group">
-                  <span className="text-gray-300 flex-1 truncate font-medium">{e.name}</span>
-                  <span className="text-red-400 font-mono font-bold">${e.amount.toLocaleString('es-AR')} {e.currency}</span>
+        <div className="glass-panel p-6 rounded-2xl border-white/5 max-w-4xl">
+          <div className="space-y-3 mb-6">
+            {config.expenses.length === 0 && config.categories.length === 0 && (
+              <p className="text-gray-500 text-xs py-4 text-center">No hay salidas configuradas.</p>
+            )}
+            
+            {/* Gastos Fijos */}
+            {config.expenses.map(e => (
+              <div key={e.id} className="flex items-center gap-3 text-sm bg-black/20 p-3 rounded-xl border border-white/5 group">
+                <div className="w-8 h-8 flex items-center justify-center bg-red-500/10 rounded-lg text-red-400"><DollarSign className="w-4 h-4" /></div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-gray-200 truncate font-bold">{e.name}</div>
+                  <div className="text-[10px] text-gray-500 uppercase">Gasto Fijo</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-20 text-right text-red-400 font-mono font-bold">${e.amount.toLocaleString('es-AR')} {e.currency}</div>
                   <button onClick={() => removeExpense(e.id)} className="text-gray-600 hover:text-red-400 transition-colors p-1 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
                 </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-5 gap-2 bg-black/40 p-3 rounded-xl border border-white/5">
-              <input type="text" placeholder="Ej: Alquiler" value={newExpName} onChange={e => setNewExpName(e.target.value)} className="col-span-2 bg-transparent text-white text-sm focus:outline-none" />
-              <input type="number" placeholder="Monto" value={newExpAmount} onChange={e => setNewExpAmount(e.target.value)} className="bg-transparent text-white text-sm focus:outline-none" />
-              <select value={newExpCurrency} onChange={e => setNewExpCurrency(e.target.value as "ARS" | "USD")} className="bg-transparent text-white text-xs focus:outline-none cursor-pointer">
-                <option value="ARS" className="bg-[#09090b]">ARS</option>
-                <option value="USD" className="bg-[#09090b]">USD</option>
-              </select>
-              <button onClick={addExpense} className="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white rounded-lg flex items-center justify-center transition-all py-1"><Plus className="w-5 h-5" /></button>
-            </div>
+              </div>
+            ))}
+
+            {/* Categorías */}
+            {config.categories.map(c => (
+              <div key={c.id} className="flex items-center gap-3 text-sm bg-black/20 p-3 rounded-xl border border-white/5 group">
+                <div className="w-8 h-8 flex items-center justify-center bg-white/5 rounded-lg text-lg">{c.icon}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-gray-200 truncate font-bold">{c.name}</div>
+                  <div className="text-[10px] text-gray-500 uppercase">{c.type === "fixed_usd" ? "USD Fijo" : c.type === "fixed_ars" ? "ARS Fijo" : "% del Resto"}</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={c.value}
+                    onChange={e => updateCategoryValue(c.id, parseFloat(e.target.value) || 0)}
+                    className="w-20 bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white text-center font-bold text-xs focus:outline-none focus:border-violet-500"
+                  />
+                  <button onClick={() => removeCategory(c.id)} className="text-gray-600 hover:text-red-400 transition-colors p-1 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
+                </div>
+              </div>
+            ))}
           </div>
 
-          {/* Categorías Manager */}
-          <div className="glass-panel p-6 rounded-2xl border-white/5">
-            <h4 className="text-sm font-bold text-violet-400 mb-4 uppercase tracking-widest">Reglas de Distribución</h4>
-            <div className="space-y-3 mb-6">
-              {config.categories.map(c => (
-                <div key={c.id} className="flex items-center gap-3 text-sm bg-black/20 p-3 rounded-xl border border-white/5 group">
-                  <div className="w-8 h-8 flex items-center justify-center bg-white/5 rounded-lg text-lg">{c.icon}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-gray-200 truncate font-bold">{c.name}</div>
-                    <div className="text-[10px] text-gray-500 uppercase">{c.type === "fixed_usd" ? "USD Fijo" : c.type === "fixed_ars" ? "ARS Fijo" : "% del Resto"}</div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      value={c.value}
-                      onChange={e => updateCategoryValue(c.id, parseFloat(e.target.value) || 0)}
-                      className="w-16 bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white text-center font-bold text-xs focus:outline-none focus:border-violet-500"
-                    />
-                    <button onClick={() => removeCategory(c.id)} className="text-gray-600 hover:text-red-400 transition-colors p-1 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-5 gap-2 bg-black/40 p-3 rounded-xl border border-white/5">
-              <input type="text" placeholder="Nombre" value={newCatName} onChange={e => setNewCatName(e.target.value)} className="col-span-2 bg-transparent text-white text-sm focus:outline-none" />
-              <select value={newCatType} onChange={e => setNewCatType(e.target.value as CategoryType)} className="bg-transparent text-white text-xs focus:outline-none cursor-pointer">
-                <option value="percentage" className="bg-[#09090b]">%</option>
-                <option value="fixed_usd" className="bg-[#09090b]">USD</option>
-                <option value="fixed_ars" className="bg-[#09090b]">ARS</option>
-              </select>
-              <input type="number" placeholder="Val" value={newCatValue} onChange={e => setNewCatValue(e.target.value)} className="bg-transparent text-white text-sm focus:outline-none" />
-              <button onClick={addCategory} className="bg-violet-600/20 hover:bg-violet-600 text-violet-400 hover:text-white rounded-lg flex items-center justify-center transition-all py-1"><Plus className="w-5 h-5" /></button>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-6 gap-2 bg-black/40 p-3 rounded-xl border border-white/5">
+            <input type="text" placeholder="Nombre" value={newCatName} onChange={e => setNewCatName(e.target.value)} className="col-span-1 sm:col-span-2 bg-transparent text-white text-sm focus:outline-none px-2" />
+            <select 
+              value={newCatType} 
+              onChange={e => setNewCatType(e.target.value as CategoryType | "expense_ars" | "expense_usd")} 
+              className="col-span-1 sm:col-span-2 bg-transparent text-white text-xs focus:outline-none cursor-pointer"
+            >
+              <optgroup label="Distribución">
+                <option value="percentage" className="bg-[#09090b]">% del remanente</option>
+                <option value="fixed_usd" className="bg-[#09090b]">USD Fijo (Inversión)</option>
+                <option value="fixed_ars" className="bg-[#09090b]">ARS Fijo (Inversión)</option>
+              </optgroup>
+              <optgroup label="Gastos Fijos (Obligaciones)">
+                <option value="expense_ars" className="bg-[#09090b]">Gasto ARS Fijo</option>
+                <option value="expense_usd" className="bg-[#09090b]">Gasto USD Fijo</option>
+              </optgroup>
+            </select>
+            <input type="number" placeholder="Monto / %" value={newCatValue} onChange={e => setNewCatValue(e.target.value)} className="col-span-1 bg-transparent text-white text-sm focus:outline-none px-2 text-center" />
+            <button 
+              onClick={() => {
+                if (!newCatName || !newCatValue) return;
+                if (newCatType === "expense_ars" || newCatType === "expense_usd") {
+                  setConfig(prev => ({ ...prev, expenses: [...prev.expenses, { id: uid(), name: newCatName, amount: parseFloat(newCatValue), currency: newCatType === "expense_ars" ? "ARS" : "USD" }] }));
+                } else {
+                  const idx = config.categories.length;
+                  setConfig(prev => ({
+                    ...prev,
+                    categories: [...prev.categories, {
+                      id: uid(), name: newCatName, type: newCatType as CategoryType,
+                      value: parseFloat(newCatValue), color: DEFAULT_COLORS[idx % DEFAULT_COLORS.length], icon: "💰"
+                    }]
+                  }));
+                }
+                setNewCatName(""); setNewCatValue("");
+              }} 
+              className="col-span-1 bg-violet-600/20 hover:bg-violet-600 text-violet-400 hover:text-white rounded-lg flex items-center justify-center transition-all py-2"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>
