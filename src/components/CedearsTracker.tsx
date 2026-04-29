@@ -43,13 +43,7 @@ type ImportResult = {
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
 
-const getDaysSince = (dateString: string) => {
-  const d = new Date(dateString);
-  const now = new Date();
-  const diffTime = Math.abs(now.getTime() - d.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays || 1;
-};
+// Removed getDaysSince
 
 // Parse Spanish-format number: "52.575" → 52575, "157.725,50" → 157725.50
 const parseSpanishNumber = (s: string): number => {
@@ -132,8 +126,7 @@ export default function CedearsTracker() {
   const [qtyInput, setQtyInput] = useState("");
   const [priceInput, setPriceInput] = useState("");
   const [dateInput, setDateInput] = useState(new Date().toISOString().split("T")[0]);
-  const [importStartDate, setImportStartDate] = useState("");
-  const [importEndDate, setImportEndDate] = useState("");
+  const [usdMep, setUsdMep] = useState<number>(1150);
 
   const { user } = useAuth();
 
@@ -158,25 +151,32 @@ export default function CedearsTracker() {
     };
     fetchPurchases();
     fetchImports();
+
+    fetch("https://dolarapi.com/v1/dolares/mep")
+      .then(res => res.json())
+      .then(data => { if (data.venta) setUsdMep(data.venta); })
+      .catch(err => console.error(err));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const positions = useMemo(() => {
-    const posMap: Record<string, { totalQty: number; totalCost: number; weightedDaysSum: number }> = {};
+    const posMap: Record<string, { totalQty: number; totalCost: number }> = {};
     
     // Sort by date to calculate PPC correctly if there are many buys/sells
     const sorted = [...purchases].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     sorted.forEach(p => {
       const t = p.ticker.toUpperCase();
-      if (!posMap[t]) posMap[t] = { totalQty: 0, totalCost: 0, weightedDaysSum: 0 };
+      if (!posMap[t]) posMap[t] = { totalQty: 0, totalCost: 0 };
       
+      const isUsd = p.currency === "USD" || p.currency === "EXT" || p.currency === "MEP";
+      const actualPrice = isUsd ? p.purchasePrice * usdMep : p.purchasePrice;
+
       if (p.quantity > 0) {
         // PURCHASE: Increases quantity and total cost
-        const cost = p.quantity * p.purchasePrice;
+        const cost = p.quantity * actualPrice;
         posMap[t].totalQty += p.quantity;
         posMap[t].totalCost += cost;
-        posMap[t].weightedDaysSum += (cost * getDaysSince(p.date));
       } else {
         // SALE: Decreases quantity, reduces total cost proportionally (keeping PPC constant)
         const qtyToSubtract = Math.abs(p.quantity);
@@ -184,7 +184,6 @@ export default function CedearsTracker() {
           const currentPPC = posMap[t].totalCost / posMap[t].totalQty;
           posMap[t].totalQty -= qtyToSubtract;
           posMap[t].totalCost = Math.max(0, posMap[t].totalQty * currentPPC);
-          // Days held doesn't change PPC, so we don't adjust weightedDaysSum for simplicity here
         } else {
           posMap[t].totalQty -= qtyToSubtract;
         }
@@ -199,8 +198,6 @@ export default function CedearsTracker() {
         const currentValue = currentPrice * data.totalQty;
         const pnlValue = currentValue - data.totalCost;
         const pnlPercent = data.totalCost > 0 && currentPrice > 0 ? (pnlValue / data.totalCost) * 100 : 0;
-        const avgDaysHeld = data.totalCost > 0 ? Math.max(1, data.weightedDaysSum / data.totalCost) : 1;
-        const tna = currentPrice > 0 ? pnlPercent * (365 / avgDaysHeld) : 0;
         
         return { 
           ticker, 
@@ -211,23 +208,19 @@ export default function CedearsTracker() {
           currentValue, 
           pnlValue, 
           pnlPercent, 
-          tna, 
           hasData: currentPrice > 0 
         };
       })
       .sort((a, b) => b.invested - a.invested);
-  }, [purchases, marketData]);
+  }, [purchases, marketData, usdMep]);
 
   const globalStats = useMemo(() => {
-    let totalInvested = 0, totalValue = 0, globalWeightedDaysSum = 0;
-    purchases.forEach(p => { const cost = p.quantity * p.purchasePrice; globalWeightedDaysSum += cost * getDaysSince(p.date); });
+    let totalInvested = 0, totalValue = 0;
     positions.forEach(p => { totalInvested += p.invested; totalValue += p.hasData ? p.currentValue : p.invested; });
     const pnl = totalValue - totalInvested;
     const pnlPercent = totalInvested > 0 ? (pnl / totalInvested) * 100 : 0;
-    const globalAvgDays = totalInvested > 0 ? Math.max(1, globalWeightedDaysSum / totalInvested) : 1;
-    const globalTna = totalInvested > 0 ? pnlPercent * (365 / globalAvgDays) : 0;
-    return { totalInvested, totalValue, pnl, pnlPercent, tna: globalTna };
-  }, [positions, purchases]);
+    return { totalInvested, totalValue, pnl, pnlPercent };
+  }, [positions]);
 
   const refreshMarketData = async () => {
     if (purchases.length === 0) return;
@@ -295,8 +288,7 @@ export default function CedearsTracker() {
         for (const row of rows) {
           if (row.nroTicket && existingTickets.has(row.nroTicket)) { skipped++; continue; }
           
-          if (importStartDate && row.date < importStartDate) { skipped++; continue; }
-          if (importEndDate && row.date > importEndDate) { skipped++; continue; }
+          if (row.date < "2025-02-01") { skipped++; continue; }
 
           if (!minDate || row.date < minDate) minDate = row.date;
           if (!maxDate || row.date > maxDate) maxDate = row.date;
@@ -386,9 +378,6 @@ export default function CedearsTracker() {
             {globalStats.pnl >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
             ${Math.abs(globalStats.pnl).toLocaleString('es-AR', { maximumFractionDigits: 0 })} ({globalStats.pnlPercent.toFixed(2)}%)
           </div>
-          <div className={clsx("mt-2 text-xs font-semibold px-2 py-1 rounded inline-block", globalStats.tna >= 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400")}>
-            TNA: {globalStats.tna > 0 ? "+" : ""}{globalStats.tna.toFixed(2)}%
-          </div>
         </div>
         <div className="glass p-6 rounded-2xl md:col-span-1 flex flex-col justify-center border-blue-500/10">
           <div className="text-sm text-gray-400 mb-1">Capital Invertido</div>
@@ -424,16 +413,6 @@ export default function CedearsTracker() {
 
       {/* CSV Import */}
       <div className="glass-panel p-6 rounded-2xl border-white/5 space-y-4">
-        <div className="flex flex-col sm:flex-row items-end gap-4 bg-black/20 p-4 rounded-xl border border-white/5">
-          <div className="flex-1 w-full">
-            <label className="block text-[10px] text-gray-400 mb-1 uppercase tracking-wider">Desde Fecha (Opcional)</label>
-            <input type="date" value={importStartDate} onChange={e => setImportStartDate(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
-          </div>
-          <div className="flex-1 w-full">
-            <label className="block text-[10px] text-gray-400 mb-1 uppercase tracking-wider">Hasta Fecha (Opcional)</label>
-            <input type="date" value={importEndDate} onChange={e => setImportEndDate(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
-          </div>
-        </div>
         <div
           className={clsx("relative border-2 border-dashed rounded-2xl p-6 transition-all cursor-pointer", isDragging ? "border-blue-400 bg-blue-500/10" : "border-white/10 hover:border-blue-500/40 hover:bg-white/5")}
           onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
@@ -560,7 +539,7 @@ export default function CedearsTracker() {
                     <th className="pb-3 px-2 font-medium text-right">Cant.</th>
                     <th className="pb-3 px-2 font-medium text-right hidden lg:table-cell">PPC</th>
                     <th className="pb-3 px-2 font-medium text-right">Precio Actual</th>
-                    <th className="pb-3 px-2 font-medium text-right">Resultados (TNA)</th>
+                    <th className="pb-3 px-2 font-medium text-right">Resultados (PnL)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
@@ -581,9 +560,6 @@ export default function CedearsTracker() {
                             <span className="font-semibold text-sm">{p.pnlValue > 0 ? "+" : ""}{p.pnlPercent.toFixed(2)}%</span>
                             <div className="text-xs font-medium space-x-1">
                               <span className="opacity-70">${Math.abs(p.pnlValue).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
-                              <span className={clsx("px-1.5 py-0.5 rounded ml-1 text-[10px]", p.tna >= 0 ? "bg-emerald-500/10" : "bg-red-500/10")}>
-                                TNA {p.tna > 0 ? "+" : ""}{p.tna.toFixed(1)}%
-                              </span>
                             </div>
                           </div>
                         )}
