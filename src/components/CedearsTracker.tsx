@@ -17,6 +17,16 @@ type Purchase = {
   date: string;
   currency: string;
   nroTicket?: string; // Cocos dedup key
+  importId?: string;
+};
+
+type CsvImport = {
+  id: string;
+  filename: string;
+  importedAt: string;
+  periodStart: string;
+  periodEnd: string;
+  rowCount: number;
 };
 
 type TickerData = {
@@ -115,6 +125,7 @@ const parseCocosCSV = (text: string): Omit<Purchase, "id">[] => {
 export default function CedearsTracker() {
   const [isClient, setIsClient] = useState(false);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [csvImports, setCsvImports] = useState<CsvImport[]>([]);
   const [marketData, setMarketData] = useState<Record<string, TickerData>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -141,7 +152,15 @@ export default function CedearsTracker() {
         ...(d.data() as Omit<Purchase, "id">),
       })));
     };
+    const fetchImports = async () => {
+      const importsSnap = await getDocs(collection(db, "users", user.uid, "cedears_csv_imports"));
+      setCsvImports(importsSnap.docs.map(d => ({
+        id: d.id,
+        ...(d.data() as Omit<CsvImport, "id">),
+      })));
+    };
     fetchPurchases();
+    fetchImports();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -260,25 +279,54 @@ export default function CedearsTracker() {
 
     let imported = 0, skipped = 0, errors = 0;
     const newPurchases: Purchase[] = [];
+    const newImports: CsvImport[] = [];
     const batch = writeBatch(db);
+    const importsColRef = collection(db, "users", user.uid, "cedears_csv_imports");
 
     try {
       for (const file of Array.from(files)) {
         const text = await file.text();
         const rows = parseCocosCSV(text);
+        
+        let minDate = "";
+        let maxDate = "";
+        let rowCount = 0;
+        
+        const importDocRef = doc(importsColRef);
+        const importId = importDocRef.id;
+
         for (const row of rows) {
           if (row.nroTicket && existingTickets.has(row.nroTicket)) { skipped++; continue; }
+          
+          if (!minDate || row.date < minDate) minDate = row.date;
+          if (!maxDate || row.date > maxDate) maxDate = row.date;
+          rowCount++;
+
           const docRef = doc(colRef);
-          batch.set(docRef, row);
-          newPurchases.push({ id: docRef.id, ...row } as Purchase);
+          const purchaseData = { ...row, importId };
+          batch.set(docRef, purchaseData);
+          newPurchases.push({ id: docRef.id, ...purchaseData } as Purchase);
           if (row.nroTicket) existingTickets.add(row.nroTicket);
           imported++;
         }
+        
+        if (rowCount > 0) {
+          const importRecord = {
+            filename: file.name,
+            importedAt: new Date().toISOString(),
+            periodStart: minDate,
+            periodEnd: maxDate,
+            rowCount
+          };
+          batch.set(importDocRef, importRecord);
+          newImports.push({ id: importId, ...importRecord });
+        }
       }
 
-      if (imported > 0) {
+      if (imported > 0 || newImports.length > 0) {
         await batch.commit();
         setPurchases(prev => [...prev, ...newPurchases]);
+        setCsvImports(prev => [...prev, ...newImports]);
       }
       setImportResult({ imported, skipped, errors });
     } catch (err: any) {
@@ -289,7 +337,32 @@ export default function CedearsTracker() {
       setIsImporting(false);
     }
   };
+  const removeCsvImport = async (importId: string) => {
+    if (!user || !colRef) return;
+    const confirmDelete = window.confirm("¿Estás seguro de eliminar este archivo? Se borrarán todos sus movimientos.");
+    if (!confirmDelete) return;
 
+    try {
+      const batch = writeBatch(db);
+      
+      const importRef = doc(db, "users", user.uid, "cedears_csv_imports", importId);
+      batch.delete(importRef);
+
+      const q = query(colRef, where("importId", "==", importId));
+      const snap = await getDocs(q);
+      snap.forEach(d => {
+        batch.delete(d.ref);
+      });
+
+      await batch.commit();
+
+      setCsvImports(prev => prev.filter(i => i.id !== importId));
+      setPurchases(prev => prev.filter(p => p.importId !== importId));
+    } catch (err) {
+      console.error("Error eliminando importación:", err);
+      alert("Error al eliminar los archivos.");
+    }
+  };
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) handleCSVFiles(e.target.files);
     e.target.value = "";
@@ -386,6 +459,37 @@ export default function CedearsTracker() {
           )}
         </div>
       </div>
+
+      {/* Imported CSVs List */}
+      {csvImports.length > 0 && (
+        <div className="glass-panel p-6 rounded-2xl border-blue-500/10">
+          <h3 className="text-sm font-semibold text-gray-200 mb-4">Archivos CSV Importados</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...csvImports].sort((a,b) => new Date(b.importedAt).getTime() - new Date(a.importedAt).getTime()).map(imp => (
+              <div key={imp.id} className="bg-black/30 border border-white/5 rounded-xl p-4 flex justify-between items-start group">
+                <div>
+                  <div className="font-medium text-blue-300 text-sm truncate max-w-[200px]" title={imp.filename}>
+                    {imp.filename}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {new Date(imp.periodStart).toLocaleDateString('es-AR')} - {new Date(imp.periodEnd).toLocaleDateString('es-AR')}
+                  </div>
+                  <div className="text-[10px] text-gray-600 mt-2 font-mono uppercase">
+                    {imp.rowCount} movimientos
+                  </div>
+                </div>
+                <button 
+                  onClick={() => removeCsvImport(imp.id)} 
+                  className="text-gray-600 hover:text-red-400 p-1.5 bg-black/40 rounded-lg opacity-0 sm:opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all"
+                  title="Eliminar archivo y sus movimientos"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Main grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
