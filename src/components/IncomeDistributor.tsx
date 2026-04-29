@@ -204,9 +204,8 @@ export default function IncomeDistributor() {
 
       {/* 2. HOJA DE RUTA (SALIDAS) */}
       {result && income > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="glass-panel overflow-hidden rounded-2xl border-emerald-500/20">
+        <div className="space-y-6 w-full">
+          <div className="glass-panel overflow-hidden rounded-2xl border-emerald-500/20">
               <div className="bg-emerald-500/10 px-6 py-4 border-b border-emerald-500/10 flex justify-between items-center">
                 <h3 className="font-bold text-emerald-400 flex items-center gap-2">
                   <ListChecks className="w-5 h-5" /> Salidas Programadas
@@ -295,39 +294,6 @@ export default function IncomeDistributor() {
                 Ingreso 100% distribuido. ¡Buen trabajo!
               </div>
             )}
-          </div>
-
-          <div className="space-y-6">
-            <div className="glass-panel p-6 rounded-2xl border-blue-500/20">
-              <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Tip del Mes</h3>
-              <p className="text-sm text-gray-300 leading-relaxed">
-                Si te sobra plata sin asignar, priorizá siempre la categoría de <strong>Inversiones</strong>. 
-                Recordá que el valor del dólar de <strong>${usdRate}</strong> es editable y sirve como referencia para el cálculo.
-              </p>
-            </div>
-            
-            <div className="glass-panel p-6 rounded-2xl border-white/5">
-              <h3 className="text-xs font-bold text-gray-500 uppercase mb-4">Breakdown %</h3>
-              <div className="flex h-3 rounded-full overflow-hidden gap-0.5 bg-white/5 mb-4">
-                {result.allocations.map(a => (
-                  <div key={a.id} style={{ width: `${Math.max(0, a.pctOfTotal)}%`, backgroundColor: a.color }} />
-                ))}
-                {result.totalExpensesARS > 0 && (
-                  <div style={{ width: `${(result.totalExpensesARS / income) * 100}%`, backgroundColor: "#374151" }} />
-                )}
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-[10px] text-gray-500">
-                  <span>SALIDAS FIJAS</span>
-                  <span>{((result.totalExpensesARS / income) * 100).toFixed(1)}%</span>
-                </div>
-                <div className="flex items-center justify-between text-[10px] text-gray-500">
-                  <span>DISTRIBUCIÓN</span>
-                  <span>{((result.allocations.reduce((a,c) => a + c.pctOfTotal, 0))).toFixed(1)}%</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
