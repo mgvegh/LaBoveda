@@ -589,7 +589,10 @@ export default function CedearsTracker() {
                     <div className="text-gray-400">{new Date(p.date).toLocaleDateString('es-AR')}</div>
                     <div className="font-bold text-blue-300">{p.ticker.replace('.BA', '')}</div>
                     <div className="text-gray-300 text-center">{p.quantity > 0 ? "+" : ""}{p.quantity}</div>
-                    <div className="text-gray-400 text-right">${p.purchasePrice.toLocaleString('es-AR')}</div>
+                    <div className="text-gray-400 text-right flex flex-col sm:block">
+                      <span>${p.purchasePrice.toLocaleString('es-AR')}</span>
+                      <span className="text-[10px] ml-1 opacity-70">{p.currency === "USD" || p.currency === "EXT" || p.currency === "MEP" ? "USD" : "ARS"}</span>
+                    </div>
                     <div className="flex justify-end items-center gap-2">
                       {p.nroTicket && <span className="bg-white/10 text-gray-400 px-1.5 py-0.5 rounded text-[10px] hidden sm:block">CSV</span>}
                       <button onClick={() => removePurchase(p.id)} className="text-gray-500 hover:text-red-400 transition-colors p-1 opacity-0 sm:opacity-100 lg:opacity-0 lg:group-hover:opacity-100" title="Eliminar registro">
