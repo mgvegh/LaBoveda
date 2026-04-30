@@ -170,7 +170,16 @@ export default function CedearsTracker() {
       if (!posMap[t]) posMap[t] = { totalQty: 0, totalCost: 0 };
       
       const isUsd = p.currency === "USD" || p.currency === "EXT" || p.currency === "MEP";
-      const actualPrice = isUsd ? p.purchasePrice * usdMep : p.purchasePrice;
+      let actualPrice = p.purchasePrice;
+      
+      if (isUsd) {
+        // Fijamos la cotización histórica para el 28/11/2025 (~$1482)
+        if (p.date === "2025-11-28" || p.date === "2024-11-28") {
+          actualPrice = p.purchasePrice * 1482;
+        } else {
+          actualPrice = p.purchasePrice * usdMep;
+        }
+      }
 
       if (p.quantity > 0) {
         // PURCHASE: Increases quantity and total cost
