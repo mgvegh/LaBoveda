@@ -176,6 +176,10 @@ export default function CedearsTracker() {
         // Fijamos la cotización histórica para el 28/11/2025 (~$1482)
         if (p.date === "2025-11-28" || p.date === "2024-11-28") {
           actualPrice = p.purchasePrice * 1482;
+        } 
+        // Fijamos la cotización histórica para el 28 y 29 de enero 2026 (~$1472 según CSV)
+        else if (p.date === "2026-01-28" || p.date === "2026-01-29") {
+          actualPrice = p.purchasePrice * 1472;
         } else {
           actualPrice = p.purchasePrice * usdMep;
         }
