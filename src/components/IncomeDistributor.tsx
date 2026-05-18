@@ -43,6 +43,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 
 export default function IncomeDistributor() {
   const [isClient, setIsClient] = useState(false);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [config, setConfig] = useState<IncomeConfig>({ categories: DEFAULT_CATEGORIES, expenses: [] });
   const [totalIncome, setTotalIncome] = useState<string>("");
   const [usdRate, setUsdRate] = useState<number>(0);
@@ -74,22 +75,30 @@ export default function IncomeDistributor() {
     if (!user) return;
     const docRef = getDocRef();
     if (!docRef) return;
+    
     getDoc(docRef).then(snap => {
       if (snap.exists()) {
         const data = snap.data() as IncomeConfig;
-        if (data.categories?.length) setConfig(data);
-        if (data.lastIncome) setTotalIncome(data.lastIncome);
+        setConfig({
+          categories: data.categories || [],
+          expenses: data.expenses || []
+        });
+        if (data.lastIncome !== undefined) setTotalIncome(data.lastIncome);
       }
+      setIsDataLoaded(true);
+    }).catch(err => {
+      console.error("Error loading config:", err);
+      setIsDataLoaded(true);
     });
   }, [user]); // eslint-disable-line
 
   useEffect(() => {
-    if (!isClient || !user) return;
+    if (!isClient || !user || !isDataLoaded) return;
     const docRef = getDocRef();
     if (!docRef) return;
     const id = setTimeout(() => setDoc(docRef, { ...config, lastIncome: totalIncome }, { merge: true }), 800);
     return () => clearTimeout(id);
-  }, [config, totalIncome, isClient, user]); // eslint-disable-line
+  }, [config, totalIncome, isClient, user, isDataLoaded]); // eslint-disable-line
 
   const income = parseFloat(totalIncome) || 0;
 
