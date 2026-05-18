@@ -94,13 +94,11 @@ export default function IncomeDistributor() {
   const income = parseFloat(totalIncome) || 0;
 
   const result = useMemo(() => {
-    if (income <= 0 || usdRate <= 0) return null;
+    if (usdRate <= 0) return null;
 
     const totalExpensesARS = config.expenses.reduce((acc, e) => {
       return acc + (e.currency === "USD" ? e.amount * usdRate : e.amount);
     }, 0);
-
-    const afterExpenses = Math.max(0, income - totalExpensesARS);
 
     const fixedAllocations = config.categories
       .filter(c => c.type !== "percentage")
@@ -110,6 +108,21 @@ export default function IncomeDistributor() {
       }));
 
     const totalFixedAllocations = fixedAllocations.reduce((acc, c) => acc + c.amountARS, 0);
+
+    const isNeededMode = income <= 0;
+
+    if (isNeededMode) {
+      return {
+        isNeededMode,
+        totalNeededARS: totalExpensesARS + totalFixedAllocations,
+        totalExpensesARS,
+        allocations: fixedAllocations.map(a => ({...a, pctOfTotal: 0})),
+        unallocated: 0,
+        afterExpenses: 0
+      };
+    }
+
+    const afterExpenses = Math.max(0, income - totalExpensesARS);
     const afterFixed = Math.max(0, afterExpenses - totalFixedAllocations);
 
     const percentageCategories = config.categories.filter(c => c.type === "percentage");
@@ -130,11 +143,13 @@ export default function IncomeDistributor() {
     const totalAllocated = allocations.reduce((a, c) => a + c.amountARS, 0);
     const unallocated = income - totalExpensesARS - totalAllocated;
 
-    return { allocations, totalExpensesARS, unallocated, afterExpenses };
+    return { isNeededMode, totalNeededARS: 0, allocations, totalExpensesARS, unallocated, afterExpenses };
   }, [income, config, usdRate]);
 
   const removeCategory = (id: string) => setConfig(prev => ({ ...prev, categories: prev.categories.filter(c => c.id !== id) }));
-  const updateCategoryValue = (id: string, value: number) => setConfig(prev => ({ ...prev, categories: prev.categories.map(c => c.id === id ? { ...c, value } : c) }));
+  const updateCategory = (id: string, updates: Partial<Category>) => setConfig(prev => ({ ...prev, categories: prev.categories.map(c => c.id === id ? { ...c, ...updates } : c) }));
+  const removeExpense = (id: string) => setConfig(prev => ({ ...prev, expenses: prev.expenses.filter(e => e.id !== id) }));
+  const updateExpense = (id: string, updates: Partial<Expense>) => setConfig(prev => ({ ...prev, expenses: prev.expenses.map(e => e.id === id ? { ...e, ...updates } : e) }));
 
   const handleAbsorbRemainder = () => {
     if (!absorbCategory || !result || result.unallocated <= 0) return;
@@ -152,8 +167,6 @@ export default function IncomeDistributor() {
     }));
     setAbsorbCategory("");
   };
-
-  const removeExpense = (id: string) => setConfig(prev => ({ ...prev, expenses: prev.expenses.filter(e => e.id !== id) }));
 
   if (!isClient) return null;
 
@@ -205,12 +218,12 @@ export default function IncomeDistributor() {
       </div>
 
       {/* 2. HOJA DE RUTA (SALIDAS) */}
-      {result && income > 0 && (
+      {result && (income > 0 || result.isNeededMode) && (
         <div className="space-y-6 w-full">
           <div className="glass-panel overflow-hidden rounded-2xl border-emerald-500/20">
               <div className="bg-emerald-500/10 px-6 py-4 border-b border-emerald-500/10 flex justify-between items-center">
                 <h3 className="font-bold text-emerald-400 flex items-center gap-2">
-                  <ListChecks className="w-5 h-5" /> Salidas Programadas
+                  <ListChecks className="w-5 h-5" /> {result.isNeededMode ? "Salidas Fijas (Ingreso Necesario)" : "Salidas Programadas"}
                 </h3>
                 <span className="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded-full font-mono uppercase">Resumen en Pesos</span>
               </div>
@@ -258,15 +271,17 @@ export default function IncomeDistributor() {
 
               {/* Total Summary Row */}
               <div className="p-6 bg-black/40 border-t border-white/10 flex justify-between items-center">
-                <span className="text-gray-400 font-bold uppercase text-xs tracking-widest">Total Salidas</span>
+                <span className="text-gray-400 font-bold uppercase text-xs tracking-widest">
+                  {result.isNeededMode ? "Total Necesario" : "Total Salidas"}
+                </span>
                 <span className="text-2xl font-black text-white">
-                  ${(result.totalExpensesARS + result.allocations.reduce((a,c) => a + c.amountARS, 0)).toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                  ${(result.isNeededMode ? result.totalNeededARS : result.totalExpensesARS + result.allocations.reduce((a,c) => a + c.amountARS, 0)).toLocaleString('es-AR', { maximumFractionDigits: 0 })}
                 </span>
               </div>
             </div>
 
             {/* Sobras / Unallocated */}
-            {result.unallocated > 100 ? (
+            {!result.isNeededMode && result.unallocated > 100 ? (
               <div className="glass-panel p-6 rounded-2xl border-amber-500/20 bg-amber-500/5 animate-pulse">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -291,7 +306,7 @@ export default function IncomeDistributor() {
                   </div>
                 </div>
               </div>
-            ) : (
+            ) : !result.isNeededMode && (
               <div className="glass-panel p-4 rounded-xl border-white/5 text-center text-xs text-gray-500">
                 Ingreso 100% distribuido. ¡Buen trabajo!
               </div>
@@ -316,12 +331,33 @@ export default function IncomeDistributor() {
             {config.expenses.map(e => (
               <div key={e.id} className="flex items-center gap-3 text-sm bg-black/20 p-3 rounded-xl border border-white/5 group">
                 <div className="w-8 h-8 flex items-center justify-center bg-red-500/10 rounded-lg text-red-400"><DollarSign className="w-4 h-4" /></div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-gray-200 truncate font-bold">{e.name}</div>
+                <div className="flex-1 min-w-0 flex flex-col gap-1">
+                  <input
+                    type="text"
+                    value={e.name}
+                    onChange={ev => updateExpense(e.id, { name: ev.target.value })}
+                    className="bg-transparent text-gray-200 font-bold focus:outline-none focus:border-b focus:border-red-500/50 w-full"
+                  />
                   <div className="text-[10px] text-gray-500 uppercase">Gasto Fijo</div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-32 text-right text-red-400 font-mono font-bold">${e.amount.toLocaleString('es-AR')} {e.currency}</div>
+                  <div className="flex items-center bg-white/5 border border-white/10 rounded-lg px-2">
+                    <span className="text-gray-500 font-bold mr-1">$</span>
+                    <input
+                      type="number"
+                      value={e.amount || ""}
+                      onChange={ev => updateExpense(e.id, { amount: parseFloat(ev.target.value) || 0 })}
+                      className="w-20 bg-transparent py-1.5 text-red-400 text-right font-mono font-bold text-xs focus:outline-none"
+                    />
+                    <select
+                      value={e.currency}
+                      onChange={ev => updateExpense(e.id, { currency: ev.target.value as "ARS"|"USD" })}
+                      className="ml-1 bg-transparent text-red-400 text-xs font-mono font-bold focus:outline-none cursor-pointer"
+                    >
+                      <option value="ARS" className="bg-[#09090b]">ARS</option>
+                      <option value="USD" className="bg-[#09090b]">USD</option>
+                    </select>
+                  </div>
                   <button onClick={() => removeExpense(e.id)} className="text-gray-600 hover:text-red-400 transition-colors p-1 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
@@ -331,16 +367,29 @@ export default function IncomeDistributor() {
             {config.categories.map(c => (
               <div key={c.id} className="flex items-center gap-3 text-sm bg-black/20 p-3 rounded-xl border border-white/5 group">
                 <div className="w-8 h-8 flex items-center justify-center bg-white/5 rounded-lg text-lg">{c.icon}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-gray-200 truncate font-bold">{c.name}</div>
-                  <div className="text-[10px] text-gray-500 uppercase">{c.type === "fixed_usd" ? "USD Fijo" : c.type === "fixed_ars" ? "ARS Fijo" : "% del Resto"}</div>
+                <div className="flex-1 min-w-0 flex flex-col gap-1">
+                  <input
+                    type="text"
+                    value={c.name}
+                    onChange={e => updateCategory(c.id, { name: e.target.value })}
+                    className="bg-transparent text-gray-200 font-bold focus:outline-none focus:border-b focus:border-violet-500/50 w-full"
+                  />
+                  <select
+                    value={c.type}
+                    onChange={e => updateCategory(c.id, { type: e.target.value as CategoryType })}
+                    className="bg-transparent text-[10px] text-gray-500 uppercase focus:outline-none w-fit cursor-pointer"
+                  >
+                    <option value="fixed_usd" className="bg-[#09090b]">USD Fijo</option>
+                    <option value="fixed_ars" className="bg-[#09090b]">ARS Fijo</option>
+                    <option value="percentage" className="bg-[#09090b]">% del Resto</option>
+                  </select>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
-                    value={c.value}
-                    onChange={e => updateCategoryValue(c.id, parseFloat(e.target.value) || 0)}
-                    className="w-32 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-center font-bold text-xs focus:outline-none focus:border-violet-500"
+                    value={c.value || ""}
+                    onChange={e => updateCategory(c.id, { value: parseFloat(e.target.value) || 0 })}
+                    className="w-24 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-center font-bold text-xs focus:outline-none focus:border-violet-500"
                   />
                   <button onClick={() => removeCategory(c.id)} className="text-gray-600 hover:text-red-400 transition-colors p-1 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
                 </div>
