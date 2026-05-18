@@ -17,6 +17,21 @@ export default function Home() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-7xl mt-10">
+        <Link href="/ingresos" className="group glass-panel rounded-3xl p-8 hover:-translate-y-1 transition-all duration-300 border-violet-500/10 hover:border-violet-500/30">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="p-4 bg-gradient-to-br from-violet-500/20 to-pink-500/20 rounded-2xl text-violet-400 group-hover:scale-110 transition-transform duration-300 shadow-inner">
+              <PiggyBank className="w-8 h-8" />
+            </div>
+            <h2 className="text-xl font-semibold tracking-tight text-gray-100">Distribución de Ingresos</h2>
+          </div>
+          <p className="text-gray-400 mb-8 leading-relaxed text-sm">
+            Ingresá tu sueldo y distribuí automáticamente: inversiones mínimas en USD, ahorro, gastos y más.
+          </p>
+          <div className="flex items-center text-violet-400 text-sm font-semibold group-hover:text-violet-300 transition-colors">
+            Planificar Ingresos <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </Link>
+
         <Link href="/cedears" className="group glass-panel rounded-3xl p-8 hover:-translate-y-1 transition-all duration-300 border-blue-500/10 hover:border-blue-500/30">
           <div className="flex items-center gap-4 mb-6">
             <div className="p-4 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-2xl text-blue-400 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 shadow-inner">
@@ -60,21 +75,6 @@ export default function Home() {
           </p>
           <div className="flex items-center text-orange-400 text-sm font-semibold group-hover:text-amber-300 transition-colors">
             Ver Estrategias <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </Link>
-
-        <Link href="/ingresos" className="group glass-panel rounded-3xl p-8 hover:-translate-y-1 transition-all duration-300 border-violet-500/10 hover:border-violet-500/30">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="p-4 bg-gradient-to-br from-violet-500/20 to-pink-500/20 rounded-2xl text-violet-400 group-hover:scale-110 transition-transform duration-300 shadow-inner">
-              <PiggyBank className="w-8 h-8" />
-            </div>
-            <h2 className="text-xl font-semibold tracking-tight text-gray-100">Distribución de Ingresos</h2>
-          </div>
-          <p className="text-gray-400 mb-8 leading-relaxed text-sm">
-            Ingresá tu sueldo y distribuí automáticamente: inversiones mínimas en USD, ahorro, gastos y más.
-          </p>
-          <div className="flex items-center text-violet-400 text-sm font-semibold group-hover:text-violet-300 transition-colors">
-            Planificar Ingresos <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </div>
         </Link>
       </div>
