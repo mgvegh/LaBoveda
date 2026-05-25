@@ -292,15 +292,20 @@ export default function IncomeDistributor() {
             {/* Sobras / Unallocated */}
             {!result.isNeededMode && result.unallocated > 100 ? (
               <div className="glass-panel p-6 rounded-2xl border-amber-500/20 bg-amber-500/5 animate-pulse">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-amber-500/20 rounded-xl text-amber-400"><TrendingUp className="w-6 h-6" /></div>
-                    <div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+                    <div className="p-3 bg-amber-500/20 rounded-xl text-amber-400 shrink-0"><TrendingUp className="w-6 h-6" /></div>
+                    <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-amber-400">¡Te sobra plata!</h4>
-                      <p className="text-xs text-amber-500/70">Tenés <strong>${result.unallocated.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</strong> sin asignar.</p>
+                      <p className="text-xs text-amber-500/70">
+                        Tenés <strong>${result.unallocated.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</strong> sin asignar
+                        {usdRate > 0 && (
+                          <> (equivale a <strong>USD {(result.unallocated / usdRate).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}</strong>)</>
+                        )}.
+                      </p>
                       
-                      <div className="mt-4 flex items-center gap-2">
-                        <select value={absorbCategory} onChange={e => setAbsorbCategory(e.target.value)} className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-2 py-1 text-amber-400 text-xs focus:outline-none">
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                        <select value={absorbCategory} onChange={e => setAbsorbCategory(e.target.value)} className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-2 py-1 text-amber-400 text-xs focus:outline-none max-w-full">
                           <option value="">Sumar a una salida...</option>
                           {config.categories.filter(c => c.type !== "percentage").map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
@@ -310,7 +315,7 @@ export default function IncomeDistributor() {
                       </div>
                     </div>
                   </div>
-                  <div className="text-2xl font-black text-amber-400">
+                  <div className="text-2xl font-black text-amber-400 self-end sm:self-center shrink-0">
                     +${result.unallocated.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
                   </div>
                 </div>
