@@ -361,7 +361,7 @@ export default function IncomeDistributor() {
                       type="number"
                       value={e.amount || ""}
                       onChange={ev => updateExpense(e.id, { amount: parseFloat(ev.target.value) || 0 })}
-                      className="w-28 bg-transparent py-1.5 text-red-400 text-right font-mono font-bold text-xs focus:outline-none"
+                      className="w-40 bg-transparent py-1.5 text-red-400 text-right font-mono font-bold text-xs focus:outline-none"
                     />
                     <select
                       value={e.currency}
@@ -403,7 +403,7 @@ export default function IncomeDistributor() {
                     type="number"
                     value={c.value || ""}
                     onChange={e => updateCategory(c.id, { value: parseFloat(e.target.value) || 0 })}
-                    className="w-32 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-center font-bold text-xs focus:outline-none focus:border-violet-500"
+                    className="w-44 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-center font-bold text-xs focus:outline-none focus:border-violet-500"
                   />
                   <button onClick={() => removeCategory(c.id)} className="text-gray-600 hover:text-red-400 transition-colors p-1 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
                 </div>
