@@ -248,7 +248,7 @@ export default function IncomeDistributor() {
                         <span className="text-gray-300 text-sm font-medium">{e.name}</span>
                       </div>
                       <span className="text-red-400 font-mono font-bold">
-                        ${amount.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                        ${amount.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
                   );
@@ -268,7 +268,7 @@ export default function IncomeDistributor() {
                     </div>
                     <div className="text-right">
                       <div className="text-xl font-mono font-black text-white">
-                        ${a.amountARS.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                        ${a.amountARS.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                       <div className="text-[10px] text-gray-500">
                         {a.pctOfTotal.toFixed(1)}% del total
@@ -284,7 +284,7 @@ export default function IncomeDistributor() {
                   {result.isNeededMode ? "Total Necesario" : "Total Salidas"}
                 </span>
                 <span className="text-2xl font-black text-white">
-                  ${(result.isNeededMode ? result.totalNeededARS : result.totalExpensesARS + result.allocations.reduce((a,c) => a + c.amountARS, 0)).toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                  ${(result.isNeededMode ? result.totalNeededARS : result.totalExpensesARS + result.allocations.reduce((a,c) => a + c.amountARS, 0)).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             </div>
@@ -298,7 +298,7 @@ export default function IncomeDistributor() {
                     <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-amber-400">¡Te sobra plata!</h4>
                       <p className="text-xs text-amber-500/70">
-                        Tenés <strong>${result.unallocated.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</strong> sin asignar
+                        Tenés <strong>${result.unallocated.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> sin asignar
                         {usdRate > 0 && (
                           <> (equivale a <strong>USD {(result.unallocated / usdRate).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}</strong>)</>
                         )}.
@@ -316,7 +316,7 @@ export default function IncomeDistributor() {
                     </div>
                   </div>
                   <div className="text-2xl font-black text-amber-400 self-end sm:self-center shrink-0">
-                    +${result.unallocated.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                    +${result.unallocated.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </div>
               </div>
@@ -361,7 +361,7 @@ export default function IncomeDistributor() {
                       type="number"
                       value={e.amount || ""}
                       onChange={ev => updateExpense(e.id, { amount: parseFloat(ev.target.value) || 0 })}
-                      className="w-20 bg-transparent py-1.5 text-red-400 text-right font-mono font-bold text-xs focus:outline-none"
+                      className="w-28 bg-transparent py-1.5 text-red-400 text-right font-mono font-bold text-xs focus:outline-none"
                     />
                     <select
                       value={e.currency}
@@ -403,7 +403,7 @@ export default function IncomeDistributor() {
                     type="number"
                     value={c.value || ""}
                     onChange={e => updateCategory(c.id, { value: parseFloat(e.target.value) || 0 })}
-                    className="w-24 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-center font-bold text-xs focus:outline-none focus:border-violet-500"
+                    className="w-32 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-center font-bold text-xs focus:outline-none focus:border-violet-500"
                   />
                   <button onClick={() => removeCategory(c.id)} className="text-gray-600 hover:text-red-400 transition-colors p-1 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
                 </div>
