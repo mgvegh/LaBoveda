@@ -61,10 +61,17 @@ export default function IncomeDistributor() {
   const fetchUsdRate = async () => {
     setIsFetchingRate(true);
     try {
-      const res = await fetch("https://dolarapi.com/v1/dolares/oficial");
+      const res = await fetch("/api/dolar/uala");
       if (res.ok) {
         const data = await res.json();
-        if (data.venta) setUsdRate(Math.round(data.venta));
+        if (data.compra) setUsdRate(Math.round(data.compra));
+      } else {
+        // Fallback al oficial si falla el scraper
+        const fallbackRes = await fetch("https://dolarapi.com/v1/dolares/oficial");
+        if (fallbackRes.ok) {
+          const fallbackData = await fallbackRes.json();
+          if (fallbackData.venta) setUsdRate(Math.round(fallbackData.venta));
+        }
       }
     } catch (err) { console.error("Error fetching rate:", err); }
     setIsFetchingRate(false);
@@ -216,7 +223,7 @@ export default function IncomeDistributor() {
                 className="w-16 bg-transparent text-white font-bold focus:outline-none"
               />
             </div>
-            <button onClick={fetchUsdRate} className={`text-gray-500 hover:text-violet-400 transition-colors ml-1 ${isFetchingRate ? "animate-spin text-violet-400" : ""}`} title="Actualizar Oficial">
+            <button onClick={fetchUsdRate} className={`text-gray-500 hover:text-violet-400 transition-colors ml-1 ${isFetchingRate ? "animate-spin text-violet-400" : ""}`} title="Actualizar Ualá">
               <RefreshCw className="w-3.5 h-3.5" />
             </button>
           </div>
