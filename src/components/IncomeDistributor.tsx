@@ -28,6 +28,7 @@ type IncomeConfig = {
   categories: Category[];
   expenses: Expense[];
   lastIncome?: string;
+  completedIds?: string[];
 };
 
 // ─── Defaults ───────────────────────────────────────────────────────────────
@@ -44,7 +45,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 export default function IncomeDistributor() {
   const [isClient, setIsClient] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
-  const [config, setConfig] = useState<IncomeConfig>({ categories: DEFAULT_CATEGORIES, expenses: [] });
+  const [config, setConfig] = useState<IncomeConfig>({ categories: DEFAULT_CATEGORIES, expenses: [], completedIds: [] });
   const [totalIncome, setTotalIncome] = useState<string>("");
   const [usdRate, setUsdRate] = useState<number>(0);
   const [isFetchingRate, setIsFetchingRate] = useState(false);
@@ -81,7 +82,8 @@ export default function IncomeDistributor() {
         const data = snap.data() as IncomeConfig;
         setConfig({
           categories: data.categories || [],
-          expenses: data.expenses || []
+          expenses: data.expenses || [],
+          completedIds: data.completedIds || []
         });
         if (data.lastIncome !== undefined) setTotalIncome(data.lastIncome);
       }
@@ -159,6 +161,18 @@ export default function IncomeDistributor() {
   const updateCategory = (id: string, updates: Partial<Category>) => setConfig(prev => ({ ...prev, categories: prev.categories.map(c => c.id === id ? { ...c, ...updates } : c) }));
   const removeExpense = (id: string) => setConfig(prev => ({ ...prev, expenses: prev.expenses.filter(e => e.id !== id) }));
   const updateExpense = (id: string, updates: Partial<Expense>) => setConfig(prev => ({ ...prev, expenses: prev.expenses.map(e => e.id === id ? { ...e, ...updates } : e) }));
+
+  const toggleCompleted = (id: string) => {
+    setConfig(prev => {
+      const isCompleted = prev.completedIds?.includes(id);
+      return {
+        ...prev,
+        completedIds: isCompleted 
+          ? (prev.completedIds || []).filter(i => i !== id)
+          : [...(prev.completedIds || []), id]
+      };
+    });
+  };
 
   const handleAbsorbRemainder = () => {
     if (!absorbCategory || !result || result.unallocated <= 0) return;
@@ -241,11 +255,15 @@ export default function IncomeDistributor() {
                 {/* Gastos Fijos (Como parte de las Salidas) */}
                 {config.expenses.map(e => {
                   const amount = e.currency === "USD" ? e.amount * usdRate : e.amount;
+                  const isCompleted = config.completedIds?.includes(e.id);
                   return (
-                    <div key={e.id} className="p-4 flex justify-between items-center hover:bg-white/5 transition-colors">
+                    <div key={e.id} className={`p-4 flex justify-between items-center hover:bg-white/5 transition-colors ${isCompleted ? 'opacity-40 grayscale' : ''}`}>
                       <div className="flex items-center gap-3">
+                        <button onClick={() => toggleCompleted(e.id)} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isCompleted ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'}`} title="Marcar como completado">
+                          <CheckCircleIcon />
+                        </button>
                         <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400"><DollarSign className="w-4 h-4" /></div>
-                        <span className="text-gray-300 text-sm font-medium">{e.name}</span>
+                        <span className={`text-gray-300 text-sm font-medium ${isCompleted ? 'line-through' : ''}`}>{e.name}</span>
                       </div>
                       <span className="text-red-400 font-mono font-bold">
                         ${amount.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -255,27 +273,33 @@ export default function IncomeDistributor() {
                 })}
 
                 {/* Distribución (Como parte de las Salidas) */}
-                {result.allocations.map(a => (
-                  <div key={a.id} className="p-4 flex justify-between items-center hover:bg-white/5 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-lg">{a.icon}</div>
-                      <div>
-                        <div className="text-sm font-bold text-white">{a.name}</div>
-                        <div className="text-[10px] text-gray-500 uppercase tracking-tighter">
-                          {a.type === "fixed_usd" ? `${a.value} USD fijo` : a.type === "fixed_ars" ? `${a.value} ARS fijo` : `${a.value}% del resto`}
+                {result.allocations.map(a => {
+                  const isCompleted = config.completedIds?.includes(a.id);
+                  return (
+                    <div key={a.id} className={`p-4 flex justify-between items-center hover:bg-white/5 transition-colors ${isCompleted ? 'opacity-40 grayscale' : ''}`}>
+                      <div className="flex items-center gap-3">
+                        <button onClick={() => toggleCompleted(a.id)} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isCompleted ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'}`} title="Marcar como completado">
+                          <CheckCircleIcon />
+                        </button>
+                        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-lg">{a.icon}</div>
+                        <div>
+                          <div className={`text-sm font-bold text-white ${isCompleted ? 'line-through' : ''}`}>{a.name}</div>
+                          <div className="text-[10px] text-gray-500 uppercase tracking-tighter">
+                            {a.type === "fixed_usd" ? `${a.value} USD fijo` : a.type === "fixed_ars" ? `${a.value} ARS fijo` : `${a.value}% del resto`}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xl font-mono font-black text-white">
+                          ${a.amountARS.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                        <div className="text-[10px] text-gray-500">
+                          {a.pctOfTotal.toFixed(1)}% del total
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-xl font-mono font-black text-white">
-                        ${a.amountARS.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </div>
-                      <div className="text-[10px] text-gray-500">
-                        {a.pctOfTotal.toFixed(1)}% del total
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Total Summary Row */}
