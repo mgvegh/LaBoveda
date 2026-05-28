@@ -552,11 +552,15 @@ export default function CedearsTracker() {
                     <th className="pb-3 px-2 font-medium text-right">Cant.</th>
                     <th className="pb-3 px-2 font-medium text-right hidden lg:table-cell">PPC</th>
                     <th className="pb-3 px-2 font-medium text-right">Precio Actual</th>
+                    <th className="pb-3 px-2 font-medium text-right">Tenencia</th>
                     <th className="pb-3 px-2 font-medium text-right">Resultados (PnL)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {positions.map(p => (
+                  {positions.map(p => {
+                    const valueToUse = p.hasData ? p.currentValue : p.invested;
+                    const percentOfPortfolio = globalStats.totalValue > 0 ? (valueToUse / globalStats.totalValue) * 100 : 0;
+                    return (
                     <tr key={p.ticker} className="hover:bg-white/5 transition-colors group">
                       <td className="py-3 px-2">
                         <div className="font-bold text-gray-200">{p.ticker.replace('.BA', '')}</div>
@@ -566,6 +570,10 @@ export default function CedearsTracker() {
                       <td className="py-3 px-2 text-right text-gray-400 hidden lg:table-cell">${p.avgPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
                       <td className="py-3 px-2 text-right">
                         {p.hasData ? <span className="font-medium text-blue-100">${p.currentPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span> : <span className="text-gray-500 text-xs">Cargando...</span>}
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        <div className="font-semibold text-gray-200">{percentOfPortfolio.toFixed(1)}%</div>
+                        <div className="text-[10px] text-gray-500">${valueToUse.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</div>
                       </td>
                       <td className="py-3 px-2 text-right">
                         {p.hasData && (
@@ -578,7 +586,8 @@ export default function CedearsTracker() {
                         )}
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
