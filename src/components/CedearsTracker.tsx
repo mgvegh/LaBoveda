@@ -122,15 +122,24 @@ export default function CedearsTracker() {
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Form states
   const [tickerInput, setTickerInput] = useState("");
   const [qtyInput, setQtyInput] = useState("");
   const [priceInput, setPriceInput] = useState("");
   const [dateInput, setDateInput] = useState(new Date().toISOString().split("T")[0]);
-  const [usdMep, setUsdMep] = useState<number>(1150);
+  const [assetType, setAssetType] = useState<"cedear" | "crypto">("cedear");
+  const [currencyInput, setCurrencyInput] = useState<"ARS" | "USD">("ARS");
+
+  const [usdUala, setUsdUala] = useState<number>(1420); // Default to a recent realistic rate
 
   const { user } = useAuth();
 
   const colRef = user ? collection(db, "users", user.uid, "cedears_purchases") : null;
+
+  const handleAssetTypeChange = (type: "cedear" | "crypto") => {
+    setAssetType(type);
+    setCurrencyInput(type === "crypto" ? "USD" : "ARS");
+  };
 
   useEffect(() => {
     setIsClient(true);
@@ -152,10 +161,29 @@ export default function CedearsTracker() {
     fetchPurchases();
     fetchImports();
 
-    fetch("https://dolarapi.com/v1/dolares/mep")
-      .then(res => res.json())
-      .then(data => { if (data.venta) setUsdMep(data.venta); })
-      .catch(err => console.error(err));
+    const fetchUalaRate = async () => {
+      try {
+        const res = await fetch("/api/dolar/uala");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.compra) {
+            setUsdUala(Math.round(data.compra));
+            return;
+          }
+        }
+        // Fallback to Dolar MEP if Uala scraper fails
+        const fallbackRes = await fetch("https://dolarapi.com/v1/dolares/mep");
+        if (fallbackRes.ok) {
+          const fallbackData = await fallbackRes.json();
+          if (fallbackData.venta) {
+            setUsdUala(fallbackData.venta);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching Uala rate:", err);
+      }
+    };
+    fetchUalaRate();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -173,15 +201,14 @@ export default function CedearsTracker() {
       let actualPrice = p.purchasePrice;
       
       if (isUsd) {
-        // Fijamos la cotización histórica para el 28/11/2025 (~$1482)
+        // Historical rates matching exact dates in Cocos CSV
         if (p.date === "2025-11-28" || p.date === "2024-11-28") {
           actualPrice = p.purchasePrice * 1482;
         } 
-        // Fijamos la cotización histórica para el 28 y 29 de enero 2026 (~$1472 según CSV)
         else if (p.date === "2026-01-28" || p.date === "2026-01-29") {
           actualPrice = p.purchasePrice * 1472;
         } else {
-          actualPrice = p.purchasePrice * usdMep;
+          actualPrice = p.purchasePrice * usdUala;
         }
       }
 
@@ -204,36 +231,76 @@ export default function CedearsTracker() {
     });
 
     return Object.entries(posMap)
-      .filter(([_, data]) => Math.abs(data.totalQty) > 0.001) // Filter out closed positions
+      .filter(([_, data]) => Math.abs(data.totalQty) > 0.000001) // Smaller threshold to support fractional cryptos
       .map(([ticker, data]) => {
-        const avgPrice = data.totalQty > 0 ? data.totalCost / data.totalQty : 0;
-        const currentPrice = marketData[ticker]?.price || 0;
-        const currentValue = currentPrice * data.totalQty;
-        const pnlValue = currentValue - data.totalCost;
-        const pnlPercent = data.totalCost > 0 && currentPrice > 0 ? (pnlValue / data.totalCost) * 100 : 0;
+        const isCrypto = ticker.endsWith('-USD');
+        const avgPriceARS = data.totalQty > 0 ? data.totalCost / data.totalQty : 0;
+        const avgPriceUSD = usdUala > 0 ? avgPriceARS / usdUala : 0;
+        
+        const rawPrice = marketData[ticker]?.price || 0;
+        const tickerCurrency = marketData[ticker]?.currency || (isCrypto ? 'USD' : 'ARS');
+        
+        let currentPriceARS = 0;
+        let currentPriceUSD = 0;
+        
+        if (rawPrice > 0) {
+          if (tickerCurrency.toUpperCase() === 'USD' || isCrypto) {
+            currentPriceUSD = rawPrice;
+            currentPriceARS = rawPrice * usdUala;
+          } else {
+            currentPriceARS = rawPrice;
+            currentPriceUSD = usdUala > 0 ? rawPrice / usdUala : 0;
+          }
+        }
+        
+        const currentValueARS = currentPriceARS * data.totalQty;
+        const currentValueUSD = currentPriceUSD * data.totalQty;
+        
+        const pnlValueARS = currentValueARS - data.totalCost;
+        const pnlPercent = data.totalCost > 0 && currentPriceARS > 0 ? (pnlValueARS / data.totalCost) * 100 : 0;
         
         return { 
           ticker, 
+          isCrypto,
           totalQty: data.totalQty, 
           invested: data.totalCost, 
-          avgPrice, 
-          currentPrice, 
-          currentValue, 
-          pnlValue, 
+          avgPrice: avgPriceARS, 
+          avgPriceUSD,
+          currentPrice: currentPriceARS, 
+          currentPriceUSD,
+          currentValue: currentValueARS, 
+          currentValueUSD,
+          pnlValue: pnlValueARS, 
           pnlPercent, 
-          hasData: currentPrice > 0 
+          hasData: rawPrice > 0 
         };
       })
       .sort((a, b) => b.invested - a.invested);
-  }, [purchases, marketData, usdMep]);
+  }, [purchases, marketData, usdUala]);
 
   const globalStats = useMemo(() => {
     let totalInvested = 0, totalValue = 0;
-    positions.forEach(p => { totalInvested += p.invested; totalValue += p.hasData ? p.currentValue : p.invested; });
+    positions.forEach(p => { 
+      totalInvested += p.invested; 
+      totalValue += p.hasData ? p.currentValue : p.invested; 
+    });
     const pnl = totalValue - totalInvested;
     const pnlPercent = totalInvested > 0 ? (pnl / totalInvested) * 100 : 0;
-    return { totalInvested, totalValue, pnl, pnlPercent };
-  }, [positions]);
+
+    const totalInvestedUSD = usdUala > 0 ? totalInvested / usdUala : 0;
+    const totalValueUSD = usdUala > 0 ? totalValue / usdUala : 0;
+    const pnlUSD = totalValueUSD - totalInvestedUSD;
+
+    return { 
+      totalInvested, 
+      totalValue, 
+      pnl, 
+      pnlPercent,
+      totalInvestedUSD,
+      totalValueUSD,
+      pnlUSD
+    };
+  }, [positions, usdUala]);
 
   const refreshMarketData = async () => {
     if (purchases.length === 0) return;
@@ -243,7 +310,14 @@ export default function CedearsTracker() {
     await Promise.all(uniqueTickers.map(async (t) => {
       try {
         const res = await fetch(`/api/yahoo?ticker=${t}`);
-        if (res.ok) { const data = await res.json(); newData[t] = { price: data.price, previousClose: data.previousClose, currency: data.currency }; }
+        if (res.ok) { 
+          const data = await res.json(); 
+          newData[t] = { 
+            price: data.price, 
+            previousClose: data.previousClose, 
+            currency: data.currency 
+          }; 
+        }
       } catch { console.error("Failed to fetch", t); }
     }));
     setMarketData(newData);
@@ -259,11 +333,30 @@ export default function CedearsTracker() {
     e.preventDefault();
     if (!tickerInput || !qtyInput || !priceInput || !user || !colRef) return;
     let t = tickerInput.toUpperCase().trim();
-    if (!t.includes(".")) t = t + ".BA";
-    const newRow = { ticker: t, quantity: parseFloat(qtyInput), purchasePrice: parseFloat(priceInput), date: dateInput || new Date().toISOString().split("T")[0], currency: "ARS" };
+    
+    if (assetType === "crypto") {
+      if (!t.endsWith("-USD")) {
+        t = t + "-USD";
+      }
+    } else {
+      if (!t.includes(".")) {
+        t = t + ".BA";
+      }
+    }
+
+    const newRow = { 
+      ticker: t, 
+      quantity: parseFloat(qtyInput), 
+      purchasePrice: parseFloat(priceInput), 
+      date: dateInput || new Date().toISOString().split("T")[0], 
+      currency: currencyInput 
+    };
     const docRef = await addDoc(colRef, newRow);
     setPurchases(prev => [...prev, { id: docRef.id, ...newRow }]);
-    setTickerInput(""); setQtyInput(""); setPriceInput(""); setDateInput(new Date().toISOString().split("T")[0]);
+    setTickerInput(""); 
+    setQtyInput(""); 
+    setPriceInput(""); 
+    setDateInput(new Date().toISOString().split("T")[0]);
   };
 
   const removePurchase = async (id: string) => {
@@ -342,6 +435,7 @@ export default function CedearsTracker() {
       setIsImporting(false);
     }
   };
+
   const removeCsvImport = async (importId: string) => {
     if (!user || !colRef) return;
     const confirmDelete = window.confirm("¿Estás seguro de eliminar este archivo? Se borrarán todos sus movimientos.");
@@ -368,6 +462,7 @@ export default function CedearsTracker() {
       alert("Error al eliminar los archivos.");
     }
   };
+
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) handleCSVFiles(e.target.files);
     e.target.value = "";
@@ -382,128 +477,501 @@ export default function CedearsTracker() {
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="glass-panel p-6 rounded-2xl md:col-span-1 border-blue-500/20 shadow-lg shadow-blue-500/5">
-          <div className="text-sm text-gray-400 mb-1">Valor Total (ARS)</div>
-          <div className="text-3xl font-bold text-white mb-2">${globalStats.totalValue.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</div>
-          <div className={clsx("flex items-center gap-2 text-sm font-medium", globalStats.pnl >= 0 ? "text-emerald-400" : "text-red-400")}>
-            {globalStats.pnl >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-            ${Math.abs(globalStats.pnl).toLocaleString('es-AR', { maximumFractionDigits: 0 })} ({globalStats.pnlPercent.toFixed(2)}%)
+      {/* ROW 1: Premium Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Valor Total ARS */}
+        <div className="glass-panel p-6 rounded-2xl border-blue-500/20 shadow-lg shadow-blue-500/5 relative overflow-hidden group hover:border-blue-500/30 transition-all">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-xl group-hover:bg-blue-500/10 transition-all pointer-events-none" />
+          <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1">Valor Total (ARS)</div>
+          <div className="text-2xl font-black text-white mb-2">
+            ${globalStats.totalValue.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+          </div>
+          <div className={clsx("flex items-center gap-1.5 text-xs font-semibold", globalStats.pnl >= 0 ? "text-emerald-400" : "text-red-400")}>
+            {globalStats.pnl >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+            <span>${Math.abs(globalStats.pnl).toLocaleString('es-AR', { maximumFractionDigits: 0 })} ({globalStats.pnlPercent.toFixed(2)}%)</span>
           </div>
         </div>
-        <div className="glass p-6 rounded-2xl md:col-span-1 flex flex-col justify-center border-blue-500/10">
-          <div className="text-sm text-gray-400 mb-1">Capital Invertido</div>
-          <div className="text-2xl font-bold text-gray-200">${globalStats.totalInvested.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</div>
+
+        {/* Valor Total USD */}
+        <div className="glass-panel p-6 rounded-2xl border-emerald-500/20 shadow-lg shadow-emerald-500/5 relative overflow-hidden group hover:border-emerald-500/30 transition-all">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition-all pointer-events-none" />
+          <div className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-1">Valor Total (USD)</div>
+          <div className="text-2xl font-black text-white mb-2">
+            ${globalStats.totalValueUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div className={clsx("flex items-center gap-1.5 text-xs font-semibold", globalStats.pnlUSD >= 0 ? "text-emerald-400" : "text-red-400")}>
+            {globalStats.pnlUSD >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+            <span>${Math.abs(globalStats.pnlUSD).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
         </div>
-        <div className="glass p-6 rounded-2xl md:col-span-2 hidden sm:flex items-center justify-center relative overflow-hidden h-32 border-blue-500/10">
+
+        {/* Capital Invertido ARS */}
+        <div className="glass-panel p-6 rounded-2xl border-white/5 relative overflow-hidden group hover:border-white/10 transition-all">
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Capital Invertido (ARS)</div>
+          <div className="text-2xl font-bold text-gray-200 mb-1">
+            ${globalStats.totalInvested.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+          </div>
+          <div className="text-[10px] text-gray-500 font-medium">Historial acumulado en pesos</div>
+        </div>
+
+        {/* Capital Invertido USD */}
+        <div className="glass-panel p-6 rounded-2xl border-white/5 relative overflow-hidden group hover:border-white/10 transition-all">
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Capital Invertido (USD)</div>
+          <div className="text-2xl font-bold text-gray-200 mb-1">
+            ${globalStats.totalInvestedUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div className="text-[10px] text-gray-500 font-medium flex items-center gap-1">
+            <span>TC Ualá:</span>
+            <span className="font-bold text-blue-400">${usdUala} ARS</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ROW 2: Mis Posiciones & Unified Chart Side-by-Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Positions Table */}
+        <div className="glass-panel p-6 rounded-2xl lg:col-span-2 border-blue-500/10 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-bold text-gray-100 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-blue-400" /> Mis Posiciones
+              </h2>
+              <button 
+                onClick={refreshMarketData} 
+                disabled={isLoading} 
+                className="p-2 text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg transition-colors flex items-center gap-2 text-sm disabled:opacity-50"
+              >
+                <RefreshCw className={clsx("w-4 h-4", isLoading && "animate-spin")} />
+                <span className="hidden sm:inline font-semibold">Actualizar Precios</span>
+              </button>
+            </div>
+            
+            {positions.length === 0 ? (
+              <div className="text-center py-12 text-gray-500 flex flex-col items-center gap-3">
+                <Upload className="w-8 h-8 text-gray-600" />
+                <div className="text-sm">Importá tu CSV de Cocos o añadí una compra manualmente en la sección de abajo.</div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left border-collapse min-w-[500px]">
+                  <thead>
+                    <tr className="border-b border-white/10 text-gray-400 text-xs uppercase tracking-wider">
+                      <th className="pb-3 px-2 font-semibold">Activo</th>
+                      <th className="pb-3 px-2 font-semibold text-right">Cant.</th>
+                      <th className="pb-3 px-2 font-semibold text-right hidden lg:table-cell">PPC</th>
+                      <th className="pb-3 px-2 font-semibold text-right">Precio Actual</th>
+                      <th className="pb-3 px-2 font-semibold text-right">Tenencia</th>
+                      <th className="pb-3 px-2 font-semibold text-right">Resultados (PnL)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {positions.map(p => {
+                      const valueToUse = p.hasData ? p.currentValue : p.invested;
+                      const percentOfPortfolio = globalStats.totalValue > 0 ? (valueToUse / globalStats.totalValue) * 100 : 0;
+                      return (
+                        <tr key={p.ticker} className="hover:bg-white/5 transition-colors group">
+                          {/* Activo */}
+                          <td className="py-3 px-2">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-gray-200">{p.ticker.replace('.BA', '').replace('-USD', '')}</span>
+                              <span className={clsx(
+                                "text-[9px] px-1.5 py-0.5 rounded font-bold uppercase", 
+                                p.isCrypto ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                              )}>
+                                {p.isCrypto ? "Cripto" : "Cedear"}
+                              </span>
+                            </div>
+                            <div className="text-xs text-gray-500 lg:hidden mt-0.5">
+                              {p.isCrypto 
+                                ? `$${p.avgPriceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })} USD avg` 
+                                : `$${p.avgPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} avg`
+                              }
+                            </div>
+                          </td>
+                          {/* Cant. */}
+                          <td className="py-3 px-2 text-right text-gray-300 font-medium">
+                            {p.totalQty.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+                          </td>
+                          {/* PPC (Lg only) */}
+                          <td className="py-3 px-2 text-right text-gray-400 hidden lg:table-cell">
+                            {p.isCrypto ? (
+                              <div>
+                                <div className="font-medium text-gray-200">
+                                  ${p.avgPriceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })} <span className="text-[9px] text-gray-500 font-bold uppercase">USD</span>
+                                </div>
+                                <div className="text-[10px] text-gray-500 mt-0.5">
+                                  ${p.avgPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <div className="font-medium text-gray-200">
+                                  ${p.avgPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} <span className="text-[9px] text-gray-500 font-bold uppercase">ARS</span>
+                                </div>
+                                <div className="text-[10px] text-gray-500 mt-0.5">
+                                  ${p.avgPriceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                                </div>
+                              </div>
+                            )}
+                          </td>
+                          {/* Precio Actual */}
+                          <td className="py-3 px-2 text-right">
+                            {p.hasData ? (
+                              p.isCrypto ? (
+                                <div>
+                                  <div className="font-semibold text-blue-100">
+                                    ${p.currentPriceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-[9px] text-gray-500 font-bold uppercase">USD</span>
+                                  </div>
+                                  <div className="text-[10px] text-gray-400 mt-0.5">
+                                    ${p.currentPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS
+                                  </div>
+                                </div>
+                              ) : (
+                                <div>
+                                  <div className="font-semibold text-blue-100">
+                                    ${p.currentPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} <span className="text-[9px] text-gray-500 font-bold uppercase">ARS</span>
+                                  </div>
+                                  <div className="text-[10px] text-gray-400 mt-0.5">
+                                    ${p.currentPriceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                                  </div>
+                                </div>
+                              )
+                            ) : (
+                              <span className="text-gray-500 text-xs">Cargando...</span>
+                            )}
+                          </td>
+                          {/* Tenencia */}
+                          <td className="py-3 px-2 text-right">
+                            <div className="font-bold text-gray-200">{percentOfPortfolio.toFixed(1)}%</div>
+                            <div className="text-[10px] text-gray-500 mt-0.5">
+                              ${valueToUse.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS
+                            </div>
+                            <div className="text-[9px] text-gray-600">
+                              ${(valueToUse / usdUala).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} USD
+                            </div>
+                          </td>
+                          {/* PnL */}
+                          <td className="py-3 px-2 text-right">
+                            {p.hasData && (
+                              <div className={clsx("flex flex-col items-end", p.pnlValue >= 0 ? "text-emerald-400" : "text-red-400")}>
+                                <span className="font-bold text-sm">
+                                  {p.pnlValue > 0 ? "+" : ""}{p.pnlPercent.toFixed(2)}%
+                                </span>
+                                <div className="text-[10px] mt-0.5">
+                                  ${p.pnlValue > 0 ? "+" : ""}{p.pnlValue.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS
+                                </div>
+                                <div className="text-[9px] opacity-75">
+                                  ${p.pnlValue > 0 ? "+" : ""}{(p.pnlValue / usdUala).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                                </div>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Individual Purchases History inside table card */}
+          {purchases.length > 0 && (
+            <div className="mt-8 pt-6 border-t border-white/10">
+              <h3 className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider">Historial de Operaciones</h3>
+              <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                {[...purchases].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(p => {
+                  const isCrypto = p.ticker.toUpperCase().endsWith('-USD');
+                  const cleanTicker = p.ticker.replace('.BA', '').replace('-USD', '');
+                  return (
+                    <div key={p.id} className="grid grid-cols-5 items-center text-xs bg-black/20 p-3 rounded-xl border border-white/5 hover:bg-white/5 transition-colors group">
+                      <div className="text-gray-400">{new Date(p.date).toLocaleDateString('es-AR')}</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-blue-300">{cleanTicker}</span>
+                        <span className={clsx(
+                          "text-[8px] px-1 rounded uppercase font-bold", 
+                          isCrypto ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                        )}>
+                          {isCrypto ? "Crip" : "Ced"}
+                        </span>
+                      </div>
+                      <div className="text-gray-300 text-center font-mono">
+                        {p.quantity > 0 ? "+" : ""}{p.quantity.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+                      </div>
+                      <div className="text-gray-400 text-right">
+                        <span>${p.purchasePrice.toLocaleString()}</span>
+                        <span className="text-[9px] ml-1 opacity-70 font-semibold font-mono">{p.currency}</span>
+                      </div>
+                      <div className="flex justify-end items-center gap-2">
+                        {p.nroTicket && <span className="bg-white/10 text-gray-400 px-1.5 py-0.5 rounded text-[10px] hidden sm:block">CSV</span>}
+                        <button 
+                          onClick={() => removePurchase(p.id)} 
+                          className="text-gray-500 hover:text-red-400 transition-colors p-1 opacity-0 sm:opacity-100 lg:opacity-0 lg:group-hover:opacity-100" 
+                          title="Eliminar registro"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Holdings Pie Chart Card */}
+        <div className="glass-panel p-6 rounded-2xl lg:col-span-1 border-blue-500/10 flex flex-col justify-between h-[520px] lg:h-auto min-h-[480px]">
+          <div>
+            <h2 className="text-lg font-bold text-gray-100 mb-2 flex items-center gap-2">
+              <PieChart className="w-5 h-5 text-blue-400" /> Distribución
+            </h2>
+            <div className="text-xs text-gray-500 mb-4">Porcentaje de tenencia basado en valuación actual (ARS)</div>
+          </div>
+          
           {positions.length > 0 ? (
-            <div className="w-full h-full flex flex-row items-center gap-6">
-              <div className="h-full w-1/3">
+            <div className="flex-1 flex flex-col justify-between relative">
+              {/* Graphic container */}
+              <div className="h-[240px] w-full relative flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RePieChart>
-                    <Pie data={positions} dataKey="currentValue" innerRadius={20} outerRadius={40} paddingAngle={2}>
-                      {positions.map((_, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(0,0,0,0)" />))}
+                  <RePieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+                    <Pie 
+                      data={positions} 
+                      dataKey="currentValue" 
+                      innerRadius={65} 
+                      outerRadius={92} 
+                      paddingAngle={3}
+                      cx="50%"
+                      cy="50%"
+                    >
+                      {positions.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(0,0,0,0)" />
+                      ))}
                     </Pie>
-                    <ReTooltip formatter={(val: unknown) => `$${Number(val).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`} />
+                    <ReTooltip 
+                      formatter={(val: unknown) => `$${Number(val).toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS`} 
+                      contentStyle={{ backgroundColor: "rgba(0,0,0,0.9)", borderColor: "rgba(255,255,255,0.1)", borderRadius: "12px", color: "#fff" }}
+                    />
                   </RePieChart>
                 </ResponsiveContainer>
+                
+                {/* Sleek center donut label */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-[10px] text-gray-400 font-semibold tracking-wider uppercase">Cartera Total</span>
+                  <span className="text-xl font-black text-white mt-0.5">
+                    ${globalStats.totalValue.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                  </span>
+                  <span className="text-[10px] text-emerald-400 font-bold mt-0.5">
+                    USD ${(globalStats.totalValueUSD).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  </span>
+                </div>
               </div>
-              <div className="w-2/3 flex flex-wrap gap-2 overflow-y-auto max-h-full custom-scrollbar">
-                {positions.map((p, i) => (
-                  <div key={p.ticker} className="flex items-center gap-1.5 text-xs text-gray-300 bg-white/5 px-2 py-1 rounded">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                    {p.ticker.replace('.BA', '')}
-                  </div>
-                ))}
+              
+              {/* Custom Scrollable Legend */}
+              <div className="mt-4 flex-1 overflow-y-auto max-h-[160px] custom-scrollbar pr-1 space-y-1.5">
+                {positions.map((p, i) => {
+                  const percent = globalStats.totalValue > 0 ? (p.currentValue / globalStats.totalValue) * 100 : 0;
+                  return (
+                    <div key={p.ticker} className="flex items-center justify-between text-xs text-gray-300 bg-white/5 px-2.5 py-1.5 rounded-xl border border-white/5 hover:bg-white/10 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                        <span className="font-bold">{p.ticker.replace('.BA', '').replace('-USD', '')}</span>
+                        <span className={clsx(
+                          "text-[8px] px-1 rounded uppercase font-bold", 
+                          p.isCrypto ? "bg-amber-500/10 text-amber-400" : "bg-blue-500/10 text-blue-400"
+                        )}>
+                          {p.isCrypto ? "Crip" : "Ced"}
+                        </span>
+                      </div>
+                      <div className="text-right font-bold text-gray-200">
+                        {percent.toFixed(1)}%
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ) : (
-            <div className="text-gray-500 flex items-center gap-2"><PieChart className="w-5 h-5" />Sin datos</div>
+            <div className="flex-1 flex flex-col items-center justify-center text-gray-500 gap-2">
+              <PieChart className="w-8 h-8 text-gray-600 animate-pulse" />
+              <span className="text-sm">Sin posiciones activas</span>
+            </div>
           )}
         </div>
       </div>
 
-      {/* CSV Import */}
-      <div className="glass-panel p-6 rounded-2xl border-white/5 space-y-4">
-        <div
-          className={clsx("relative border-2 border-dashed rounded-2xl p-6 transition-all cursor-pointer", isDragging ? "border-blue-400 bg-blue-500/10" : "border-white/10 hover:border-blue-500/40 hover:bg-white/5")}
-          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-          onDragLeave={() => setIsDragging(false)}
-          onDrop={onDrop}
-          onClick={() => fileInputRef.current?.click()}
-        >
-        <input ref={fileInputRef} type="file" accept=".csv" multiple className="hidden" onChange={onFileChange} />
-        <div className="flex flex-col sm:flex-row items-center gap-4">
-          <div className={clsx("p-3 rounded-xl", isDragging ? "bg-blue-500/20" : "bg-blue-500/10")}>
-            {isImporting ? <RefreshCw className="w-6 h-6 text-blue-400 animate-spin" /> : <FileUp className="w-6 h-6 text-blue-400" />}
-          </div>
-          <div className="text-center sm:text-left">
-            <div className="font-medium text-gray-200">
-              {isImporting ? "Importando..." : "Importar CSV de Cocos"}
-            </div>
-            <div className="text-sm text-gray-500">
-              Arrastrá o hacé clic · Podés subir múltiples archivos a la vez
-            </div>
-          </div>
-          {importResult && !isImporting && (
-            <div className="ml-auto flex items-center gap-3 text-sm shrink-0">
-              <button onClick={(e) => { e.stopPropagation(); setImportResult(null); }} className="text-gray-500 hover:text-gray-300">
-                <X className="w-4 h-4" />
+      {/* ROW 3: Horizontal "Añadir Compra Manual" Form */}
+      <div className="glass-panel p-6 rounded-2xl border-blue-500/10">
+        <h2 className="text-lg font-bold mb-4 text-blue-400 flex items-center gap-2">
+          <Plus className="w-5 h-5" /> Añadir Compra Manual
+        </h2>
+        <form onSubmit={handleAddPurchase} className="flex flex-wrap lg:flex-nowrap items-end gap-4 w-full">
+          {/* Asset Type Toggle */}
+          <div className="w-full sm:w-auto min-w-[170px]">
+            <label className="block text-xs font-semibold text-gray-400 mb-1.5 tracking-wide uppercase">Tipo de Activo</label>
+            <div className="grid grid-cols-2 gap-1 p-1 bg-black/40 border border-white/10 rounded-lg">
+              <button
+                type="button"
+                onClick={() => handleAssetTypeChange("cedear")}
+                className={clsx(
+                  "py-1.5 text-xs font-bold rounded transition-all",
+                  assetType === "cedear" ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" : "text-gray-400 hover:text-white"
+                )}
+              >
+                Cedear/Acción
               </button>
-              <div className="flex items-center gap-1.5 text-emerald-400">
-                <CheckCircle2 className="w-4 h-4" />
-                <span className="font-semibold">{importResult.imported} importados</span>
-              </div>
-              {importResult.skipped > 0 && (
-                <span className="text-gray-500">{importResult.skipped} omitidos</span>
-              )}
+              <button
+                type="button"
+                onClick={() => handleAssetTypeChange("crypto")}
+                className={clsx(
+                  "py-1.5 text-xs font-bold rounded transition-all",
+                  assetType === "crypto" ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" : "text-gray-400 hover:text-white"
+                )}
+              >
+                Criptomoneda
+              </button>
             </div>
-          )}
-        </div>
-      </div>
-    </div>
+          </div>
 
-      {/* Main grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Manual add form */}
-        <div className="glass-panel p-6 rounded-2xl md:col-span-1 h-fit border-blue-500/10">
-          <h2 className="text-lg font-semibold mb-4 text-blue-400 flex items-center gap-2">
-            <Plus className="w-4 h-4" />Añadir Compra Manual
-          </h2>
-          <form onSubmit={handleAddPurchase} className="space-y-4">
-            <div>
-              <label className="block text-xs text-gray-400 mb-1 tracking-wide uppercase">Ticker (ej. AAPL, SPY)</label>
-              <input type="text" required placeholder="AAPL" value={tickerInput} onChange={e => setTickerInput(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-blue-500 uppercase transition-colors" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-gray-400 mb-1 tracking-wide uppercase">Cantidad</label>
-                <input type="number" required step="0.01" min="0" placeholder="2" value={qtyInput} onChange={e => setQtyInput(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-blue-500 transition-colors" />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-400 mb-1 tracking-wide uppercase">Precio (ARS)</label>
-                <input type="number" step="0.01" required min="0" placeholder="50000" value={priceInput} onChange={e => setPriceInput(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-blue-500 transition-colors" />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs text-gray-400 mb-1 tracking-wide uppercase">Fecha</label>
-              <input type="date" required value={dateInput} onChange={e => setDateInput(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-blue-500 transition-colors" />
-            </div>
-            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors mt-2 shadow-lg shadow-blue-500/20">
+          {/* Ticker */}
+          <div className="w-full sm:w-auto flex-1 min-w-[110px]">
+            <label className="block text-xs font-semibold text-gray-400 mb-1.5 tracking-wide uppercase">Ticker</label>
+            <input
+              type="text"
+              required
+              placeholder={assetType === "crypto" ? "BTC" : "AAPL"}
+              value={tickerInput}
+              onChange={e => setTickerInput(e.target.value)}
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 uppercase transition-colors"
+            />
+          </div>
+
+          {/* Quantity */}
+          <div className="w-full sm:w-auto flex-1 min-w-[110px]">
+            <label className="block text-xs font-semibold text-gray-400 mb-1.5 tracking-wide uppercase">Cantidad</label>
+            <input
+              type="number"
+              required
+              step="any"
+              min="0"
+              placeholder={assetType === "crypto" ? "0.015" : "2"}
+              value={qtyInput}
+              onChange={e => setQtyInput(e.target.value)}
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors"
+            />
+          </div>
+
+          {/* Currency Selector */}
+          <div className="w-full sm:w-auto min-w-[90px]">
+            <label className="block text-xs font-semibold text-gray-400 mb-1.5 tracking-wide uppercase">Moneda</label>
+            <select
+              value={currencyInput}
+              onChange={e => setCurrencyInput(e.target.value as "ARS" | "USD")}
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors cursor-pointer"
+            >
+              <option value="ARS" className="bg-zinc-900">ARS</option>
+              <option value="USD" className="bg-zinc-900">USD</option>
+            </select>
+          </div>
+
+          {/* Price */}
+          <div className="w-full sm:w-auto flex-1 min-w-[130px]">
+            <label className="block text-xs font-semibold text-gray-400 mb-1.5 tracking-wide uppercase">
+              Precio ({currencyInput})
+            </label>
+            <input
+              type="number"
+              step="any"
+              required
+              min="0"
+              placeholder={currencyInput === "USD" ? "65000" : "50000"}
+              value={priceInput}
+              onChange={e => setPriceInput(e.target.value)}
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors"
+            />
+          </div>
+
+          {/* Date */}
+          <div className="w-full sm:w-auto flex-1 min-w-[130px]">
+            <label className="block text-xs font-semibold text-gray-400 mb-1.5 tracking-wide uppercase">Fecha</label>
+            <input
+              type="date"
+              required
+              value={dateInput}
+              onChange={e => setDateInput(e.target.value)}
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors cursor-pointer"
+            />
+          </div>
+
+          {/* Submit Button */}
+          <div className="w-full lg:w-auto shrink-0">
+            <button
+              type="submit"
+              className="w-full lg:w-auto bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-6 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+            >
               <Plus className="w-4 h-4" /> Registrar
             </button>
-          </form>
+          </div>
+        </form>
+      </div>
 
-          {/* Imported CSVs List */}
-          {csvImports.length > 0 && (
-            <div className="pt-6 border-t border-white/10 mt-6">
-              <h3 className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider">CSVs Importados</h3>
-              <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+      {/* ROW 4: Cocos CSV Import Zone & CSV Imports List */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <div
+            className={clsx(
+              "relative border-2 border-dashed rounded-2xl p-6 transition-all cursor-pointer h-full flex items-center justify-center min-h-[120px]", 
+              isDragging ? "border-blue-400 bg-blue-500/10" : "border-white/10 hover:border-blue-500/40 hover:bg-white/5"
+            )}
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={onDrop}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <input ref={fileInputRef} type="file" accept=".csv" multiple className="hidden" onChange={onFileChange} />
+            <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
+              <div className={clsx("p-3 rounded-xl shrink-0", isDragging ? "bg-blue-500/20" : "bg-blue-500/10")}>
+                {isImporting ? <RefreshCw className="w-6 h-6 text-blue-400 animate-spin" /> : <FileUp className="w-6 h-6 text-blue-400" />}
+              </div>
+              <div className="text-center sm:text-left flex-1 min-w-0">
+                <div className="font-bold text-gray-200">
+                  {isImporting ? "Importando archivo(s)..." : "Importar CSV de Cocos"}
+                </div>
+                <div className="text-xs text-gray-500 mt-1 truncate">
+                  Arrastrá o haz clic para subir múltiples archivos. Se omiten operaciones anteriores a Febrero 2025.
+                </div>
+              </div>
+              {importResult && !isImporting && (
+                <div className="flex items-center gap-2.5 text-xs shrink-0 bg-white/5 px-3 py-2 rounded-xl border border-white/5">
+                  <div className="flex items-center gap-1 text-emerald-400 font-bold">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>{importResult.imported} importados</span>
+                  </div>
+                  {importResult.skipped > 0 && (
+                    <span className="text-gray-400 font-medium font-mono">{importResult.skipped} omitidos</span>
+                  )}
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setImportResult(null); }} 
+                    className="text-gray-500 hover:text-gray-300 p-0.5"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="lg:col-span-1">
+          {/* List of imported files */}
+          <div className="glass-panel p-5 rounded-2xl border-white/5 h-full max-h-[140px] lg:max-h-full overflow-y-auto custom-scrollbar">
+            <h3 className="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wider">Archivos CSV Importados ({csvImports.length})</h3>
+            {csvImports.length > 0 ? (
+              <div className="space-y-2">
                 {[...csvImports].sort((a,b) => new Date(b.importedAt).getTime() - new Date(a.importedAt).getTime()).map(imp => (
-                  <div key={imp.id} className="bg-black/20 border border-white/5 rounded-lg p-2.5 flex justify-between items-center group text-xs hover:bg-white/5 transition-colors">
+                  <div key={imp.id} className="bg-black/30 border border-white/5 rounded-xl p-2.5 flex justify-between items-center group text-xs hover:bg-white/5 transition-colors">
                     <div className="min-w-0 flex-1 pr-2">
-                      <div className="font-medium text-blue-300 truncate" title={imp.filename}>
+                      <div className="font-bold text-blue-300 truncate" title={imp.filename}>
                         {imp.filename}
                       </div>
                       <div className="text-[10px] text-gray-500 mt-0.5">
@@ -511,112 +979,24 @@ export default function CedearsTracker() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[10px] text-gray-600 bg-white/5 px-1.5 py-0.5 rounded font-mono">
+                      <span className="text-[10px] text-gray-400 bg-white/5 px-2 py-0.5 rounded-lg font-bold font-mono">
                         {imp.rowCount}
                       </span>
                       <button 
                         onClick={() => removeCsvImport(imp.id)} 
-                        className="text-gray-600 hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-all"
+                        className="text-gray-500 hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
                         title="Eliminar importación"
                       >
-                        <Trash2 className="w-3 h-3" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-        </div>
-
-        {/* Positions table */}
-        <div className="glass-panel p-6 rounded-2xl md:col-span-2 border-blue-500/10">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-100">Mis Posiciones</h2>
-            <button onClick={refreshMarketData} disabled={isLoading} className="p-2 text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg transition-colors flex items-center gap-2 text-sm disabled:opacity-50">
-              <RefreshCw className={clsx("w-4 h-4", isLoading && "animate-spin")} />
-              <span className="hidden sm:inline">Actualizar Precios</span>
-            </button>
+            ) : (
+              <div className="text-xs text-gray-500 text-center py-6">No hay archivos CSV registrados</div>
+            )}
           </div>
-          {positions.length === 0 ? (
-            <div className="text-center py-10 text-gray-500 flex flex-col items-center gap-3">
-              <Upload className="w-8 h-8 text-gray-600" />
-              <div>Importá tu CSV de Cocos o añadí una compra manualmente.</div>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-white/10 text-gray-400 text-xs uppercase tracking-wider">
-                    <th className="pb-3 px-2 font-medium">Activo</th>
-                    <th className="pb-3 px-2 font-medium text-right">Cant.</th>
-                    <th className="pb-3 px-2 font-medium text-right hidden lg:table-cell">PPC</th>
-                    <th className="pb-3 px-2 font-medium text-right">Precio Actual</th>
-                    <th className="pb-3 px-2 font-medium text-right">Tenencia</th>
-                    <th className="pb-3 px-2 font-medium text-right">Resultados (PnL)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {positions.map(p => {
-                    const valueToUse = p.hasData ? p.currentValue : p.invested;
-                    const percentOfPortfolio = globalStats.totalValue > 0 ? (valueToUse / globalStats.totalValue) * 100 : 0;
-                    return (
-                    <tr key={p.ticker} className="hover:bg-white/5 transition-colors group">
-                      <td className="py-3 px-2">
-                        <div className="font-bold text-gray-200">{p.ticker.replace('.BA', '')}</div>
-                        <div className="text-xs text-gray-500 lg:hidden">${p.avgPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })}/u avg</div>
-                      </td>
-                      <td className="py-3 px-2 text-right text-gray-300 font-medium">{p.totalQty.toLocaleString()}</td>
-                      <td className="py-3 px-2 text-right text-gray-400 hidden lg:table-cell">${p.avgPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
-                      <td className="py-3 px-2 text-right">
-                        {p.hasData ? <span className="font-medium text-blue-100">${p.currentPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span> : <span className="text-gray-500 text-xs">Cargando...</span>}
-                      </td>
-                      <td className="py-3 px-2 text-right">
-                        <div className="font-semibold text-gray-200">{percentOfPortfolio.toFixed(1)}%</div>
-                        <div className="text-[10px] text-gray-500">${valueToUse.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</div>
-                      </td>
-                      <td className="py-3 px-2 text-right">
-                        {p.hasData && (
-                          <div className={clsx("flex flex-col items-end", p.pnlValue >= 0 ? "text-emerald-400" : "text-red-400")}>
-                            <span className="font-semibold text-sm">{p.pnlValue > 0 ? "+" : ""}{p.pnlPercent.toFixed(2)}%</span>
-                            <div className="text-xs font-medium space-x-1">
-                              <span className="opacity-70">${Math.abs(p.pnlValue).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
-                            </div>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {purchases.length > 0 && (
-            <div className="mt-8 pt-6 border-t border-white/10">
-              <h3 className="text-sm font-medium text-gray-400 mb-3">Historial de Compras Individuales</h3>
-              <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
-                {[...purchases].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(p => (
-                  <div key={p.id} className="grid grid-cols-5 items-center text-xs bg-black/20 p-3 rounded-xl border border-white/5 hover:bg-white/5 transition-colors group">
-                    <div className="text-gray-400">{new Date(p.date).toLocaleDateString('es-AR')}</div>
-                    <div className="font-bold text-blue-300">{p.ticker.replace('.BA', '')}</div>
-                    <div className="text-gray-300 text-center">{p.quantity > 0 ? "+" : ""}{p.quantity}</div>
-                    <div className="text-gray-400 text-right flex flex-col sm:block">
-                      <span>${p.purchasePrice.toLocaleString('es-AR')}</span>
-                      <span className="text-[10px] ml-1 opacity-70">{p.currency === "USD" || p.currency === "EXT" || p.currency === "MEP" ? "USD" : "ARS"}</span>
-                    </div>
-                    <div className="flex justify-end items-center gap-2">
-                      {p.nroTicket && <span className="bg-white/10 text-gray-400 px-1.5 py-0.5 rounded text-[10px] hidden sm:block">CSV</span>}
-                      <button onClick={() => removePurchase(p.id)} className="text-gray-500 hover:text-red-400 transition-colors p-1 opacity-0 sm:opacity-100 lg:opacity-0 lg:group-hover:opacity-100" title="Eliminar registro">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
