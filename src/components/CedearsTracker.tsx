@@ -477,8 +477,8 @@ export default function CedearsTracker() {
 
   return (
     <div className="space-y-6">
-      {/* ROW 1: Premium Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* ROW 1: Premium Stats Grid (3 cards) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Valor Total ARS */}
         <div className="glass-panel p-6 rounded-2xl border-blue-500/20 shadow-lg shadow-blue-500/5 relative overflow-hidden group hover:border-blue-500/30 transition-all">
           <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-xl group-hover:bg-blue-500/10 transition-all pointer-events-none" />
@@ -492,19 +492,6 @@ export default function CedearsTracker() {
           </div>
         </div>
 
-        {/* Valor Total USD */}
-        <div className="glass-panel p-6 rounded-2xl border-emerald-500/20 shadow-lg shadow-emerald-500/5 relative overflow-hidden group hover:border-emerald-500/30 transition-all">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition-all pointer-events-none" />
-          <div className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-1">Valor Total (USD)</div>
-          <div className="text-2xl font-black text-white mb-2">
-            ${globalStats.totalValueUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-          <div className={clsx("flex items-center gap-1.5 text-xs font-semibold", globalStats.pnlUSD >= 0 ? "text-emerald-400" : "text-red-400")}>
-            {globalStats.pnlUSD >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-            <span>${Math.abs(globalStats.pnlUSD).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
-        </div>
-
         {/* Capital Invertido ARS */}
         <div className="glass-panel p-6 rounded-2xl border-white/5 relative overflow-hidden group hover:border-white/10 transition-all">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Capital Invertido (ARS)</div>
@@ -514,11 +501,12 @@ export default function CedearsTracker() {
           <div className="text-[10px] text-gray-500 font-medium">Historial acumulado en pesos</div>
         </div>
 
-        {/* Capital Invertido USD */}
-        <div className="glass-panel p-6 rounded-2xl border-white/5 relative overflow-hidden group hover:border-white/10 transition-all">
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Capital Invertido (USD)</div>
-          <div className="text-2xl font-bold text-gray-200 mb-1">
-            ${globalStats.totalInvestedUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        {/* Tenencia Total USD (Sin rendimiento, solo actual) */}
+        <div className="glass-panel p-6 rounded-2xl border-emerald-500/20 shadow-lg shadow-emerald-500/5 relative overflow-hidden group hover:border-emerald-500/30 transition-all">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition-all pointer-events-none" />
+          <div className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-1">Tenencia Total (USD)</div>
+          <div className="text-2xl font-black text-white mb-2">
+            ${globalStats.totalValueUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <div className="text-[10px] text-gray-500 font-medium flex items-center gap-1">
             <span>TC Ualá:</span>
@@ -527,280 +515,7 @@ export default function CedearsTracker() {
         </div>
       </div>
 
-      {/* ROW 2: Mis Posiciones & Unified Chart Side-by-Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Positions Table */}
-        <div className="glass-panel p-6 rounded-2xl lg:col-span-2 border-blue-500/10 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-gray-100 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-blue-400" /> Mis Posiciones
-              </h2>
-              <button 
-                onClick={refreshMarketData} 
-                disabled={isLoading} 
-                className="p-2 text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg transition-colors flex items-center gap-2 text-sm disabled:opacity-50"
-              >
-                <RefreshCw className={clsx("w-4 h-4", isLoading && "animate-spin")} />
-                <span className="hidden sm:inline font-semibold">Actualizar Precios</span>
-              </button>
-            </div>
-            
-            {positions.length === 0 ? (
-              <div className="text-center py-12 text-gray-500 flex flex-col items-center gap-3">
-                <Upload className="w-8 h-8 text-gray-600" />
-                <div className="text-sm">Importá tu CSV de Cocos o añadí una compra manualmente en la sección de abajo.</div>
-              </div>
-            ) : (
-              <div className="overflow-x-auto custom-scrollbar">
-                <table className="w-full text-left border-collapse min-w-[500px]">
-                  <thead>
-                    <tr className="border-b border-white/10 text-gray-400 text-xs uppercase tracking-wider">
-                      <th className="pb-3 px-2 font-semibold">Activo</th>
-                      <th className="pb-3 px-2 font-semibold text-right">Cant.</th>
-                      <th className="pb-3 px-2 font-semibold text-right hidden lg:table-cell">PPC</th>
-                      <th className="pb-3 px-2 font-semibold text-right">Precio Actual</th>
-                      <th className="pb-3 px-2 font-semibold text-right">Tenencia</th>
-                      <th className="pb-3 px-2 font-semibold text-right">Resultados (PnL)</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {positions.map(p => {
-                      const valueToUse = p.hasData ? p.currentValue : p.invested;
-                      const percentOfPortfolio = globalStats.totalValue > 0 ? (valueToUse / globalStats.totalValue) * 100 : 0;
-                      return (
-                        <tr key={p.ticker} className="hover:bg-white/5 transition-colors group">
-                          {/* Activo */}
-                          <td className="py-3 px-2">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-bold text-gray-200">{p.ticker.replace('.BA', '').replace('-USD', '')}</span>
-                              <span className={clsx(
-                                "text-[9px] px-1.5 py-0.5 rounded font-bold uppercase", 
-                                p.isCrypto ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                              )}>
-                                {p.isCrypto ? "Cripto" : "Cedear"}
-                              </span>
-                            </div>
-                            <div className="text-xs text-gray-500 lg:hidden mt-0.5">
-                              {p.isCrypto 
-                                ? `$${p.avgPriceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })} USD avg` 
-                                : `$${p.avgPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} avg`
-                              }
-                            </div>
-                          </td>
-                          {/* Cant. */}
-                          <td className="py-3 px-2 text-right text-gray-300 font-medium">
-                            {p.totalQty.toLocaleString(undefined, { maximumFractionDigits: 6 })}
-                          </td>
-                          {/* PPC (Lg only) */}
-                          <td className="py-3 px-2 text-right text-gray-400 hidden lg:table-cell">
-                            {p.isCrypto ? (
-                              <div>
-                                <div className="font-medium text-gray-200">
-                                  ${p.avgPriceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })} <span className="text-[9px] text-gray-500 font-bold uppercase">USD</span>
-                                </div>
-                                <div className="text-[10px] text-gray-500 mt-0.5">
-                                  ${p.avgPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS
-                                </div>
-                              </div>
-                            ) : (
-                              <div>
-                                <div className="font-medium text-gray-200">
-                                  ${p.avgPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} <span className="text-[9px] text-gray-500 font-bold uppercase">ARS</span>
-                                </div>
-                                <div className="text-[10px] text-gray-500 mt-0.5">
-                                  ${p.avgPriceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
-                                </div>
-                              </div>
-                            )}
-                          </td>
-                          {/* Precio Actual */}
-                          <td className="py-3 px-2 text-right">
-                            {p.hasData ? (
-                              p.isCrypto ? (
-                                <div>
-                                  <div className="font-semibold text-blue-100">
-                                    ${p.currentPriceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-[9px] text-gray-500 font-bold uppercase">USD</span>
-                                  </div>
-                                  <div className="text-[10px] text-gray-400 mt-0.5">
-                                    ${p.currentPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS
-                                  </div>
-                                </div>
-                              ) : (
-                                <div>
-                                  <div className="font-semibold text-blue-100">
-                                    ${p.currentPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} <span className="text-[9px] text-gray-500 font-bold uppercase">ARS</span>
-                                  </div>
-                                  <div className="text-[10px] text-gray-400 mt-0.5">
-                                    ${p.currentPriceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
-                                  </div>
-                                </div>
-                              )
-                            ) : (
-                              <span className="text-gray-500 text-xs">Cargando...</span>
-                            )}
-                          </td>
-                          {/* Tenencia */}
-                          <td className="py-3 px-2 text-right">
-                            <div className="font-bold text-gray-200">{percentOfPortfolio.toFixed(1)}%</div>
-                            <div className="text-[10px] text-gray-500 mt-0.5">
-                              ${valueToUse.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS
-                            </div>
-                            <div className="text-[9px] text-gray-600">
-                              ${(valueToUse / usdUala).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} USD
-                            </div>
-                          </td>
-                          {/* PnL */}
-                          <td className="py-3 px-2 text-right">
-                            {p.hasData && (
-                              <div className={clsx("flex flex-col items-end", p.pnlValue >= 0 ? "text-emerald-400" : "text-red-400")}>
-                                <span className="font-bold text-sm">
-                                  {p.pnlValue > 0 ? "+" : ""}{p.pnlPercent.toFixed(2)}%
-                                </span>
-                                <div className="text-[10px] mt-0.5">
-                                  ${p.pnlValue > 0 ? "+" : ""}{p.pnlValue.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS
-                                </div>
-                                <div className="text-[9px] opacity-75">
-                                  ${p.pnlValue > 0 ? "+" : ""}{(p.pnlValue / usdUala).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
-                                </div>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-          {/* Individual Purchases History inside table card */}
-          {purchases.length > 0 && (
-            <div className="mt-8 pt-6 border-t border-white/10">
-              <h3 className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider">Historial de Operaciones</h3>
-              <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
-                {[...purchases].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(p => {
-                  const isCrypto = p.ticker.toUpperCase().endsWith('-USD');
-                  const cleanTicker = p.ticker.replace('.BA', '').replace('-USD', '');
-                  return (
-                    <div key={p.id} className="grid grid-cols-5 items-center text-xs bg-black/20 p-3 rounded-xl border border-white/5 hover:bg-white/5 transition-colors group">
-                      <div className="text-gray-400">{new Date(p.date).toLocaleDateString('es-AR')}</div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-blue-300">{cleanTicker}</span>
-                        <span className={clsx(
-                          "text-[8px] px-1 rounded uppercase font-bold", 
-                          isCrypto ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                        )}>
-                          {isCrypto ? "Crip" : "Ced"}
-                        </span>
-                      </div>
-                      <div className="text-gray-300 text-center font-mono">
-                        {p.quantity > 0 ? "+" : ""}{p.quantity.toLocaleString(undefined, { maximumFractionDigits: 6 })}
-                      </div>
-                      <div className="text-gray-400 text-right">
-                        <span>${p.purchasePrice.toLocaleString()}</span>
-                        <span className="text-[9px] ml-1 opacity-70 font-semibold font-mono">{p.currency}</span>
-                      </div>
-                      <div className="flex justify-end items-center gap-2">
-                        {p.nroTicket && <span className="bg-white/10 text-gray-400 px-1.5 py-0.5 rounded text-[10px] hidden sm:block">CSV</span>}
-                        <button 
-                          onClick={() => removePurchase(p.id)} 
-                          className="text-gray-500 hover:text-red-400 transition-colors p-1 opacity-0 sm:opacity-100 lg:opacity-0 lg:group-hover:opacity-100" 
-                          title="Eliminar registro"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Holdings Pie Chart Card */}
-        <div className="glass-panel p-6 rounded-2xl lg:col-span-1 border-blue-500/10 flex flex-col justify-between h-[520px] lg:h-auto min-h-[480px]">
-          <div>
-            <h2 className="text-lg font-bold text-gray-100 mb-2 flex items-center gap-2">
-              <PieChart className="w-5 h-5 text-blue-400" /> Distribución
-            </h2>
-            <div className="text-xs text-gray-500 mb-4">Porcentaje de tenencia basado en valuación actual (ARS)</div>
-          </div>
-          
-          {positions.length > 0 ? (
-            <div className="flex-1 flex flex-col justify-between relative">
-              {/* Graphic container */}
-              <div className="h-[240px] w-full relative flex items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RePieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-                    <Pie 
-                      data={positions} 
-                      dataKey="currentValue" 
-                      innerRadius={65} 
-                      outerRadius={92} 
-                      paddingAngle={3}
-                      cx="50%"
-                      cy="50%"
-                    >
-                      {positions.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(0,0,0,0)" />
-                      ))}
-                    </Pie>
-                    <ReTooltip 
-                      formatter={(val: unknown) => `$${Number(val).toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS`} 
-                      contentStyle={{ backgroundColor: "rgba(0,0,0,0.9)", borderColor: "rgba(255,255,255,0.1)", borderRadius: "12px", color: "#fff" }}
-                    />
-                  </RePieChart>
-                </ResponsiveContainer>
-                
-                {/* Sleek center donut label */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-[10px] text-gray-400 font-semibold tracking-wider uppercase">Cartera Total</span>
-                  <span className="text-xl font-black text-white mt-0.5">
-                    ${globalStats.totalValue.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
-                  </span>
-                  <span className="text-[10px] text-emerald-400 font-bold mt-0.5">
-                    USD ${(globalStats.totalValueUSD).toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                  </span>
-                </div>
-              </div>
-              
-              {/* Custom Scrollable Legend */}
-              <div className="mt-4 flex-1 overflow-y-auto max-h-[160px] custom-scrollbar pr-1 space-y-1.5">
-                {positions.map((p, i) => {
-                  const percent = globalStats.totalValue > 0 ? (p.currentValue / globalStats.totalValue) * 100 : 0;
-                  return (
-                    <div key={p.ticker} className="flex items-center justify-between text-xs text-gray-300 bg-white/5 px-2.5 py-1.5 rounded-xl border border-white/5 hover:bg-white/10 transition-colors">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                        <span className="font-bold">{p.ticker.replace('.BA', '').replace('-USD', '')}</span>
-                        <span className={clsx(
-                          "text-[8px] px-1 rounded uppercase font-bold", 
-                          p.isCrypto ? "bg-amber-500/10 text-amber-400" : "bg-blue-500/10 text-blue-400"
-                        )}>
-                          {p.isCrypto ? "Crip" : "Ced"}
-                        </span>
-                      </div>
-                      <div className="text-right font-bold text-gray-200">
-                        {percent.toFixed(1)}%
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-gray-500 gap-2">
-              <PieChart className="w-8 h-8 text-gray-600 animate-pulse" />
-              <span className="text-sm">Sin posiciones activas</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ROW 3: Horizontal "Añadir Compra Manual" Form */}
+      {/* ROW 2: Horizontal "Añadir Compra Manual" Form */}
       <div className="glass-panel p-6 rounded-2xl border-blue-500/10">
         <h2 className="text-lg font-bold mb-4 text-blue-400 flex items-center gap-2">
           <Plus className="w-5 h-5" /> Añadir Compra Manual
@@ -913,6 +628,260 @@ export default function CedearsTracker() {
             </button>
           </div>
         </form>
+      </div>
+
+      {/* ROW 3: Mis Posiciones & Unified Chart Side-by-Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Positions Table */}
+        <div className="glass-panel p-6 rounded-2xl lg:col-span-2 border-blue-500/10 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-bold text-gray-100 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-blue-400" /> Mis Posiciones
+              </h2>
+              <button 
+                onClick={refreshMarketData} 
+                disabled={isLoading} 
+                className="p-2 text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg transition-colors flex items-center gap-2 text-sm disabled:opacity-50"
+              >
+                <RefreshCw className={clsx("w-4 h-4", isLoading && "animate-spin")} />
+                <span className="hidden sm:inline font-semibold">Actualizar Precios</span>
+              </button>
+            </div>
+            
+            {positions.length === 0 ? (
+              <div className="text-center py-12 text-gray-500 flex flex-col items-center gap-3">
+                <Upload className="w-8 h-8 text-gray-600" />
+                <div className="text-sm">Importá tu CSV de Cocos o añadí una compra manualmente en la sección de arriba.</div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left border-collapse min-w-[500px]">
+                  <thead>
+                    <tr className="border-b border-white/10 text-gray-400 text-xs uppercase tracking-wider">
+                      <th className="pb-3 px-2 font-semibold">Activo</th>
+                      <th className="pb-3 px-2 font-semibold text-right">Cant.</th>
+                      <th className="pb-3 px-2 font-semibold text-right hidden lg:table-cell">PPC</th>
+                      <th className="pb-3 px-2 font-semibold text-right">Precio Actual</th>
+                      <th className="pb-3 px-2 font-semibold text-right">Tenencia</th>
+                      <th className="pb-3 px-2 font-semibold text-right">Resultados (PnL)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {positions.map(p => {
+                      const valueToUse = p.hasData ? p.currentValue : p.invested;
+                      const percentOfPortfolio = globalStats.totalValue > 0 ? (valueToUse / globalStats.totalValue) * 100 : 0;
+                      return (
+                        <tr key={p.ticker} className="hover:bg-white/5 transition-colors group">
+                          {/* Activo */}
+                          <td className="py-3 px-2">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-gray-200">{p.ticker.replace('.BA', '').replace('-USD', '')}</span>
+                              <span className={clsx(
+                                "text-[9px] px-1.5 py-0.5 rounded font-bold uppercase", 
+                                p.isCrypto ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                              )}>
+                                {p.isCrypto ? "Cripto" : "Cedear"}
+                              </span>
+                            </div>
+                            <div className="text-xs text-gray-500 lg:hidden mt-0.5">
+                              ${p.avgPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} avg
+                            </div>
+                          </td>
+                          {/* Cant. */}
+                          <td className="py-3 px-2 text-right text-gray-300 font-medium">
+                            {p.totalQty.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+                          </td>
+                          {/* PPC (ARS Only) */}
+                          <td className="py-3 px-2 text-right text-gray-400 hidden lg:table-cell">
+                            <div className="font-medium text-gray-200">
+                              ${p.avgPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} <span className="text-[9px] text-gray-500 font-bold uppercase">ARS</span>
+                            </div>
+                          </td>
+                          {/* Precio Actual */}
+                          <td className="py-3 px-2 text-right">
+                            {p.hasData ? (
+                              p.isCrypto ? (
+                                <div>
+                                  <div className="font-semibold text-blue-100">
+                                    ${p.currentPriceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-[9px] text-gray-500 font-bold uppercase">USD</span>
+                                  </div>
+                                  <div className="text-[10px] text-gray-400 mt-0.5">
+                                    ${p.currentPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS
+                                  </div>
+                                </div>
+                              ) : (
+                                <div>
+                                  <div className="font-semibold text-blue-100">
+                                    ${p.currentPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} <span className="text-[9px] text-gray-500 font-bold uppercase">ARS</span>
+                                  </div>
+                                  <div className="text-[10px] text-gray-400 mt-0.5">
+                                    ${p.currentPriceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                                  </div>
+                                </div>
+                              )
+                            ) : (
+                              <span className="text-gray-500 text-xs">Cargando...</span>
+                            )}
+                          </td>
+                          {/* Tenencia */}
+                          <td className="py-3 px-2 text-right">
+                            <div className="font-bold text-gray-200">{percentOfPortfolio.toFixed(1)}%</div>
+                            <div className="text-[10px] text-gray-500 mt-0.5">
+                              ${valueToUse.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS
+                            </div>
+                            <div className="text-[9px] text-gray-600">
+                              ${(valueToUse / usdUala).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} USD
+                            </div>
+                          </td>
+                          {/* PnL */}
+                          <td className="py-3 px-2 text-right">
+                            {p.hasData && (
+                              <div className={clsx("flex flex-col items-end", p.pnlValue >= 0 ? "text-emerald-400" : "text-red-400")}>
+                                <span className="font-bold text-sm">
+                                  {p.pnlValue > 0 ? "+" : ""}{p.pnlPercent.toFixed(2)}%
+                                </span>
+                                <div className="text-[10px] mt-0.5">
+                                  ${p.pnlValue > 0 ? "+" : ""}{p.pnlValue.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS
+                                </div>
+                                <div className="text-[9px] opacity-75">
+                                  ${p.pnlValue > 0 ? "+" : ""}{(p.pnlValue / usdUala).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                                </div>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Individual Purchases History inside table card */}
+          {purchases.length > 0 && (
+            <div className="mt-8 pt-6 border-t border-white/10">
+              <h3 className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider">Historial de Operaciones</h3>
+              <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                {[...purchases].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(p => {
+                  const isCrypto = p.ticker.toUpperCase().endsWith('-USD');
+                  const cleanTicker = p.ticker.replace('.BA', '').replace('-USD', '');
+                  return (
+                    <div key={p.id} className="grid grid-cols-5 items-center text-xs bg-black/20 p-3 rounded-xl border border-white/5 hover:bg-white/5 transition-colors group">
+                      <div className="text-gray-400">{new Date(p.date).toLocaleDateString('es-AR')}</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-blue-300">{cleanTicker}</span>
+                        <span className={clsx(
+                          "text-[8px] px-1 rounded uppercase font-bold", 
+                          isCrypto ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                        )}>
+                          {isCrypto ? "Crip" : "Ced"}
+                        </span>
+                      </div>
+                      <div className="text-gray-300 text-center font-mono">
+                        {p.quantity > 0 ? "+" : ""}{p.quantity.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+                      </div>
+                      <div className="text-gray-400 text-right">
+                        <span>${p.purchasePrice.toLocaleString()}</span>
+                        <span className="text-[9px] ml-1 opacity-70 font-semibold font-mono">{p.currency}</span>
+                      </div>
+                      <div className="flex justify-end items-center gap-2">
+                        {p.nroTicket && <span className="bg-white/10 text-gray-400 px-1.5 py-0.5 rounded text-[10px] hidden sm:block">CSV</span>}
+                        <button 
+                          onClick={() => removePurchase(p.id)} 
+                          className="text-gray-500 hover:text-red-400 transition-colors p-1 opacity-0 sm:opacity-100 lg:opacity-0 lg:group-hover:opacity-100" 
+                          title="Eliminar registro"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Holdings Pie Chart Card - Compact layout */}
+        <div className="glass-panel p-6 rounded-2xl lg:col-span-1 border-blue-500/10 flex flex-col h-fit">
+          <div>
+            <h2 className="text-lg font-bold text-gray-100 mb-1 flex items-center gap-2">
+              <PieChart className="w-5 h-5 text-blue-400" /> Distribución
+            </h2>
+            <div className="text-[11px] text-gray-500 mb-2">Porcentaje de tenencia actual</div>
+          </div>
+          
+          {positions.length > 0 ? (
+            <div className="flex flex-col items-center gap-2">
+              {/* Graphic container */}
+              <div className="h-[210px] w-full relative flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RePieChart margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                    <Pie 
+                      data={positions} 
+                      dataKey="currentValue" 
+                      innerRadius={55} 
+                      outerRadius={80} 
+                      paddingAngle={3}
+                      cx="50%"
+                      cy="50%"
+                    >
+                      {positions.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(0,0,0,0)" />
+                      ))}
+                    </Pie>
+                    <ReTooltip 
+                      formatter={(val: unknown) => `$${Number(val).toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS`} 
+                      contentStyle={{ backgroundColor: "rgba(0,0,0,0.9)", borderColor: "rgba(255,255,255,0.1)", borderRadius: "12px", color: "#fff" }}
+                    />
+                  </RePieChart>
+                </ResponsiveContainer>
+                
+                {/* Sleek center donut label */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-[9px] text-gray-400 font-semibold tracking-wider uppercase">Cartera Total</span>
+                  <span className="text-lg font-black text-white mt-0.5">
+                    ${globalStats.totalValue.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                  </span>
+                  <span className="text-[9px] text-emerald-400 font-bold mt-0.5">
+                    USD ${(globalStats.totalValueUSD).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Custom Scrollable Legend */}
+              <div className="w-full overflow-y-auto max-h-[140px] custom-scrollbar pr-1 space-y-1.5 mt-1">
+                {positions.map((p, i) => {
+                  const percent = globalStats.totalValue > 0 ? (p.currentValue / globalStats.totalValue) * 100 : 0;
+                  return (
+                    <div key={p.ticker} className="flex items-center justify-between text-xs text-gray-300 bg-white/5 px-2.5 py-1 rounded-lg border border-white/5 hover:bg-white/10 transition-colors">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                        <span className="font-bold">{p.ticker.replace('.BA', '').replace('-USD', '')}</span>
+                        <span className={clsx(
+                          "text-[8px] px-1 rounded uppercase font-bold", 
+                          p.isCrypto ? "bg-amber-500/10 text-amber-400" : "bg-blue-500/10 text-blue-400"
+                        )}>
+                          {p.isCrypto ? "Crip" : "Ced"}
+                        </span>
+                      </div>
+                      <div className="text-right font-bold text-gray-200">
+                        {percent.toFixed(1)}%
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="text-gray-500 gap-2 py-8 flex flex-col items-center justify-center">
+              <PieChart className="w-8 h-8 text-gray-600 animate-pulse" />
+              <span className="text-sm">Sin posiciones activas</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ROW 4: Cocos CSV Import Zone & CSV Imports List */}
