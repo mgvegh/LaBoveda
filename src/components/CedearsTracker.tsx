@@ -722,14 +722,14 @@ export default function CedearsTracker() {
           {positions.length > 0 ? (
             <div className="flex flex-col items-center gap-2">
               {/* Graphic container */}
-              <div className="h-[210px] w-full relative flex items-center justify-center">
+              <div className="h-[270px] w-full relative flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <RePieChart margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                     <Pie 
                       data={positions} 
                       dataKey="currentValue" 
-                      innerRadius={55} 
-                      outerRadius={80} 
+                      innerRadius={70} 
+                      outerRadius={100} 
                       paddingAngle={3}
                       cx="50%"
                       cy="50%"
@@ -747,11 +747,11 @@ export default function CedearsTracker() {
                 
                 {/* Sleek center donut label */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-[9px] text-gray-400 font-semibold tracking-wider uppercase">Cartera Total</span>
-                  <span className="text-lg font-black text-white mt-0.5">
+                  <span className="text-[10px] text-gray-400 font-semibold tracking-wider uppercase">Cartera Total</span>
+                  <span className="text-2xl font-black text-white mt-0.5">
                     ${globalStats.totalValue.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
                   </span>
-                  <span className="text-[9px] text-emerald-400 font-bold mt-0.5">
+                  <span className="text-xs text-emerald-400 font-bold mt-0.5">
                     USD ${(globalStats.totalValueUSD).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </span>
                 </div>
