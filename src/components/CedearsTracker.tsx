@@ -711,7 +711,7 @@ export default function CedearsTracker() {
         </div>
 
         {/* Holdings Pie Chart Card - Compact layout */}
-        <div className="glass-panel p-6 rounded-2xl lg:col-span-1 border-blue-500/10 flex flex-col h-fit">
+        <div className="glass-panel p-6 rounded-2xl lg:col-span-1 border-blue-500/10 flex flex-col h-full">
           <div>
             <h2 className="text-lg font-bold text-gray-100 mb-1 flex items-center gap-2">
               <PieChart className="w-5 h-5 text-blue-400" /> Distribución
@@ -757,8 +757,8 @@ export default function CedearsTracker() {
                 </div>
               </div>
               
-              {/* Custom Scrollable Legend */}
-              <div className="w-full overflow-y-auto max-h-[140px] custom-scrollbar pr-1 space-y-1.5 mt-1">
+              {/* Legend showing all items (no max-height/scroll) */}
+              <div className="w-full space-y-1.5 mt-2">
                 {positions.map((p, i) => {
                   const percent = globalStats.totalValue > 0 ? (p.currentValue / globalStats.totalValue) * 100 : 0;
                   return (
