@@ -127,19 +127,12 @@ export default function CedearsTracker() {
   const [qtyInput, setQtyInput] = useState("");
   const [priceInput, setPriceInput] = useState("");
   const [dateInput, setDateInput] = useState(new Date().toISOString().split("T")[0]);
-  const [assetType, setAssetType] = useState<"cedear" | "crypto">("cedear");
-  const [currencyInput, setCurrencyInput] = useState<"ARS" | "USD">("ARS");
 
   const [usdUala, setUsdUala] = useState<number>(1420); // Default to a recent realistic rate
 
   const { user } = useAuth();
 
   const colRef = user ? collection(db, "users", user.uid, "cedears_purchases") : null;
-
-  const handleAssetTypeChange = (type: "cedear" | "crypto") => {
-    setAssetType(type);
-    setCurrencyInput(type === "crypto" ? "USD" : "ARS");
-  };
 
   useEffect(() => {
     setIsClient(true);
@@ -231,27 +224,15 @@ export default function CedearsTracker() {
     });
 
     return Object.entries(posMap)
-      .filter(([_, data]) => Math.abs(data.totalQty) > 0.000001) // Smaller threshold to support fractional cryptos
+      .filter(([_, data]) => Math.abs(data.totalQty) > 0.001) // Standard threshold for Cedears
       .map(([ticker, data]) => {
-        const isCrypto = ticker.endsWith('-USD');
         const avgPriceARS = data.totalQty > 0 ? data.totalCost / data.totalQty : 0;
         const avgPriceUSD = usdUala > 0 ? avgPriceARS / usdUala : 0;
         
         const rawPrice = marketData[ticker]?.price || 0;
-        const tickerCurrency = marketData[ticker]?.currency || (isCrypto ? 'USD' : 'ARS');
         
-        let currentPriceARS = 0;
-        let currentPriceUSD = 0;
-        
-        if (rawPrice > 0) {
-          if (tickerCurrency.toUpperCase() === 'USD' || isCrypto) {
-            currentPriceUSD = rawPrice;
-            currentPriceARS = rawPrice * usdUala;
-          } else {
-            currentPriceARS = rawPrice;
-            currentPriceUSD = usdUala > 0 ? rawPrice / usdUala : 0;
-          }
-        }
+        const currentPriceARS = rawPrice;
+        const currentPriceUSD = usdUala > 0 ? rawPrice / usdUala : 0;
         
         const currentValueARS = currentPriceARS * data.totalQty;
         const currentValueUSD = currentPriceUSD * data.totalQty;
@@ -261,7 +242,6 @@ export default function CedearsTracker() {
         
         return { 
           ticker, 
-          isCrypto,
           totalQty: data.totalQty, 
           invested: data.totalCost, 
           avgPrice: avgPriceARS, 
@@ -334,14 +314,8 @@ export default function CedearsTracker() {
     if (!tickerInput || !qtyInput || !priceInput || !user || !colRef) return;
     let t = tickerInput.toUpperCase().trim();
     
-    if (assetType === "crypto") {
-      if (!t.endsWith("-USD")) {
-        t = t + "-USD";
-      }
-    } else {
-      if (!t.includes(".")) {
-        t = t + ".BA";
-      }
+    if (!t.includes(".")) {
+      t = t + ".BA";
     }
 
     const newRow = { 
@@ -349,7 +323,7 @@ export default function CedearsTracker() {
       quantity: parseFloat(qtyInput), 
       purchasePrice: parseFloat(priceInput), 
       date: dateInput || new Date().toISOString().split("T")[0], 
-      currency: currencyInput 
+      currency: "ARS" 
     };
     const docRef = await addDoc(colRef, newRow);
     setPurchases(prev => [...prev, { id: docRef.id, ...newRow }]);
@@ -521,93 +495,53 @@ export default function CedearsTracker() {
           <Plus className="w-5 h-5" /> Añadir Compra Manual
         </h2>
         <form onSubmit={handleAddPurchase} className="flex flex-wrap lg:flex-nowrap items-end gap-4 w-full">
-          {/* Asset Type Toggle */}
-          <div className="w-full sm:w-auto min-w-[170px]">
-            <label className="block text-xs font-semibold text-gray-400 mb-1.5 tracking-wide uppercase">Tipo de Activo</label>
-            <div className="grid grid-cols-2 gap-1 p-1 bg-black/40 border border-white/10 rounded-lg">
-              <button
-                type="button"
-                onClick={() => handleAssetTypeChange("cedear")}
-                className={clsx(
-                  "py-1.5 text-xs font-bold rounded transition-all",
-                  assetType === "cedear" ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" : "text-gray-400 hover:text-white"
-                )}
-              >
-                Cedear/Acción
-              </button>
-              <button
-                type="button"
-                onClick={() => handleAssetTypeChange("crypto")}
-                className={clsx(
-                  "py-1.5 text-xs font-bold rounded transition-all",
-                  assetType === "crypto" ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" : "text-gray-400 hover:text-white"
-                )}
-              >
-                Criptomoneda
-              </button>
-            </div>
-          </div>
-
           {/* Ticker */}
-          <div className="w-full sm:w-auto flex-1 min-w-[110px]">
+          <div className="w-full sm:w-auto flex-1 min-w-[120px]">
             <label className="block text-xs font-semibold text-gray-400 mb-1.5 tracking-wide uppercase">Ticker</label>
             <input
               type="text"
               required
-              placeholder={assetType === "crypto" ? "BTC" : "AAPL"}
+              placeholder="AAPL"
               value={tickerInput}
               onChange={e => setTickerInput(e.target.value)}
               className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 uppercase transition-colors"
             />
           </div>
 
-          {/* Quantity */}
-          <div className="w-full sm:w-auto flex-1 min-w-[110px]">
+          {/* Cantidad */}
+          <div className="w-full sm:w-auto flex-1 min-w-[120px]">
             <label className="block text-xs font-semibold text-gray-400 mb-1.5 tracking-wide uppercase">Cantidad</label>
             <input
               type="number"
               required
-              step="any"
+              step="0.01"
               min="0"
-              placeholder={assetType === "crypto" ? "0.015" : "2"}
+              placeholder="2"
               value={qtyInput}
               onChange={e => setQtyInput(e.target.value)}
               className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors"
             />
           </div>
 
-          {/* Currency Selector */}
-          <div className="w-full sm:w-auto min-w-[90px]">
-            <label className="block text-xs font-semibold text-gray-400 mb-1.5 tracking-wide uppercase">Moneda</label>
-            <select
-              value={currencyInput}
-              onChange={e => setCurrencyInput(e.target.value as "ARS" | "USD")}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors cursor-pointer"
-            >
-              <option value="ARS" className="bg-zinc-900">ARS</option>
-              <option value="USD" className="bg-zinc-900">USD</option>
-            </select>
-          </div>
-
-          {/* Price */}
-          <div className="w-full sm:w-auto flex-1 min-w-[130px]">
+          {/* Precio ARS */}
+          <div className="w-full sm:w-auto flex-1 min-w-[150px]">
             <label className="block text-xs font-semibold text-gray-400 mb-1.5 tracking-wide uppercase">
-              Precio ({currencyInput})
+              Precio (ARS)
             </label>
             <input
               type="number"
-              step="any"
+              step="0.01"
               required
               min="0"
-              placeholder={currencyInput === "USD" ? "65000" : "50000"}
+              placeholder="50000"
               value={priceInput}
               onChange={e => setPriceInput(e.target.value)}
               className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors"
             />
           </div>
 
-          {/* Date */}
-          <div className="w-full sm:w-auto flex-1 min-w-[130px]">
+          {/* Fecha */}
+          <div className="w-full sm:w-auto flex-1 min-w-[150px]">
             <label className="block text-xs font-semibold text-gray-400 mb-1.5 tracking-wide uppercase">Fecha</label>
             <input
               type="date"
@@ -675,22 +609,14 @@ export default function CedearsTracker() {
                         <tr key={p.ticker} className="hover:bg-white/5 transition-colors group">
                           {/* Activo */}
                           <td className="py-3 px-2">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-bold text-gray-200">{p.ticker.replace('.BA', '').replace('-USD', '')}</span>
-                              <span className={clsx(
-                                "text-[9px] px-1.5 py-0.5 rounded font-bold uppercase", 
-                                p.isCrypto ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                              )}>
-                                {p.isCrypto ? "Cripto" : "Cedear"}
-                              </span>
-                            </div>
+                            <span className="font-bold text-gray-200">{p.ticker.replace('.BA', '')}</span>
                             <div className="text-xs text-gray-500 lg:hidden mt-0.5">
                               ${p.avgPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} avg
                             </div>
                           </td>
                           {/* Cant. */}
                           <td className="py-3 px-2 text-right text-gray-300 font-medium">
-                            {p.totalQty.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+                            {p.totalQty.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                           </td>
                           {/* PPC (ARS Only) */}
                           <td className="py-3 px-2 text-right text-gray-400 hidden lg:table-cell">
@@ -701,25 +627,14 @@ export default function CedearsTracker() {
                           {/* Precio Actual */}
                           <td className="py-3 px-2 text-right">
                             {p.hasData ? (
-                              p.isCrypto ? (
-                                <div>
-                                  <div className="font-semibold text-blue-100">
-                                    ${p.currentPriceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-[9px] text-gray-500 font-bold uppercase">USD</span>
-                                  </div>
-                                  <div className="text-[10px] text-gray-400 mt-0.5">
-                                    ${p.currentPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS
-                                  </div>
+                              <div>
+                                <div className="font-semibold text-blue-100">
+                                  ${p.currentPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} <span className="text-[9px] text-gray-500 font-bold uppercase">ARS</span>
                                 </div>
-                              ) : (
-                                <div>
-                                  <div className="font-semibold text-blue-100">
-                                    ${p.currentPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} <span className="text-[9px] text-gray-500 font-bold uppercase">ARS</span>
-                                  </div>
-                                  <div className="text-[10px] text-gray-400 mt-0.5">
-                                    ${p.currentPriceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
-                                  </div>
+                                <div className="text-[10px] text-gray-400 mt-0.5">
+                                  ${p.currentPriceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
                                 </div>
-                              )
+                              </div>
                             ) : (
                               <span className="text-gray-500 text-xs">Cargando...</span>
                             )}
@@ -765,22 +680,13 @@ export default function CedearsTracker() {
               <h3 className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider">Historial de Operaciones</h3>
               <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
                 {[...purchases].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(p => {
-                  const isCrypto = p.ticker.toUpperCase().endsWith('-USD');
-                  const cleanTicker = p.ticker.replace('.BA', '').replace('-USD', '');
+                  const cleanTicker = p.ticker.replace('.BA', '');
                   return (
                     <div key={p.id} className="grid grid-cols-5 items-center text-xs bg-black/20 p-3 rounded-xl border border-white/5 hover:bg-white/5 transition-colors group">
                       <div className="text-gray-400">{new Date(p.date).toLocaleDateString('es-AR')}</div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-blue-300">{cleanTicker}</span>
-                        <span className={clsx(
-                          "text-[8px] px-1 rounded uppercase font-bold", 
-                          isCrypto ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                        )}>
-                          {isCrypto ? "Crip" : "Ced"}
-                        </span>
-                      </div>
+                      <span className="font-bold text-blue-300">{cleanTicker}</span>
                       <div className="text-gray-300 text-center font-mono">
-                        {p.quantity > 0 ? "+" : ""}{p.quantity.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+                        {p.quantity > 0 ? "+" : ""}{p.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                       </div>
                       <div className="text-gray-400 text-right">
                         <span>${p.purchasePrice.toLocaleString()}</span>
@@ -859,13 +765,7 @@ export default function CedearsTracker() {
                     <div key={p.ticker} className="flex items-center justify-between text-xs text-gray-300 bg-white/5 px-2.5 py-1 rounded-lg border border-white/5 hover:bg-white/10 transition-colors">
                       <div className="flex items-center gap-1.5">
                         <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                        <span className="font-bold">{p.ticker.replace('.BA', '').replace('-USD', '')}</span>
-                        <span className={clsx(
-                          "text-[8px] px-1 rounded uppercase font-bold", 
-                          p.isCrypto ? "bg-amber-500/10 text-amber-400" : "bg-blue-500/10 text-blue-400"
-                        )}>
-                          {p.isCrypto ? "Crip" : "Ced"}
-                        </span>
+                        <span className="font-bold">{p.ticker.replace('.BA', '')}</span>
                       </div>
                       <div className="text-right font-bold text-gray-200">
                         {percent.toFixed(1)}%
