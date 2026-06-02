@@ -747,11 +747,11 @@ export default function CedearsTracker() {
                 
                 {/* Sleek center donut label */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-[10px] text-gray-400 font-semibold tracking-wider uppercase">Cartera Total</span>
-                  <span className="text-2xl font-black text-white mt-0.5">
+                  <span className="text-[9px] text-gray-400 font-semibold tracking-wider uppercase">Cartera Total</span>
+                  <span className="text-lg font-black text-white mt-0.5">
                     ${globalStats.totalValue.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
                   </span>
-                  <span className="text-xs text-emerald-400 font-bold mt-0.5">
+                  <span className="text-[9px] text-emerald-400 font-bold mt-0.5">
                     USD ${(globalStats.totalValueUSD).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </span>
                 </div>
