@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Trash2, RefreshCw, DollarSign, TrendingUp, Landmark, ArrowRightLeft, ListChecks, Coins } from "lucide-react";
+import { Plus, Trash2, RefreshCw, DollarSign, TrendingUp, Landmark, ArrowRightLeft, ListChecks, Coins, Users } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -24,11 +24,20 @@ type Expense = {
   currency: "ARS" | "USD";
 };
 
+type Debt = {
+  id: string;
+  debtorName: string;
+  amount: number;
+  currency: "ARS" | "USD";
+  isPaid: boolean;
+};
+
 type IncomeConfig = {
   categories: Category[];
   expenses: Expense[];
   lastIncome?: string;
   completedIds?: string[];
+  debts?: Debt[];
 };
 
 // ─── Defaults ───────────────────────────────────────────────────────────────
@@ -45,7 +54,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 export default function IncomeDistributor() {
   const [isClient, setIsClient] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
-  const [config, setConfig] = useState<IncomeConfig>({ categories: DEFAULT_CATEGORIES, expenses: [], completedIds: [] });
+  const [config, setConfig] = useState<IncomeConfig>({ categories: DEFAULT_CATEGORIES, expenses: [], completedIds: [], debts: [] });
   const [totalIncome, setTotalIncome] = useState<string>("");
   const [usdRate, setUsdRate] = useState<number>(0);
   const [isFetchingRate, setIsFetchingRate] = useState(false);
@@ -54,6 +63,10 @@ export default function IncomeDistributor() {
   const [newCatType, setNewCatType] = useState<string>("fixed_usd");
   const [newCatValue, setNewCatValue] = useState("");
   const [absorbCategory, setAbsorbCategory] = useState("");
+
+  const [newDebtName, setNewDebtName] = useState("");
+  const [newDebtAmount, setNewDebtAmount] = useState("");
+  const [newDebtCurrency, setNewDebtCurrency] = useState<"ARS" | "USD">("ARS");
 
   const { user } = useAuth();
   const getDocRef = () => user ? doc(db, "users", user.uid, "income_config", "data") : null;
@@ -90,7 +103,8 @@ export default function IncomeDistributor() {
         setConfig({
           categories: data.categories || [],
           expenses: data.expenses || [],
-          completedIds: data.completedIds || []
+          completedIds: data.completedIds || [],
+          debts: data.debts || []
         });
         if (data.lastIncome !== undefined) setTotalIncome(data.lastIncome);
       }
@@ -164,6 +178,22 @@ export default function IncomeDistributor() {
     return { isNeededMode, totalNeededARS: 0, allocations, totalExpensesARS, unallocated, afterExpenses };
   }, [income, config, usdRate]);
 
+  const debtTotals = useMemo(() => {
+    let totalARS = 0;
+    let totalUSD = 0;
+    (config.debts || []).forEach(d => {
+      if (d.isPaid) return;
+      if (d.currency === "USD") {
+        totalUSD += d.amount;
+        totalARS += d.amount * (usdRate || 0);
+      } else {
+        totalARS += d.amount;
+        totalUSD += usdRate > 0 ? d.amount / usdRate : 0;
+      }
+    });
+    return { totalARS, totalUSD };
+  }, [config.debts, usdRate]);
+
   const removeCategory = (id: string) => setConfig(prev => ({ ...prev, categories: prev.categories.filter(c => c.id !== id) }));
   const updateCategory = (id: string, updates: Partial<Category>) => setConfig(prev => ({ ...prev, categories: prev.categories.map(c => c.id === id ? { ...c, ...updates } : c) }));
   const removeExpense = (id: string) => setConfig(prev => ({ ...prev, expenses: prev.expenses.filter(e => e.id !== id) }));
@@ -179,6 +209,34 @@ export default function IncomeDistributor() {
           : [...(prev.completedIds || []), id]
       };
     });
+  };
+
+  const addDebt = (debtorName: string, amount: number, currency: "ARS" | "USD") => {
+    setConfig(prev => ({
+      ...prev,
+      debts: [...(prev.debts || []), { id: uid(), debtorName, amount, currency, isPaid: false }]
+    }));
+  };
+
+  const removeDebt = (id: string) => {
+    setConfig(prev => ({
+      ...prev,
+      debts: (prev.debts || []).filter(d => d.id !== id)
+    }));
+  };
+
+  const toggleDebtPaid = (id: string) => {
+    setConfig(prev => ({
+      ...prev,
+      debts: (prev.debts || []).map(d => d.id === id ? { ...d, isPaid: !d.isPaid } : d)
+    }));
+  };
+
+  const updateDebt = (id: string, updates: Partial<Debt>) => {
+    setConfig(prev => ({
+      ...prev,
+      debts: (prev.debts || []).map(d => d.id === id ? { ...d, ...updates } : d)
+    }));
   };
 
   const handleAbsorbRemainder = () => {
@@ -468,6 +526,120 @@ export default function IncomeDistributor() {
                 setNewCatName(""); setNewCatValue("");
               }} 
               className="col-span-1 bg-violet-600/20 hover:bg-violet-600 text-violet-400 hover:text-white rounded-lg flex items-center justify-center transition-all py-2"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. DEUDAS A MI FAVOR */}
+      <div className="pt-10 border-t border-white/10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+              <Users className="w-5 h-5 text-indigo-400" />
+              Deudas a mi Favor
+            </h3>
+            <p className="text-sm text-gray-400">Registrá la plata que te debe alguien y controlá los cobros.</p>
+          </div>
+          {debtTotals.totalARS > 0 && (
+            <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl px-4 py-2 flex flex-col items-end">
+              <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">Total Pendiente de Cobro</span>
+              <div className="text-lg font-black text-white">
+                ${debtTotals.totalARS.toLocaleString('es-AR', { maximumFractionDigits: 0 })} <span className="text-xs font-bold text-gray-400">ARS</span>
+              </div>
+              {usdRate > 0 && (
+                <div className="text-[11px] text-gray-400 mt-0.5">
+                  o USD {debtTotals.totalUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="glass-panel p-6 rounded-2xl border-white/5 w-full">
+          <div className="space-y-3 mb-6">
+            {(!config.debts || config.debts.length === 0) && (
+              <p className="text-gray-500 text-xs py-4 text-center">No tenés deudas registradas a tu favor.</p>
+            )}
+
+            {config.debts?.map(d => (
+              <div key={d.id} className={`flex items-center gap-3 text-sm bg-black/20 p-3 rounded-xl border border-white/5 group transition-all duration-300 ${d.isPaid ? 'opacity-40 grayscale' : ''}`}>
+                <button 
+                  onClick={() => toggleDebtPaid(d.id)} 
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${d.isPaid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'}`} 
+                  title={d.isPaid ? "Marcar como no cobrado" : "Marcar como cobrado"}
+                >
+                  <CheckCircleIcon />
+                </button>
+                <div className="flex-1 min-w-0 flex flex-col gap-1">
+                  <input
+                    type="text"
+                    value={d.debtorName}
+                    onChange={ev => updateDebt(d.id, { debtorName: ev.target.value })}
+                    className={`bg-transparent text-gray-200 font-bold focus:outline-none focus:border-b focus:border-indigo-500/50 w-full ${d.isPaid ? 'line-through' : ''}`}
+                    placeholder="Nombre del deudor"
+                  />
+                  <div className="text-[10px] text-gray-500 uppercase">A cobrar</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center bg-white/5 border border-white/10 rounded-lg px-2">
+                    <span className="text-gray-500 font-bold mr-1">$</span>
+                    <input
+                      type="number"
+                      value={d.amount || ""}
+                      onChange={ev => updateDebt(d.id, { amount: parseFloat(ev.target.value) || 0 })}
+                      className="w-40 bg-transparent py-1.5 text-indigo-400 text-right font-mono font-bold text-xs focus:outline-none"
+                    />
+                    <select
+                      value={d.currency}
+                      onChange={ev => updateDebt(d.id, { currency: ev.target.value as "ARS"|"USD" })}
+                      className="ml-1 bg-transparent text-indigo-400 text-xs font-mono font-bold focus:outline-none cursor-pointer"
+                    >
+                      <option value="ARS" className="bg-[#09090b]">ARS</option>
+                      <option value="USD" className="bg-[#09090b]">USD</option>
+                    </select>
+                  </div>
+                  <button onClick={() => removeDebt(d.id)} className="text-gray-500 hover:text-red-400 transition-colors p-1" title="Eliminar deuda"><Trash2 className="w-4 h-4" /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Formulario de carga rápida para nuevas deudas */}
+          <div className="grid grid-cols-1 sm:grid-cols-6 gap-2 bg-black/40 p-3 rounded-xl border border-white/5">
+            <input 
+              type="text" 
+              placeholder="Nombre del deudor (ej: Juan)" 
+              value={newDebtName} 
+              onChange={e => setNewDebtName(e.target.value)} 
+              className="col-span-1 sm:col-span-2 bg-transparent text-white text-sm focus:outline-none px-2" 
+            />
+            <select 
+              value={newDebtCurrency} 
+              onChange={e => setNewDebtCurrency(e.target.value as "ARS"|"USD")} 
+              className="col-span-1 sm:col-span-2 bg-transparent text-white text-xs focus:outline-none cursor-pointer"
+            >
+              <option value="ARS" className="bg-[#09090b]">ARS (Pesos)</option>
+              <option value="USD" className="bg-[#09090b]">USD (Dólares)</option>
+            </select>
+            <input 
+              type="number" 
+              placeholder="Monto" 
+              value={newDebtAmount} 
+              onChange={e => setNewDebtAmount(e.target.value)} 
+              className="col-span-1 bg-transparent text-white text-sm focus:outline-none px-2 text-center" 
+            />
+            <button 
+              onClick={() => {
+                if (!newDebtName || !newDebtAmount) return;
+                addDebt(newDebtName, parseFloat(newDebtAmount), newDebtCurrency);
+                setNewDebtName(""); 
+                setNewDebtAmount("");
+              }} 
+              className="col-span-1 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-white rounded-lg flex items-center justify-center transition-all py-2"
+              title="Añadir deudor"
             >
               <Plus className="w-5 h-5" />
             </button>
