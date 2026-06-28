@@ -632,8 +632,8 @@ export default function IncomeDistributor() {
                 >
                   <CheckCircleIcon />
                 </button>
-                <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div>
+                <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-12 gap-2">
+                  <div className="sm:col-span-4">
                     <input
                       type="text"
                       value={d.debtorName}
@@ -643,7 +643,7 @@ export default function IncomeDistributor() {
                     />
                     <div className="text-[10px] text-gray-500 uppercase">Deudor</div>
                   </div>
-                  <div>
+                  <div className="sm:col-span-8">
                     <input
                       type="text"
                       value={d.description || ""}
@@ -682,17 +682,17 @@ export default function IncomeDistributor() {
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 bg-black/40 p-3 rounded-xl border border-white/5">
             <input 
               type="text" 
-              placeholder="Deudor (ej: Juan)" 
+              placeholder="Deudor" 
               value={newDebtName} 
               onChange={e => setNewDebtName(e.target.value)} 
-              className="col-span-1 sm:col-span-3 bg-transparent text-white text-sm focus:outline-none px-2" 
+              className="col-span-1 sm:col-span-2 bg-transparent text-white text-sm focus:outline-none px-2" 
             />
             <input 
               type="text" 
               placeholder="Concepto (ej: Cena, Alquiler)" 
               value={newDebtDescription} 
               onChange={e => setNewDebtDescription(e.target.value)} 
-              className="col-span-1 sm:col-span-3 bg-transparent text-white text-sm focus:outline-none px-2" 
+              className="col-span-1 sm:col-span-4 bg-transparent text-white text-sm focus:outline-none px-2" 
             />
             <select 
               value={newDebtCurrency} 
