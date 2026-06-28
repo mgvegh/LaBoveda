@@ -624,44 +624,44 @@ export default function IncomeDistributor() {
             )}
 
             {filteredDebts.map(d => (
-              <div key={d.id} className={`flex items-center gap-3 text-sm bg-black/20 p-3 rounded-xl border border-white/5 group transition-all duration-300 ${d.isPaid ? 'opacity-40 grayscale' : ''}`}>
-                <button 
-                  onClick={() => toggleDebtPaid(d.id)} 
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${d.isPaid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'}`} 
-                  title={d.isPaid ? "Marcar como no cobrado" : "Marcar como cobrado"}
-                >
-                  <CheckCircleIcon />
-                </button>
-                <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-12 gap-2">
-                  <div className="sm:col-span-4">
-                    <input
-                      type="text"
-                      value={d.debtorName}
-                      onChange={ev => updateDebt(d.id, { debtorName: ev.target.value })}
-                      className={`bg-transparent text-gray-200 font-bold focus:outline-none focus:border-b focus:border-indigo-500/50 w-full ${d.isPaid ? 'line-through' : ''}`}
-                      placeholder="Deudor"
-                    />
-                    <div className="text-[10px] text-gray-500 uppercase">Deudor</div>
-                  </div>
-                  <div className="sm:col-span-8">
-                    <input
-                      type="text"
-                      value={d.description || ""}
-                      onChange={ev => updateDebt(d.id, { description: ev.target.value })}
-                      className={`bg-transparent text-gray-300 focus:outline-none focus:border-b focus:border-indigo-500/50 w-full ${d.isPaid ? 'line-through' : ''}`}
-                      placeholder="Concepto (ej: Cena, Alquiler)"
-                    />
-                    <div className="text-[10px] text-gray-500 uppercase">Concepto</div>
-                  </div>
+              <div key={d.id} className={`grid grid-cols-1 sm:grid-cols-12 gap-3 items-center text-sm bg-black/20 p-3 rounded-xl border border-white/5 group transition-all duration-300 ${d.isPaid ? 'opacity-40 grayscale' : ''}`}>
+                <div className="col-span-1 flex justify-start sm:justify-center">
+                  <button 
+                    onClick={() => toggleDebtPaid(d.id)} 
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${d.isPaid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'}`} 
+                    title={d.isPaid ? "Marcar como no cobrado" : "Marcar como cobrado"}
+                  >
+                    <CheckCircleIcon />
+                  </button>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center bg-white/5 border border-white/10 rounded-lg px-2">
+                <div className="col-span-1 sm:col-span-2">
+                  <input
+                    type="text"
+                    value={d.debtorName}
+                    onChange={ev => updateDebt(d.id, { debtorName: ev.target.value })}
+                    className={`bg-transparent text-gray-200 font-bold focus:outline-none focus:border-b focus:border-indigo-500/50 w-full ${d.isPaid ? 'line-through' : ''}`}
+                    placeholder="Deudor"
+                  />
+                  <div className="text-[10px] text-gray-500 uppercase">Deudor</div>
+                </div>
+                <div className="col-span-1 sm:col-span-5">
+                  <input
+                    type="text"
+                    value={d.description || ""}
+                    onChange={ev => updateDebt(d.id, { description: ev.target.value })}
+                    className={`bg-transparent text-gray-300 focus:outline-none focus:border-b focus:border-indigo-500/50 w-full ${d.isPaid ? 'line-through' : ''}`}
+                    placeholder="Concepto (ej: Cena, Alquiler)"
+                  />
+                  <div className="text-[10px] text-gray-500 uppercase">Concepto</div>
+                </div>
+                <div className="col-span-1 sm:col-span-3">
+                  <div className="flex items-center bg-white/5 border border-white/10 rounded-lg px-2 w-full">
                     <span className="text-gray-500 font-bold mr-1">$</span>
                     <input
                       type="number"
                       value={d.amount || ""}
                       onChange={ev => updateDebt(d.id, { amount: parseFloat(ev.target.value) || 0 })}
-                      className="w-24 sm:w-40 bg-transparent py-1.5 text-indigo-400 text-right font-mono font-bold text-xs focus:outline-none"
+                      className="w-full bg-transparent py-1.5 text-indigo-400 text-right font-mono font-bold text-xs focus:outline-none"
                     />
                     <select
                       value={d.currency}
@@ -672,6 +672,8 @@ export default function IncomeDistributor() {
                       <option value="USD" className="bg-[#09090b]">USD</option>
                     </select>
                   </div>
+                </div>
+                <div className="col-span-1 sm:col-span-1 flex justify-end sm:justify-center">
                   <button onClick={() => removeDebt(d.id)} className="text-gray-500 hover:text-red-400 transition-colors p-1" title="Eliminar deuda"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
@@ -679,49 +681,61 @@ export default function IncomeDistributor() {
           </div>
 
           {/* Formulario de carga rápida para nuevas deudas */}
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 bg-black/40 p-3 rounded-xl border border-white/5">
-            <input 
-              type="text" 
-              placeholder="Deudor" 
-              value={newDebtName} 
-              onChange={e => setNewDebtName(e.target.value)} 
-              className="col-span-1 sm:col-span-2 bg-transparent text-white text-sm focus:outline-none px-2" 
-            />
-            <input 
-              type="text" 
-              placeholder="Concepto (ej: Cena, Alquiler)" 
-              value={newDebtDescription} 
-              onChange={e => setNewDebtDescription(e.target.value)} 
-              className="col-span-1 sm:col-span-4 bg-transparent text-white text-sm focus:outline-none px-2" 
-            />
-            <select 
-              value={newDebtCurrency} 
-              onChange={e => setNewDebtCurrency(e.target.value as "ARS"|"USD")} 
-              className="col-span-1 sm:col-span-3 bg-transparent text-white text-xs focus:outline-none cursor-pointer animate-none"
-            >
-              <option value="ARS" className="bg-[#09090b]">ARS (Pesos)</option>
-              <option value="USD" className="bg-[#09090b]">USD (Dólares)</option>
-            </select>
-            <input 
-              type="number" 
-              placeholder="Monto" 
-              value={newDebtAmount} 
-              onChange={e => setNewDebtAmount(e.target.value)} 
-              className="col-span-1 sm:col-span-2 bg-transparent text-white text-sm focus:outline-none px-2 text-center" 
-            />
-            <button 
-              onClick={() => {
-                if (!newDebtName || !newDebtAmount) return;
-                addDebt(newDebtName, newDebtDescription, parseFloat(newDebtAmount), newDebtCurrency);
-                setNewDebtName(""); 
-                setNewDebtDescription("");
-                setNewDebtAmount("");
-              }} 
-              className="col-span-1 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-white rounded-lg flex items-center justify-center transition-all py-2"
-              title="Añadir deuda"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center bg-black/40 p-3 rounded-xl border border-white/5">
+            <div className="hidden sm:block sm:col-span-1" />
+            <div className="col-span-1 sm:col-span-2">
+              <input 
+                type="text" 
+                placeholder="Deudor" 
+                value={newDebtName} 
+                onChange={e => setNewDebtName(e.target.value)} 
+                className="bg-transparent text-white text-sm focus:outline-none w-full px-2" 
+              />
+            </div>
+            <div className="col-span-1 sm:col-span-5">
+              <input 
+                type="text" 
+                placeholder="Concepto (ej: Cena, Alquiler)" 
+                value={newDebtDescription} 
+                onChange={e => setNewDebtDescription(e.target.value)} 
+                className="bg-transparent text-white text-sm focus:outline-none w-full px-2" 
+              />
+            </div>
+            <div className="col-span-1 sm:col-span-3">
+              <div className="flex items-center bg-white/5 border border-white/10 rounded-lg px-2 w-full">
+                <span className="text-gray-500 font-bold mr-1">$</span>
+                <input 
+                  type="number" 
+                  placeholder="Monto" 
+                  value={newDebtAmount} 
+                  onChange={e => setNewDebtAmount(e.target.value)} 
+                  className="w-full bg-transparent py-1.5 text-white text-right font-mono font-bold text-xs focus:outline-none" 
+                />
+                <select 
+                  value={newDebtCurrency} 
+                  onChange={e => setNewDebtCurrency(e.target.value as "ARS"|"USD")} 
+                  className="ml-1 bg-transparent text-white text-xs font-mono font-bold focus:outline-none cursor-pointer animate-none"
+                >
+                  <option value="ARS" className="bg-[#09090b]">ARS</option>
+                  <option value="USD" className="bg-[#09090b]">USD</option>
+                </select>
+              </div>
+            </div>
+            <div className="col-span-1 sm:col-span-1 flex justify-end sm:justify-center">
+              <button 
+                onClick={() => {
+                  if (!newDebtName || !newDebtAmount) return;
+                  addDebt(newDebtName, newDebtDescription, parseFloat(newDebtAmount), newDebtCurrency);
+                  setNewDebtName(""); 
+                  setNewDebtDescription("");
+                  setNewDebtAmount("");
+                }} 
+                className="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-white rounded-lg flex items-center justify-center transition-all p-2 w-8 h-8"
+                title="Añadir deuda"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
