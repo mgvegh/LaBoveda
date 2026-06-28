@@ -27,6 +27,7 @@ type Expense = {
 type Debt = {
   id: string;
   debtorName: string;
+  description?: string;
   amount: number;
   currency: "ARS" | "USD";
   isPaid: boolean;
@@ -65,8 +66,10 @@ export default function IncomeDistributor() {
   const [absorbCategory, setAbsorbCategory] = useState("");
 
   const [newDebtName, setNewDebtName] = useState("");
+  const [newDebtDescription, setNewDebtDescription] = useState("");
   const [newDebtAmount, setNewDebtAmount] = useState("");
   const [newDebtCurrency, setNewDebtCurrency] = useState<"ARS" | "USD">("ARS");
+  const [debtorFilter, setDebtorFilter] = useState<string>("");
 
   const { user } = useAuth();
   const getDocRef = () => user ? doc(db, "users", user.uid, "income_config", "data") : null;
@@ -194,6 +197,33 @@ export default function IncomeDistributor() {
     return { totalARS, totalUSD };
   }, [config.debts, usdRate]);
 
+  const uniqueDebtors = useMemo(() => {
+    const names = (config.debts || []).map(d => d.debtorName.trim()).filter(Boolean);
+    return [...new Set(names)];
+  }, [config.debts]);
+
+  const filteredDebts = useMemo(() => {
+    const list = config.debts || [];
+    if (!debtorFilter) return list;
+    return list.filter(d => d.debtorName.trim().toLowerCase() === debtorFilter.toLowerCase());
+  }, [config.debts, debtorFilter]);
+
+  const filteredDebtTotals = useMemo(() => {
+    let totalARS = 0;
+    let totalUSD = 0;
+    filteredDebts.forEach(d => {
+      if (d.isPaid) return;
+      if (d.currency === "USD") {
+        totalUSD += d.amount;
+        totalARS += d.amount * (usdRate || 0);
+      } else {
+        totalARS += d.amount;
+        totalUSD += usdRate > 0 ? d.amount / usdRate : 0;
+      }
+    });
+    return { totalARS, totalUSD };
+  }, [filteredDebts, usdRate]);
+
   const removeCategory = (id: string) => setConfig(prev => ({ ...prev, categories: prev.categories.filter(c => c.id !== id) }));
   const updateCategory = (id: string, updates: Partial<Category>) => setConfig(prev => ({ ...prev, categories: prev.categories.map(c => c.id === id ? { ...c, ...updates } : c) }));
   const removeExpense = (id: string) => setConfig(prev => ({ ...prev, expenses: prev.expenses.filter(e => e.id !== id) }));
@@ -211,10 +241,10 @@ export default function IncomeDistributor() {
     });
   };
 
-  const addDebt = (debtorName: string, amount: number, currency: "ARS" | "USD") => {
+  const addDebt = (debtorName: string, description: string, amount: number, currency: "ARS" | "USD") => {
     setConfig(prev => ({
       ...prev,
-      debts: [...(prev.debts || []), { id: uid(), debtorName, amount, currency, isPaid: false }]
+      debts: [...(prev.debts || []), { id: uid(), debtorName, description, amount, currency, isPaid: false }]
     }));
   };
 
@@ -558,13 +588,42 @@ export default function IncomeDistributor() {
           )}
         </div>
 
-        <div className="glass-panel p-6 rounded-2xl border-white/5 w-full">
-          <div className="space-y-3 mb-6">
+        <div className="glass-panel p-6 rounded-2xl border-white/5 w-full space-y-4">
+          {/* Filtro por deudor */}
+          {uniqueDebtors.length > 0 && (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-black/20 p-3 rounded-xl border border-white/5">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400 font-semibold uppercase">Filtrar por Deudor:</span>
+                <select
+                  value={debtorFilter}
+                  onChange={e => setDebtorFilter(e.target.value)}
+                  className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none cursor-pointer"
+                >
+                  <option value="" className="bg-[#09090b]">Todos los deudores</option>
+                  {uniqueDebtors.map(name => (
+                    <option key={name} value={name} className="bg-[#09090b]">{name}</option>
+                  ))}
+                </select>
+              </div>
+              {debtorFilter && (
+                <div className="text-xs text-indigo-300 font-medium sm:ml-auto">
+                  Suma pendiente de {debtorFilter}: <strong>${filteredDebtTotals.totalARS.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS</strong>
+                  {usdRate > 0 && ` / USD ${filteredDebtTotals.totalUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="space-y-3">
             {(!config.debts || config.debts.length === 0) && (
               <p className="text-gray-500 text-xs py-4 text-center">No tenés deudas registradas a tu favor.</p>
             )}
 
-            {config.debts?.map(d => (
+            {filteredDebts.length === 0 && config.debts && config.debts.length > 0 && (
+              <p className="text-gray-500 text-xs py-4 text-center">No hay deudas cargadas para el deudor seleccionado.</p>
+            )}
+
+            {filteredDebts.map(d => (
               <div key={d.id} className={`flex items-center gap-3 text-sm bg-black/20 p-3 rounded-xl border border-white/5 group transition-all duration-300 ${d.isPaid ? 'opacity-40 grayscale' : ''}`}>
                 <button 
                   onClick={() => toggleDebtPaid(d.id)} 
@@ -573,15 +632,27 @@ export default function IncomeDistributor() {
                 >
                   <CheckCircleIcon />
                 </button>
-                <div className="flex-1 min-w-0 flex flex-col gap-1">
-                  <input
-                    type="text"
-                    value={d.debtorName}
-                    onChange={ev => updateDebt(d.id, { debtorName: ev.target.value })}
-                    className={`bg-transparent text-gray-200 font-bold focus:outline-none focus:border-b focus:border-indigo-500/50 w-full ${d.isPaid ? 'line-through' : ''}`}
-                    placeholder="Nombre del deudor"
-                  />
-                  <div className="text-[10px] text-gray-500 uppercase">A cobrar</div>
+                <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <input
+                      type="text"
+                      value={d.debtorName}
+                      onChange={ev => updateDebt(d.id, { debtorName: ev.target.value })}
+                      className={`bg-transparent text-gray-200 font-bold focus:outline-none focus:border-b focus:border-indigo-500/50 w-full ${d.isPaid ? 'line-through' : ''}`}
+                      placeholder="Deudor"
+                    />
+                    <div className="text-[10px] text-gray-500 uppercase">Deudor</div>
+                  </div>
+                  <div>
+                    <input
+                      type="text"
+                      value={d.description || ""}
+                      onChange={ev => updateDebt(d.id, { description: ev.target.value })}
+                      className={`bg-transparent text-gray-300 focus:outline-none focus:border-b focus:border-indigo-500/50 w-full ${d.isPaid ? 'line-through' : ''}`}
+                      placeholder="Concepto (ej: Cena, Alquiler)"
+                    />
+                    <div className="text-[10px] text-gray-500 uppercase">Concepto</div>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="flex items-center bg-white/5 border border-white/10 rounded-lg px-2">
@@ -590,7 +661,7 @@ export default function IncomeDistributor() {
                       type="number"
                       value={d.amount || ""}
                       onChange={ev => updateDebt(d.id, { amount: parseFloat(ev.target.value) || 0 })}
-                      className="w-40 bg-transparent py-1.5 text-indigo-400 text-right font-mono font-bold text-xs focus:outline-none"
+                      className="w-24 sm:w-40 bg-transparent py-1.5 text-indigo-400 text-right font-mono font-bold text-xs focus:outline-none"
                     />
                     <select
                       value={d.currency}
@@ -608,18 +679,25 @@ export default function IncomeDistributor() {
           </div>
 
           {/* Formulario de carga rápida para nuevas deudas */}
-          <div className="grid grid-cols-1 sm:grid-cols-6 gap-2 bg-black/40 p-3 rounded-xl border border-white/5">
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 bg-black/40 p-3 rounded-xl border border-white/5">
             <input 
               type="text" 
-              placeholder="Nombre del deudor (ej: Juan)" 
+              placeholder="Deudor (ej: Juan)" 
               value={newDebtName} 
               onChange={e => setNewDebtName(e.target.value)} 
-              className="col-span-1 sm:col-span-2 bg-transparent text-white text-sm focus:outline-none px-2" 
+              className="col-span-1 sm:col-span-3 bg-transparent text-white text-sm focus:outline-none px-2" 
+            />
+            <input 
+              type="text" 
+              placeholder="Concepto (ej: Cena, Alquiler)" 
+              value={newDebtDescription} 
+              onChange={e => setNewDebtDescription(e.target.value)} 
+              className="col-span-1 sm:col-span-3 bg-transparent text-white text-sm focus:outline-none px-2" 
             />
             <select 
               value={newDebtCurrency} 
               onChange={e => setNewDebtCurrency(e.target.value as "ARS"|"USD")} 
-              className="col-span-1 sm:col-span-2 bg-transparent text-white text-xs focus:outline-none cursor-pointer"
+              className="col-span-1 sm:col-span-3 bg-transparent text-white text-xs focus:outline-none cursor-pointer animate-none"
             >
               <option value="ARS" className="bg-[#09090b]">ARS (Pesos)</option>
               <option value="USD" className="bg-[#09090b]">USD (Dólares)</option>
@@ -629,17 +707,18 @@ export default function IncomeDistributor() {
               placeholder="Monto" 
               value={newDebtAmount} 
               onChange={e => setNewDebtAmount(e.target.value)} 
-              className="col-span-1 bg-transparent text-white text-sm focus:outline-none px-2 text-center" 
+              className="col-span-1 sm:col-span-2 bg-transparent text-white text-sm focus:outline-none px-2 text-center" 
             />
             <button 
               onClick={() => {
                 if (!newDebtName || !newDebtAmount) return;
-                addDebt(newDebtName, parseFloat(newDebtAmount), newDebtCurrency);
+                addDebt(newDebtName, newDebtDescription, parseFloat(newDebtAmount), newDebtCurrency);
                 setNewDebtName(""); 
+                setNewDebtDescription("");
                 setNewDebtAmount("");
               }} 
               className="col-span-1 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-white rounded-lg flex items-center justify-center transition-all py-2"
-              title="Añadir deudor"
+              title="Añadir deuda"
             >
               <Plus className="w-5 h-5" />
             </button>
