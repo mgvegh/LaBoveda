@@ -12,9 +12,10 @@ async function tryArgentineFallback(ticker: string) {
       const bondsList = await bondsRes.json() as any[];
       const found = bondsList.find(b => b.symbol.toUpperCase() === baseSymbol);
       if (found) {
-        const price = found.c;
+        // Argentine bonds are quoted per 100 nominal values. Divide by 100 for unit price.
+        const price = found.c / 100;
         const pct = found.pct_change || 0;
-        const previousClose = price / (1 + pct / 100);
+        const previousClose = (found.c / (1 + pct / 100)) / 100;
         const isUsd = baseSymbol.endsWith("D") || baseSymbol.endsWith("C");
         const currency = isUsd ? "USD" : "ARS";
         return { price, previousClose, currency };
@@ -33,9 +34,10 @@ async function tryArgentineFallback(ticker: string) {
       const corpList = await corpRes.json() as any[];
       const found = corpList.find(c => c.symbol.toUpperCase() === baseSymbol);
       if (found) {
-        const price = found.c;
+        // Argentine corporate bonds (ONs) are also quoted per 100 nominal values.
+        const price = found.c / 100;
         const pct = found.pct_change || 0;
-        const previousClose = price / (1 + pct / 100);
+        const previousClose = (found.c / (1 + pct / 100)) / 100;
         const isUsd = baseSymbol.endsWith("D") || baseSymbol.endsWith("C");
         const currency = isUsd ? "USD" : "ARS";
         return { price, previousClose, currency };
