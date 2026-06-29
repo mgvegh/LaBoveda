@@ -1,5 +1,53 @@
 import { NextResponse } from "next/server";
 
+async function tryArgentineFallback(ticker: string) {
+  const baseSymbol = ticker.replace(/\.BA$/i, "").toUpperCase();
+
+  // 1. Fetch from arg_bonds (sovereign bonds)
+  try {
+    const bondsRes = await fetch("https://data912.com/live/arg_bonds", {
+      next: { revalidate: 300 } // Cache for 5 mins
+    });
+    if (bondsRes.ok) {
+      const bondsList = await bondsRes.json() as any[];
+      const found = bondsList.find(b => b.symbol.toUpperCase() === baseSymbol);
+      if (found) {
+        const price = found.c;
+        const pct = found.pct_change || 0;
+        const previousClose = price / (1 + pct / 100);
+        const isUsd = baseSymbol.endsWith("D") || baseSymbol.endsWith("C");
+        const currency = isUsd ? "USD" : "ARS";
+        return { price, previousClose, currency };
+      }
+    }
+  } catch (err) {
+    console.error("Failed to fetch/parse data912 arg_bonds:", err);
+  }
+
+  // 2. Fetch from arg_corp (corporate bonds / ONs)
+  try {
+    const corpRes = await fetch("https://data912.com/live/arg_corp", {
+      next: { revalidate: 300 } // Cache for 5 mins
+    });
+    if (corpRes.ok) {
+      const corpList = await corpRes.json() as any[];
+      const found = corpList.find(c => c.symbol.toUpperCase() === baseSymbol);
+      if (found) {
+        const price = found.c;
+        const pct = found.pct_change || 0;
+        const previousClose = price / (1 + pct / 100);
+        const isUsd = baseSymbol.endsWith("D") || baseSymbol.endsWith("C");
+        const currency = isUsd ? "USD" : "ARS";
+        return { price, previousClose, currency };
+      }
+    }
+  } catch (err) {
+    console.error("Failed to fetch/parse data912 arg_corp:", err);
+  }
+
+  return null;
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const ticker = searchParams.get('ticker');
@@ -18,13 +66,27 @@ export async function GET(request: Request) {
     });
 
     if (!response.ok) {
-       throw new Error(`Yahoo Finance API HTTP error! status: ${response.status}`);
+      const fallbackData = await tryArgentineFallback(ticker);
+      if (fallbackData) {
+        return NextResponse.json({
+          ticker,
+          ...fallbackData
+        });
+      }
+      throw new Error(`Yahoo Finance API HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
     const result = data.chart.result?.[0];
     
     if (!result || !result.meta.regularMarketPrice) {
+      const fallbackData = await tryArgentineFallback(ticker);
+      if (fallbackData) {
+        return NextResponse.json({
+          ticker,
+          ...fallbackData
+        });
+      }
       return NextResponse.json({ error: 'Data not found' }, { status: 404 });
     }
 
@@ -40,6 +102,19 @@ export async function GET(request: Request) {
     });
   } catch (error: any) {
     console.error('Yahoo Finance API Error:', error);
+    
+    try {
+      const fallbackData = await tryArgentineFallback(ticker);
+      if (fallbackData) {
+        return NextResponse.json({
+          ticker,
+          ...fallbackData
+        });
+      }
+    } catch (fallbackError) {
+      console.error('Fallback error in catch:', fallbackError);
+    }
+
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
