@@ -836,7 +836,7 @@ export default function CedearsTracker() {
                 <div className="font-bold text-gray-200">
                   {isImporting ? "Importando archivo(s)..." : "Importar CSV de Cocos"}
                 </div>
-                <div className="text-xs text-gray-500 mt-1 truncate">
+                <div className="text-xs text-gray-500 mt-1">
                   Arrastrá o haz clic para subir múltiples archivos. Se omiten operaciones anteriores a Febrero 2025.
                 </div>
               </div>
