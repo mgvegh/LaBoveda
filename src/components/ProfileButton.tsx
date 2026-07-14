@@ -286,7 +286,8 @@ export default function ProfileButton() {
         window.location.reload();
       } catch (e) {
         console.error(e);
-        alert("Error al parsear o guardar el archivo de backup.");
+        const errMsg = e instanceof Error ? e.message : String(e);
+        alert(`Error al parsear o guardar el archivo de backup: ${errMsg}`);
       } finally {
         setIsLoading(false);
       }
