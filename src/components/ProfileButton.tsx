@@ -393,7 +393,6 @@ export default function ProfileButton() {
                 <Upload className="w-3.5 h-3.5" /> Importar JSON
                 <input
                   type="file"
-                  accept=".json,application/json,text/plain"
                   onChange={handleImportData}
                   className="hidden"
                 />
