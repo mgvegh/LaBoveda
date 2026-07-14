@@ -462,25 +462,27 @@ export default function IncomeDistributor() {
             
             {/* Gastos Fijos */}
             {config.expenses.map(e => (
-              <div key={e.id} className="flex items-center gap-3 text-sm bg-black/20 p-3 rounded-xl border border-white/5 group">
-                <div className="w-8 h-8 flex items-center justify-center bg-red-500/10 rounded-lg text-red-400"><DollarSign className="w-4 h-4" /></div>
-                <div className="flex-1 min-w-0 flex flex-col gap-1">
-                  <input
-                    type="text"
-                    value={e.name}
-                    onChange={ev => updateExpense(e.id, { name: ev.target.value })}
-                    className="bg-transparent text-gray-200 font-bold focus:outline-none focus:border-b focus:border-red-500/50 w-full"
-                  />
-                  <div className="text-[10px] text-gray-500 uppercase">Gasto Fijo</div>
+              <div key={e.id} className="flex flex-col sm:flex-row sm:items-center gap-3 text-sm bg-black/20 p-3 rounded-xl border border-white/5 group">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="w-8 h-8 flex items-center justify-center bg-red-500/10 rounded-lg text-red-400 shrink-0"><DollarSign className="w-4 h-4" /></div>
+                  <div className="flex-1 min-w-0">
+                    <input
+                      type="text"
+                      value={e.name}
+                      onChange={ev => updateExpense(e.id, { name: ev.target.value })}
+                      className="bg-transparent text-gray-200 font-bold focus:outline-none focus:border-b focus:border-red-500/50 w-full"
+                    />
+                    <div className="text-[10px] text-gray-500 uppercase">Gasto Fijo</div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center bg-white/5 border border-white/10 rounded-lg px-2">
+                <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+                  <div className="flex items-center bg-white/5 border border-white/10 rounded-lg px-2 flex-1 sm:flex-initial sm:w-40">
                     <span className="text-gray-500 font-bold mr-1">$</span>
                     <input
                       type="number"
                       value={e.amount || ""}
                       onChange={ev => updateExpense(e.id, { amount: parseFloat(ev.target.value) || 0 })}
-                      className="w-40 bg-transparent py-1.5 text-red-400 text-right font-mono font-bold text-xs focus:outline-none"
+                      className="w-full bg-transparent py-1.5 text-red-400 text-right font-mono font-bold text-xs focus:outline-none"
                     />
                     <select
                       value={e.currency}
@@ -491,74 +493,96 @@ export default function IncomeDistributor() {
                       <option value="USD" className="bg-[#09090b]">USD</option>
                     </select>
                   </div>
-                  <button onClick={() => removeExpense(e.id)} className="text-gray-600 hover:text-red-400 transition-colors p-1 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => removeExpense(e.id)} className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded-lg bg-white/5 sm:bg-transparent sm:p-1 sm:opacity-0 group-hover:opacity-100 shrink-0"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
             ))}
 
             {/* Categorías */}
             {config.categories.map(c => (
-              <div key={c.id} className="flex items-center gap-3 text-sm bg-black/20 p-3 rounded-xl border border-white/5 group">
-                <div className="w-8 h-8 flex items-center justify-center bg-white/5 rounded-lg text-lg">{c.icon}</div>
-                <div className="flex-1 min-w-0 flex flex-col gap-1">
-                  <input
-                    type="text"
-                    value={c.name}
-                    onChange={e => updateCategory(c.id, { name: e.target.value })}
-                    className="bg-transparent text-gray-200 font-bold focus:outline-none focus:border-b focus:border-violet-500/50 w-full"
-                  />
-                  <select
-                    value={c.type}
-                    onChange={e => updateCategory(c.id, { type: e.target.value as CategoryType })}
-                    className="bg-transparent text-[10px] text-gray-500 uppercase focus:outline-none w-fit cursor-pointer"
-                  >
-                    <option value="fixed_usd" className="bg-[#09090b]">USD Fijo</option>
-                    <option value="fixed_ars" className="bg-[#09090b]">ARS Fijo</option>
-                    <option value="percentage" className="bg-[#09090b]">% del Resto</option>
-                  </select>
+              <div key={c.id} className="flex flex-col sm:flex-row sm:items-center gap-3 text-sm bg-black/20 p-3 rounded-xl border border-white/5 group">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="w-8 h-8 flex items-center justify-center bg-white/5 rounded-lg text-lg shrink-0">{c.icon}</div>
+                  <div className="flex-1 min-w-0">
+                    <input
+                      type="text"
+                      value={c.name}
+                      onChange={e => updateCategory(c.id, { name: e.target.value })}
+                      className="bg-transparent text-gray-200 font-bold focus:outline-none focus:border-b focus:border-violet-500/50 w-full"
+                    />
+                    <select
+                      value={c.type}
+                      onChange={e => updateCategory(c.id, { type: e.target.value as CategoryType })}
+                      className="bg-transparent text-[10px] text-gray-500 uppercase focus:outline-none w-fit cursor-pointer"
+                    >
+                      <option value="fixed_usd" className="bg-[#09090b]">USD Fijo</option>
+                      <option value="fixed_ars" className="bg-[#09090b]">ARS Fijo</option>
+                      <option value="percentage" className="bg-[#09090b]">% del Resto</option>
+                    </select>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    value={c.value || ""}
-                    onChange={e => updateCategory(c.id, { value: parseFloat(e.target.value) || 0 })}
-                    className="w-44 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-center font-bold text-xs focus:outline-none focus:border-violet-500"
-                  />
-                  <button onClick={() => removeCategory(c.id)} className="text-gray-600 hover:text-red-400 transition-colors p-1 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
+                <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+                  <div className="flex items-center bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 flex-1 sm:flex-initial sm:w-44">
+                    <input
+                      type="number"
+                      value={c.value || ""}
+                      onChange={e => updateCategory(c.id, { value: parseFloat(e.target.value) || 0 })}
+                      className="w-full bg-transparent text-white text-center font-bold text-xs focus:outline-none focus:border-violet-500"
+                    />
+                    <span className="text-[10px] text-gray-500 font-bold ml-1 uppercase">
+                      {c.type === "percentage" ? "%" : c.type === "fixed_usd" ? "USD" : "ARS"}
+                    </span>
+                  </div>
+                  <button onClick={() => removeCategory(c.id)} className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded-lg bg-white/5 sm:bg-transparent sm:p-1 sm:opacity-0 group-hover:opacity-100 shrink-0"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-6 gap-2 bg-black/40 p-3 rounded-xl border border-white/5">
-            <input type="text" placeholder="Nombre" value={newCatName} onChange={e => setNewCatName(e.target.value)} className="col-span-1 sm:col-span-2 bg-transparent text-white text-sm focus:outline-none px-2" />
+          <div className="flex flex-col sm:grid sm:grid-cols-6 gap-2 bg-black/40 p-3 rounded-xl border border-white/5">
+            <input 
+              type="text" 
+              placeholder="Nombre" 
+              value={newCatName} 
+              onChange={e => setNewCatName(e.target.value)} 
+              className="bg-transparent text-white text-sm focus:outline-none px-2 py-1.5 sm:col-span-2" 
+            />
             <select 
               value={newCatType} 
               onChange={e => setNewCatType(e.target.value)} 
-              className="col-span-1 sm:col-span-2 bg-transparent text-white text-xs focus:outline-none cursor-pointer"
+              className="bg-transparent text-white text-xs focus:outline-none cursor-pointer px-2 py-1.5 sm:col-span-2"
             >
               <option value="fixed_usd" className="bg-[#09090b]">USD FIJO</option>
               <option value="fixed_ars" className="bg-[#09090b]">ARS FIJO</option>
               <option value="percentage" className="bg-[#09090b]">% DEL REMANENTE</option>
             </select>
-            <input type="number" placeholder="Monto / %" value={newCatValue} onChange={e => setNewCatValue(e.target.value)} className="col-span-1 bg-transparent text-white text-sm focus:outline-none px-2 text-center" />
-            <button 
-              onClick={() => {
-                if (!newCatName || !newCatValue) return;
-                const idx = config.categories.length;
-                setConfig(prev => ({
-                  ...prev,
-                  categories: [...prev.categories, {
-                    id: uid(), name: newCatName, type: newCatType as CategoryType,
-                    value: parseFloat(newCatValue), color: DEFAULT_COLORS[idx % DEFAULT_COLORS.length], icon: "💰"
-                  }]
-                }));
-                setNewCatName(""); setNewCatValue("");
-              }} 
-              className="col-span-1 bg-violet-600/20 hover:bg-violet-600 text-violet-400 hover:text-white rounded-lg flex items-center justify-center transition-all py-2"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2 sm:col-span-2">
+              <input 
+                type="number" 
+                placeholder="Monto / %" 
+                value={newCatValue} 
+                onChange={e => setNewCatValue(e.target.value)} 
+                className="flex-1 bg-transparent text-white text-sm focus:outline-none px-2 py-1.5 text-center sm:text-left" 
+              />
+              <button 
+                onClick={() => {
+                  if (!newCatName || !newCatValue) return;
+                  const idx = config.categories.length;
+                  setConfig(prev => ({
+                    ...prev,
+                    categories: [...prev.categories, {
+                      id: uid(), name: newCatName, type: newCatType as CategoryType,
+                      value: parseFloat(newCatValue), color: DEFAULT_COLORS[idx % DEFAULT_COLORS.length], icon: "💰"
+                    }]
+                  }));
+                  setNewCatName(""); setNewCatValue("");
+                }} 
+                className="bg-violet-600/20 hover:bg-violet-600 text-violet-400 hover:text-white rounded-lg flex items-center justify-center transition-all p-2 w-8 h-8 shrink-0"
+                title="Añadir salida"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -624,38 +648,46 @@ export default function IncomeDistributor() {
             )}
 
             {filteredDebts.map(d => (
-              <div key={d.id} className={`grid grid-cols-1 sm:grid-cols-12 gap-3 items-center text-sm bg-black/20 p-3 rounded-xl border border-white/5 group transition-all duration-300 ${d.isPaid ? 'opacity-40 grayscale' : ''}`}>
-                <div className="col-span-1 flex justify-start sm:justify-center">
-                  <button 
-                    onClick={() => toggleDebtPaid(d.id)} 
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${d.isPaid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'}`} 
-                    title={d.isPaid ? "Marcar como no cobrado" : "Marcar como cobrado"}
-                  >
-                    <CheckCircleIcon />
-                  </button>
+              <div key={d.id} className={`flex flex-col sm:grid sm:grid-cols-12 gap-3 sm:items-center text-sm bg-black/20 p-3 rounded-xl border border-white/5 group transition-all duration-300 ${d.isPaid ? 'opacity-40 grayscale' : ''}`}>
+                {/* Checkbox + Deudor + Concepto */}
+                <div className="flex items-center gap-3 flex-1 min-w-0 sm:col-span-8 sm:grid sm:grid-cols-8 sm:gap-3">
+                  {/* Checkbox */}
+                  <div className="shrink-0 sm:col-span-1 flex justify-start sm:justify-center">
+                    <button 
+                      onClick={() => toggleDebtPaid(d.id)} 
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${d.isPaid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'}`} 
+                      title={d.isPaid ? "Marcar como no cobrado" : "Marcar como cobrado"}
+                    >
+                      <CheckCircleIcon />
+                    </button>
+                  </div>
+                  {/* Deudor */}
+                  <div className="flex-1 sm:col-span-2 min-w-0">
+                    <input
+                      type="text"
+                      value={d.debtorName}
+                      onChange={ev => updateDebt(d.id, { debtorName: ev.target.value })}
+                      className={`bg-transparent text-gray-200 font-bold focus:outline-none focus:border-b focus:border-indigo-500/50 w-full ${d.isPaid ? 'line-through' : ''}`}
+                      placeholder="Deudor"
+                    />
+                    <div className="text-[10px] text-gray-500 uppercase">Deudor</div>
+                  </div>
+                  {/* Concepto */}
+                  <div className="flex-1 sm:col-span-5 min-w-0">
+                    <input
+                      type="text"
+                      value={d.description || ""}
+                      onChange={ev => updateDebt(d.id, { description: ev.target.value })}
+                      className={`bg-transparent text-gray-300 focus:outline-none focus:border-b focus:border-indigo-500/50 w-full ${d.isPaid ? 'line-through' : ''}`}
+                      placeholder="Concepto"
+                    />
+                    <div className="text-[10px] text-gray-500 uppercase">Concepto</div>
+                  </div>
                 </div>
-                <div className="col-span-1 sm:col-span-2">
-                  <input
-                    type="text"
-                    value={d.debtorName}
-                    onChange={ev => updateDebt(d.id, { debtorName: ev.target.value })}
-                    className={`bg-transparent text-gray-200 font-bold focus:outline-none focus:border-b focus:border-indigo-500/50 w-full ${d.isPaid ? 'line-through' : ''}`}
-                    placeholder="Deudor"
-                  />
-                  <div className="text-[10px] text-gray-500 uppercase">Deudor</div>
-                </div>
-                <div className="col-span-1 sm:col-span-5">
-                  <input
-                    type="text"
-                    value={d.description || ""}
-                    onChange={ev => updateDebt(d.id, { description: ev.target.value })}
-                    className={`bg-transparent text-gray-300 focus:outline-none focus:border-b focus:border-indigo-500/50 w-full ${d.isPaid ? 'line-through' : ''}`}
-                    placeholder="Concepto (ej: Cena, Alquiler)"
-                  />
-                  <div className="text-[10px] text-gray-500 uppercase">Concepto</div>
-                </div>
-                <div className="col-span-1 sm:col-span-3">
-                  <div className="flex items-center bg-white/5 border border-white/10 rounded-lg px-2 w-full">
+
+                {/* Monto + Acciones */}
+                <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:col-span-4 sm:grid sm:grid-cols-4 sm:gap-3">
+                  <div className="flex items-center bg-white/5 border border-white/10 rounded-lg px-2 flex-1 sm:col-span-3 sm:w-full">
                     <span className="text-gray-500 font-bold mr-1">$</span>
                     <input
                       type="number"
@@ -672,37 +704,39 @@ export default function IncomeDistributor() {
                       <option value="USD" className="bg-[#09090b]">USD</option>
                     </select>
                   </div>
-                </div>
-                <div className="col-span-1 sm:col-span-1 flex justify-end sm:justify-center">
-                  <button onClick={() => removeDebt(d.id)} className="text-gray-500 hover:text-red-400 transition-colors p-1" title="Eliminar deuda"><Trash2 className="w-4 h-4" /></button>
+                  <div className="shrink-0 sm:col-span-1 flex justify-end sm:justify-center">
+                    <button onClick={() => removeDebt(d.id)} className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded-lg bg-white/5 sm:bg-transparent sm:p-1" title="Eliminar deuda"><Trash2 className="w-4 h-4" /></button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
 
           {/* Formulario de carga rápida para nuevas deudas */}
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center bg-black/40 p-3 rounded-xl border border-white/5">
+          <div className="flex flex-col sm:grid sm:grid-cols-12 gap-3 sm:items-center bg-black/40 p-3 rounded-xl border border-white/5">
             <div className="hidden sm:block sm:col-span-1" />
-            <div className="col-span-1 sm:col-span-2">
+            <div className="flex-1 sm:col-span-2 min-w-0">
               <input 
                 type="text" 
                 placeholder="Deudor" 
                 value={newDebtName} 
                 onChange={e => setNewDebtName(e.target.value)} 
-                className="bg-transparent text-white text-sm focus:outline-none w-full px-2" 
+                className="bg-transparent text-white text-sm focus:outline-none w-full px-2 py-1.5" 
               />
+              <div className="text-[10px] text-gray-500 uppercase sm:hidden px-2 mt-0.5">Deudor</div>
             </div>
-            <div className="col-span-1 sm:col-span-5">
+            <div className="flex-1 sm:col-span-5 min-w-0">
               <input 
                 type="text" 
                 placeholder="Concepto (ej: Cena, Alquiler)" 
                 value={newDebtDescription} 
                 onChange={e => setNewDebtDescription(e.target.value)} 
-                className="bg-transparent text-white text-sm focus:outline-none w-full px-2" 
+                className="bg-transparent text-white text-sm focus:outline-none w-full px-2 py-1.5" 
               />
+              <div className="text-[10px] text-gray-500 uppercase sm:hidden px-2 mt-0.5">Concepto</div>
             </div>
-            <div className="col-span-1 sm:col-span-3">
-              <div className="flex items-center bg-white/5 border border-white/10 rounded-lg px-2 w-full">
+            <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:col-span-4 sm:grid sm:grid-cols-4 sm:gap-3">
+              <div className="flex items-center bg-white/5 border border-white/10 rounded-lg px-2 flex-1 sm:col-span-3 sm:w-full">
                 <span className="text-gray-500 font-bold mr-1">$</span>
                 <input 
                   type="number" 
@@ -714,27 +748,27 @@ export default function IncomeDistributor() {
                 <select 
                   value={newDebtCurrency} 
                   onChange={e => setNewDebtCurrency(e.target.value as "ARS"|"USD")} 
-                  className="ml-1 bg-transparent text-white text-xs font-mono font-bold focus:outline-none cursor-pointer animate-none"
+                  className="ml-1 bg-transparent text-white text-xs font-mono font-bold focus:outline-none cursor-pointer"
                 >
                   <option value="ARS" className="bg-[#09090b]">ARS</option>
                   <option value="USD" className="bg-[#09090b]">USD</option>
                 </select>
               </div>
-            </div>
-            <div className="col-span-1 sm:col-span-1 flex justify-end sm:justify-center">
-              <button 
-                onClick={() => {
-                  if (!newDebtName || !newDebtAmount) return;
-                  addDebt(newDebtName, newDebtDescription, parseFloat(newDebtAmount), newDebtCurrency);
-                  setNewDebtName(""); 
-                  setNewDebtDescription("");
-                  setNewDebtAmount("");
-                }} 
-                className="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-white rounded-lg flex items-center justify-center transition-all p-2 w-8 h-8"
-                title="Añadir deuda"
-              >
-                <Plus className="w-5 h-5" />
-              </button>
+              <div className="shrink-0 sm:col-span-1 flex justify-end sm:justify-center">
+                <button 
+                  onClick={() => {
+                    if (!newDebtName || !newDebtAmount) return;
+                    addDebt(newDebtName, newDebtDescription, parseFloat(newDebtAmount), newDebtCurrency);
+                    setNewDebtName(""); 
+                    setNewDebtDescription("");
+                    setNewDebtAmount("");
+                  }} 
+                  className="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-white rounded-lg flex items-center justify-center transition-all p-2 w-8 h-8 shrink-0"
+                  title="Añadir deuda"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -127,6 +127,7 @@ export default function CedearsTracker() {
   const [qtyInput, setQtyInput] = useState("");
   const [priceInput, setPriceInput] = useState("");
   const [dateInput, setDateInput] = useState(new Date().toISOString().split("T")[0]);
+  const [operationType, setOperationType] = useState<"compra" | "venta">("compra");
 
   const [usdUala, setUsdUala] = useState<number>(1420); // Default to a recent realistic rate
 
@@ -318,9 +319,12 @@ export default function CedearsTracker() {
       t = t + ".BA";
     }
 
+    const qty = parseFloat(qtyInput);
+    const signedQty = operationType === "compra" ? qty : -qty;
+
     const newRow = { 
       ticker: t, 
-      quantity: parseFloat(qtyInput), 
+      quantity: signedQty, 
       purchasePrice: parseFloat(priceInput), 
       date: dateInput || new Date().toISOString().split("T")[0], 
       currency: "ARS" 
@@ -331,6 +335,7 @@ export default function CedearsTracker() {
     setQtyInput(""); 
     setPriceInput(""); 
     setDateInput(new Date().toISOString().split("T")[0]);
+    setOperationType("compra");
   };
 
   const removePurchase = async (id: string) => {
@@ -489,12 +494,31 @@ export default function CedearsTracker() {
         </div>
       </div>
 
-      {/* ROW 2: Horizontal "Añadir Compra Manual" Form */}
-      <div className="glass-panel p-6 rounded-2xl border-blue-500/10">
-        <h2 className="text-lg font-bold mb-4 text-blue-400 flex items-center gap-2">
-          <Plus className="w-5 h-5" /> Añadir Compra Manual
+      {/* ROW 2: Horizontal "Registrar Operación Manual" Form */}
+      <div className={clsx(
+        "glass-panel p-6 rounded-2xl transition-all duration-300",
+        operationType === "compra" ? "border-blue-500/10" : "border-rose-500/10"
+      )}>
+        <h2 className={clsx(
+          "text-lg font-bold mb-4 flex items-center gap-2 transition-colors duration-300",
+          operationType === "compra" ? "text-blue-400" : "text-rose-400"
+        )}>
+          {operationType === "compra" ? <Plus className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />} Registrar Operación Manual
         </h2>
         <form onSubmit={handleAddPurchase} className="flex flex-wrap lg:flex-nowrap items-end gap-4 w-full">
+          {/* Tipo de Operación */}
+          <div className="w-full sm:w-auto flex-1 min-w-[120px]">
+            <label className="block text-xs font-semibold text-gray-400 mb-1.5 tracking-wide uppercase">Tipo</label>
+            <select
+              value={operationType}
+              onChange={e => setOperationType(e.target.value as "compra" | "venta")}
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors cursor-pointer"
+            >
+              <option value="compra" className="bg-[#09090b]">Compra</option>
+              <option value="venta" className="bg-[#09090b]">Venta</option>
+            </select>
+          </div>
+
           {/* Ticker */}
           <div className="w-full sm:w-auto flex-1 min-w-[120px]">
             <label className="block text-xs font-semibold text-gray-400 mb-1.5 tracking-wide uppercase">Ticker</label>
@@ -515,7 +539,7 @@ export default function CedearsTracker() {
               type="number"
               required
               step="0.01"
-              min="0"
+              min="0.0001"
               placeholder="2"
               value={qtyInput}
               onChange={e => setQtyInput(e.target.value)}
@@ -556,9 +580,15 @@ export default function CedearsTracker() {
           <div className="w-full lg:w-auto shrink-0">
             <button
               type="submit"
-              className="w-full lg:w-auto bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-6 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+              className={clsx(
+                "w-full lg:w-auto text-white font-bold py-2.5 px-6 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95",
+                operationType === "compra" 
+                  ? "bg-blue-600 hover:bg-blue-500 shadow-blue-500/20" 
+                  : "bg-rose-600 hover:bg-rose-500 shadow-rose-500/20"
+              )}
             >
-              <Plus className="w-4 h-4" /> Registrar
+              {operationType === "compra" ? <Plus className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+              {operationType === "compra" ? "Registrar Compra" : "Registrar Venta"}
             </button>
           </div>
         </form>
@@ -684,8 +714,8 @@ export default function CedearsTracker() {
                   return (
                     <div key={p.id} className="grid grid-cols-5 items-center text-xs bg-black/20 p-3 rounded-xl border border-white/5 hover:bg-white/5 transition-colors group">
                       <div className="text-gray-400">{new Date(p.date).toLocaleDateString('es-AR')}</div>
-                      <span className="font-bold text-blue-300">{cleanTicker}</span>
-                      <div className="text-gray-300 text-center font-mono">
+                      <span className={clsx("font-bold transition-colors", p.quantity > 0 ? "text-blue-300" : "text-rose-300")}>{cleanTicker}</span>
+                      <div className={clsx("text-center font-mono font-bold", p.quantity > 0 ? "text-emerald-400" : "text-rose-400")}>
                         {p.quantity > 0 ? "+" : ""}{p.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                       </div>
                       <div className="text-gray-400 text-right">
