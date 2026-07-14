@@ -1,13 +1,11 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { User, LogOut, ChevronDown, RefreshCw, ShieldCheck } from "lucide-react";
+import { User, LogOut, ChevronDown, RefreshCw, ShieldCheck, Download, Upload } from "lucide-react";
 import Link from "next/link";
 import clsx from "clsx";
 import { useAuth } from "@/components/AuthProvider";
 import { db } from "@/lib/firebase";
-import { collection, getDocs } from "firebase/firestore";
-
-type TickerData = { price: number; };
+import { collection, getDocs, doc, getDoc, setDoc, deleteDoc, addDoc } from "firebase/firestore";
 
 export default function ProfileButton() {
   const { user, signOut } = useAuth();
@@ -60,7 +58,6 @@ export default function ProfileButton() {
       setCriptoSpotStats({ invested: crInv, current: crCurr });
 
       // 3. Strategies (from Firestore doc)
-      const { getDoc, doc } = await import("firebase/firestore");
       const stratSnap = await getDoc(doc(db, "users", user.uid, "cripto_strategies", "state"));
       let sInv = 0, sProf = 0;
       if (stratSnap.exists()) {
@@ -78,6 +75,134 @@ export default function ProfileButton() {
     finally { setIsLoading(false); }
   };
 
+  const handleExportData = async () => {
+    if (!user) return;
+    setIsLoading(true);
+    try {
+      // 1. Fetch Income Config
+      const incomeConfigSnap = await getDoc(doc(db, "users", user.uid, "income_config", "data"));
+      const incomeConfig = incomeConfigSnap.exists() ? incomeConfigSnap.data() : null;
+
+      // 2. Fetch Cedears Purchases
+      const cedearsSnap = await getDocs(collection(db, "users", user.uid, "cedears_purchases"));
+      const cedearsPurchases = cedearsSnap.docs.map(d => d.data());
+
+      // 3. Fetch Cedears CSV Imports
+      const cedearsImportsSnap = await getDocs(collection(db, "users", user.uid, "cedears_csv_imports"));
+      const cedearsCsvImports = cedearsImportsSnap.docs.map(d => d.data());
+
+      // 4. Fetch Cripto Portfolio
+      const criptoSnap = await getDocs(collection(db, "users", user.uid, "cripto_portfolio"));
+      const criptoPortfolio = criptoSnap.docs.map(d => d.data());
+
+      // 5. Fetch Cripto Strategies State
+      const stratSnap = await getDoc(doc(db, "users", user.uid, "cripto_strategies", "state"));
+      const criptoStrategies = stratSnap.exists() ? stratSnap.data() : null;
+
+      const backupData = {
+        version: "2.0",
+        exportedAt: new Date().toISOString(),
+        userEmail: user.email,
+        incomeConfig,
+        cedearsPurchases,
+        cedearsCsvImports,
+        criptoPortfolio,
+        criptoStrategies
+      };
+
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `Boveda_Backup_${new Date().toISOString().split('T')[0]}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    } catch (e) {
+      console.error(e);
+      alert("Error al exportar los datos.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleImportData = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    const confirmImport = confirm("¿Estás seguro de que deseas importar estos datos? Esto borrará tus datos actuales de CEDEARs y Cripto para evitar duplicaciones.");
+    if (!confirmImport) {
+      e.target.value = "";
+      return;
+    }
+
+    setIsLoading(true);
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const text = event.target?.result as string;
+        const backup = JSON.parse(text);
+
+        if (!backup.version) {
+          alert("El archivo de backup no es válido.");
+          setIsLoading(false);
+          return;
+        }
+
+        // 1. Import Income Config (overwrite document)
+        if (backup.incomeConfig) {
+          await setDoc(doc(db, "users", user.uid, "income_config", "data"), backup.incomeConfig);
+        }
+
+        // 2. Overwrite CEDEARs Purchases
+        const existingCedears = await getDocs(collection(db, "users", user.uid, "cedears_purchases"));
+        for (const docObj of existingCedears.docs) {
+          await deleteDoc(doc(db, "users", user.uid, "cedears_purchases", docObj.id));
+        }
+        if (backup.cedearsPurchases) {
+          for (const item of backup.cedearsPurchases) {
+            await addDoc(collection(db, "users", user.uid, "cedears_purchases"), item);
+          }
+        }
+
+        // 3. Overwrite CEDEARs CSV Imports
+        const existingImports = await getDocs(collection(db, "users", user.uid, "cedears_csv_imports"));
+        for (const docObj of existingImports.docs) {
+          await deleteDoc(doc(db, "users", user.uid, "cedears_csv_imports", docObj.id));
+        }
+        if (backup.cedearsCsvImports) {
+          for (const item of backup.cedearsCsvImports) {
+            await addDoc(collection(db, "users", user.uid, "cedears_csv_imports"), item);
+          }
+        }
+
+        // 4. Overwrite Cripto Portfolio
+        const existingCripto = await getDocs(collection(db, "users", user.uid, "cripto_portfolio"));
+        for (const docObj of existingCripto.docs) {
+          await deleteDoc(doc(db, "users", user.uid, "cripto_portfolio", docObj.id));
+        }
+        if (backup.criptoPortfolio) {
+          for (const item of backup.criptoPortfolio) {
+            await addDoc(collection(db, "users", user.uid, "cripto_portfolio"), item);
+          }
+        }
+
+        // 5. Import Cripto Strategies State (overwrite document)
+        if (backup.criptoStrategies) {
+          await setDoc(doc(db, "users", user.uid, "cripto_strategies", "state"), backup.criptoStrategies);
+        }
+
+        alert("¡Datos importados con éxito! Recargando para aplicar los cambios.");
+        window.location.reload();
+      } catch (e) {
+        console.error(e);
+        alert("Error al parsear o guardar el archivo de backup.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const toggleDropdown = () => {
     if (!isOpen && !hasLoaded) fetchGlobalStats();
     setIsOpen(!isOpen);
@@ -85,7 +210,6 @@ export default function ProfileButton() {
 
   if (!user) return null;
 
-  // Firebase User has email but no .id — use .uid
   const isAdmin = user.email === "vm.admin@laboveda.com";
 
   return (
@@ -157,6 +281,34 @@ export default function ProfileButton() {
               </div>
             )}
           </div>
+          
+          <div className="p-4 border-t border-white/5 bg-white/[0.01] space-y-3">
+            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Migración de Datos</h4>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={handleExportData}
+                disabled={isLoading}
+                className="flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-bold rounded-xl text-teal-400 hover:text-teal-300 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/15 transition-all active:scale-95 disabled:opacity-50"
+              >
+                <Download className="w-3.5 h-3.5" /> Exportar JSON
+              </button>
+              <label
+                className={clsx(
+                  "flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-bold rounded-xl text-violet-400 hover:text-violet-300 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/15 transition-all active:scale-95 cursor-pointer text-center",
+                  isLoading && "pointer-events-none opacity-50"
+                )}
+              >
+                <Upload className="w-3.5 h-3.5" /> Importar JSON
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleImportData}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          </div>
+
           <div className="p-2 border-t border-white/5 bg-black/40 space-y-1">
             {isAdmin && (
               <Link href="/admin" onClick={() => setIsOpen(false)} className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors">
