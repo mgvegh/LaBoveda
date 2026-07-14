@@ -712,21 +712,21 @@ export default function CedearsTracker() {
                 {[...purchases].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(p => {
                   const cleanTicker = p.ticker.replace('.BA', '');
                   return (
-                    <div key={p.id} className="grid grid-cols-5 items-center text-xs bg-black/20 p-3 rounded-xl border border-white/5 hover:bg-white/5 transition-colors group">
-                      <div className="text-gray-400">{new Date(p.date).toLocaleDateString('es-AR')}</div>
-                      <span className={clsx("font-bold transition-colors", p.quantity > 0 ? "text-blue-300" : "text-rose-300")}>{cleanTicker}</span>
-                      <div className={clsx("text-center font-mono font-bold", p.quantity > 0 ? "text-emerald-400" : "text-rose-400")}>
+                    <div key={p.id} className="grid grid-cols-12 gap-1 items-center text-[10px] sm:text-xs bg-black/20 p-2 sm:p-3 rounded-xl border border-white/5 hover:bg-white/5 transition-colors group">
+                      <div className="col-span-3 text-gray-400 truncate">{new Date(p.date).toLocaleDateString('es-AR')}</div>
+                      <span className={clsx("col-span-2 font-bold truncate transition-colors", p.quantity > 0 ? "text-blue-300" : "text-rose-300")}>{cleanTicker}</span>
+                      <div className={clsx("col-span-3 text-center font-mono font-bold truncate", p.quantity > 0 ? "text-emerald-400" : "text-rose-400")}>
                         {p.quantity > 0 ? "+" : ""}{p.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                       </div>
-                      <div className="text-gray-400 text-right">
+                      <div className="col-span-3 text-right text-gray-400 truncate">
                         <span>${p.purchasePrice.toLocaleString()}</span>
                         <span className="text-[9px] ml-1 opacity-70 font-semibold font-mono">{p.currency}</span>
                       </div>
-                      <div className="flex justify-end items-center gap-2">
-                        {p.nroTicket && <span className="bg-white/10 text-gray-400 px-1.5 py-0.5 rounded text-[10px] hidden sm:block">CSV</span>}
+                      <div className="col-span-1 flex justify-end items-center gap-1 sm:gap-2">
+                        {p.nroTicket && <span className="bg-white/10 text-gray-400 px-1.5 py-0.5 rounded text-[9px] hidden md:block">CSV</span>}
                         <button 
                           onClick={() => removePurchase(p.id)} 
-                          className="text-gray-500 hover:text-red-400 transition-colors p-1 opacity-0 sm:opacity-100 lg:opacity-0 lg:group-hover:opacity-100" 
+                          className="text-gray-500 hover:text-red-400 transition-colors p-1" 
                           title="Eliminar registro"
                         >
                           <Trash2 className="w-4 h-4" />

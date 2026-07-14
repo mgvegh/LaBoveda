@@ -21,6 +21,7 @@ export default function CriptoPortfolioTracker() {
   const [qtyInput, setQtyInput] = useState("");
   const [priceInput, setPriceInput] = useState("");
   const [dateInput, setDateInput] = useState(new Date().toISOString().split("T")[0]);
+  const [operationType, setOperationType] = useState<"compra" | "venta">("compra");
   const { user } = useAuth();
   const colRef = user ? collection(db, "users", user.uid, "cripto_portfolio") : null;
 
@@ -33,33 +34,73 @@ export default function CriptoPortfolioTracker() {
 
   const positions = useMemo(() => {
     const posMap: Record<string, { totalQty: number; invested: number; weightedDaysSum: number }> = {};
-    purchases.forEach(p => {
+    
+    // Process in chronological order
+    const sorted = [...purchases].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    sorted.forEach(p => {
       const t = p.ticker.toUpperCase();
       if (!posMap[t]) posMap[t] = { totalQty: 0, invested: 0, weightedDaysSum: 0 };
-      const cost = p.quantity * p.purchasePrice;
-      posMap[t].totalQty += p.quantity; posMap[t].invested += cost; posMap[t].weightedDaysSum += cost * getDaysSince(p.date);
+      
+      if (p.quantity > 0) {
+        // PURCHASE
+        const cost = p.quantity * p.purchasePrice;
+        posMap[t].totalQty += p.quantity;
+        posMap[t].invested += cost;
+        posMap[t].weightedDaysSum += cost * getDaysSince(p.date);
+      } else {
+        // SALE: Decreases quantity, reduces invested cost proportionally (maintaining PPC constant)
+        const qtyToSubtract = Math.abs(p.quantity);
+        if (posMap[t].totalQty > 0) {
+          const currentPPC = posMap[t].invested / posMap[t].totalQty;
+          const currentAvgDays = posMap[t].weightedDaysSum / posMap[t].invested;
+          posMap[t].totalQty -= qtyToSubtract;
+          posMap[t].invested = Math.max(0, posMap[t].totalQty * currentPPC);
+          posMap[t].weightedDaysSum = Math.max(0, posMap[t].invested * currentAvgDays);
+        } else {
+          posMap[t].totalQty -= qtyToSubtract;
+        }
+      }
     });
-    return Object.entries(posMap).map(([ticker, data]) => {
-      const avgPrice = data.invested / data.totalQty;
-      const currentPrice = marketData[ticker]?.price || 0;
-      const currentValue = currentPrice * data.totalQty;
-      const pnlValue = currentValue - data.invested;
-      const pnlPercent = data.invested > 0 && currentPrice > 0 ? (pnlValue / data.invested) * 100 : 0;
-      const avgDaysHeld = Math.max(1, data.weightedDaysSum / data.invested);
-      const tna = currentPrice > 0 ? pnlPercent * (365 / avgDaysHeld) : 0;
-      return { ticker, totalQty: data.totalQty, invested: data.invested, avgPrice, currentPrice, currentValue, pnlValue, pnlPercent, tna, hasData: currentPrice > 0 };
-    }).sort((a, b) => b.invested - a.invested);
+
+    return Object.entries(posMap)
+      .filter(([_, data]) => Math.abs(data.totalQty) > 0.0001)
+      .map(([ticker, data]) => {
+        const avgPrice = data.totalQty > 0 ? data.invested / data.totalQty : 0;
+        const currentPrice = marketData[ticker]?.price || 0;
+        const currentValue = currentPrice * data.totalQty;
+        const pnlValue = currentValue - data.invested;
+        const pnlPercent = data.invested > 0 && currentPrice > 0 ? (pnlValue / data.invested) * 100 : 0;
+        const avgDaysHeld = data.invested > 0 ? Math.max(1, data.weightedDaysSum / data.invested) : 1;
+        const tna = currentPrice > 0 ? pnlPercent * (365 / avgDaysHeld) : 0;
+        return { 
+          ticker, 
+          totalQty: data.totalQty, 
+          invested: data.invested, 
+          avgPrice, 
+          currentPrice, 
+          currentValue, 
+          pnlValue, 
+          pnlPercent, 
+          tna, 
+          avgDaysHeld,
+          hasData: currentPrice > 0 
+        };
+      }).sort((a, b) => b.invested - a.invested);
   }, [purchases, marketData]);
 
   const globalStats = useMemo(() => {
     let totalInvested = 0, totalValue = 0, gwd = 0;
-    purchases.forEach(p => { const cost = p.quantity * p.purchasePrice; gwd += cost * getDaysSince(p.date); });
-    positions.forEach(p => { totalInvested += p.invested; totalValue += p.hasData ? p.currentValue : p.invested; });
+    positions.forEach(p => {
+      totalInvested += p.invested;
+      totalValue += p.hasData ? p.currentValue : p.invested;
+      gwd += p.invested * (p.avgDaysHeld || 1);
+    });
     const pnl = totalValue - totalInvested;
     const pnlPercent = totalInvested > 0 ? (pnl / totalInvested) * 100 : 0;
     const globalAvgDays = totalInvested > 0 ? Math.max(1, gwd / totalInvested) : 1;
     return { totalInvested, totalValue, pnl, pnlPercent, tna: totalInvested > 0 ? pnlPercent * (365 / globalAvgDays) : 0 };
-  }, [positions, purchases]);
+  }, [positions]);
 
   const refreshMarketData = async () => {
     if (!purchases.length) return;
@@ -79,10 +120,15 @@ export default function CriptoPortfolioTracker() {
     if (!tickerInput || !qtyInput || !priceInput || !user || !colRef) return;
     let t = tickerInput.toUpperCase().trim();
     if (!t.includes("-")) t = t + "-USD";
-    const newRow = { ticker: t, quantity: parseFloat(qtyInput), purchasePrice: parseFloat(priceInput), date: dateInput };
+    
+    const qty = parseFloat(qtyInput);
+    const signedQty = operationType === "compra" ? qty : -qty;
+
+    const newRow = { ticker: t, quantity: signedQty, purchasePrice: parseFloat(priceInput), date: dateInput };
     const docRef = await addDoc(colRef, newRow);
     setPurchases(prev => [...prev, { id: docRef.id, ...newRow }]);
     setTickerInput(""); setQtyInput(""); setPriceInput(""); setDateInput(new Date().toISOString().split("T")[0]);
+    setOperationType("compra");
   };
 
   const removePurchase = async (id: string) => {
@@ -138,9 +184,28 @@ export default function CriptoPortfolioTracker() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="glass-panel p-6 rounded-2xl md:col-span-1 h-fit border-teal-500/10">
-          <h2 className="text-lg font-semibold mb-4 text-teal-400">Añadir Compra (Spot)</h2>
+        <div className={clsx(
+          "glass-panel p-6 rounded-2xl md:col-span-1 h-fit transition-all duration-300",
+          operationType === "compra" ? "border-teal-500/10" : "border-rose-500/10"
+        )}>
+          <h2 className={clsx(
+            "text-lg font-semibold mb-4 transition-colors duration-300 flex items-center gap-2",
+            operationType === "compra" ? "text-teal-400" : "text-rose-400"
+          )}>
+            {operationType === "compra" ? <Plus className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />} Registrar Operación Manual
+          </h2>
           <form onSubmit={handleAddPurchase} className="space-y-4">
+            <div>
+              <label className="block text-xs text-gray-400 mb-1 tracking-wide uppercase">Tipo</label>
+              <select
+                value={operationType}
+                onChange={e => setOperationType(e.target.value as "compra" | "venta")}
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-teal-500 transition-colors cursor-pointer"
+              >
+                <option value="compra" className="bg-[#09090b]">Compra (Spot)</option>
+                <option value="venta" className="bg-[#09090b]">Venta (Spot)</option>
+              </select>
+            </div>
             <div>
               <label className="block text-xs text-gray-400 mb-1 tracking-wide uppercase">Criptomoneda (ej. BTC, ETH)</label>
               <input type="text" required placeholder="BTC" value={tickerInput} onChange={e => setTickerInput(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-teal-500 uppercase transition-colors" />
@@ -148,7 +213,7 @@ export default function CriptoPortfolioTracker() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-gray-400 mb-1 tracking-wide uppercase">Cantidad</label>
-                <input type="number" required step="0.00000001" min="0" placeholder="0.05" value={qtyInput} onChange={e => setQtyInput(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-teal-500 transition-colors" />
+                <input type="number" required step="0.00000001" min="0.00000001" placeholder="0.05" value={qtyInput} onChange={e => setQtyInput(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-teal-500 transition-colors" />
               </div>
               <div>
                 <label className="block text-xs text-gray-400 mb-1 tracking-wide uppercase">Precio (USD/u)</label>
@@ -159,8 +224,17 @@ export default function CriptoPortfolioTracker() {
               <label className="block text-xs text-gray-400 mb-1 tracking-wide uppercase">Fecha</label>
               <input type="date" required value={dateInput} onChange={e => setDateInput(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-teal-500 transition-colors" />
             </div>
-            <button type="submit" className="w-full bg-teal-600 hover:bg-teal-500 text-white font-medium py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors mt-2 shadow-lg shadow-teal-500/20">
-              <Plus className="w-4 h-4" /> Registrar Compra
+            <button 
+              type="submit" 
+              className={clsx(
+                "w-full text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors mt-2 shadow-lg active:scale-95",
+                operationType === "compra" 
+                  ? "bg-teal-600 hover:bg-teal-500 shadow-teal-500/20" 
+                  : "bg-rose-600 hover:bg-rose-500 shadow-rose-500/20"
+              )}
+            >
+              {operationType === "compra" ? <Plus className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+              {operationType === "compra" ? "Registrar Compra" : "Registrar Venta"}
             </button>
           </form>
         </div>
@@ -203,16 +277,27 @@ export default function CriptoPortfolioTracker() {
           )}
           {purchases.length > 0 && (
             <div className="mt-8 pt-6 border-t border-white/10">
-              <h3 className="text-sm font-medium text-gray-400 mb-3">Historial de Compras</h3>
+              <h3 className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider">Historial de Operaciones</h3>
               <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
-                {purchases.map(p => (
-                  <div key={p.id} className="flex justify-between items-center text-xs bg-black/20 p-2 rounded-md">
-                    <span className="text-gray-400 w-24">{p.date}</span>
-                    <span className="font-bold text-teal-300 w-20">{p.ticker.replace('-USD', '')}</span>
-                    <span className="text-gray-400">{p.quantity} x ${p.purchasePrice}</span>
-                    <button onClick={() => removePurchase(p.id)} className="text-gray-500 hover:text-red-400 transition-colors p-1"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                ))}
+                {[...purchases].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(p => {
+                  const cleanTicker = p.ticker.replace('-USD', '');
+                  return (
+                    <div key={p.id} className="grid grid-cols-12 gap-1 items-center text-[10px] sm:text-xs bg-black/20 p-2 sm:p-3 rounded-xl border border-white/5 hover:bg-white/5 transition-colors group">
+                      <div className="col-span-3 text-gray-400 truncate">{new Date(p.date).toLocaleDateString('es-AR')}</div>
+                      <span className={clsx("col-span-2 font-bold truncate transition-colors", p.quantity > 0 ? "text-teal-300" : "text-rose-300")}>{cleanTicker}</span>
+                      <div className={clsx("col-span-3 text-center font-mono font-bold truncate", p.quantity > 0 ? "text-emerald-400" : "text-rose-400")}>
+                        {p.quantity > 0 ? "+" : ""}{p.quantity.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+                      </div>
+                      <div className="col-span-3 text-right text-gray-400 truncate">
+                        <span>${p.purchasePrice.toLocaleString()}</span>
+                        <span className="text-[9px] ml-1 opacity-70 font-semibold font-mono">USD</span>
+                      </div>
+                      <div className="col-span-1 flex justify-end items-center">
+                        <button onClick={() => removePurchase(p.id)} className="text-gray-500 hover:text-red-400 transition-colors p-1" title="Eliminar registro"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
