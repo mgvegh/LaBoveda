@@ -29,31 +29,122 @@ export default function ProfileButton() {
     if (!user) return;
     setIsLoading(true);
     try {
-      // 1. CEDEARs
+      // Fetch dollar rate first
+      let usdUala = 1450;
+      try {
+        const res = await fetch("/api/dolar/uala");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.compra) usdUala = Math.round(data.compra);
+        }
+      } catch (err) {
+        console.error("Error fetching dollar rate in ProfileButton:", err);
+      }
+
+      // 1. CEDEARs - Replicate correct positions math
       const cedearsSnap = await getDocs(collection(db, "users", user.uid, "cedears_purchases"));
       const cedears = cedearsSnap.docs.map(d => d.data());
+      
       let cInv = 0, cCurr = 0;
       if (cedears.length > 0) {
-        const uniqueTickers = [...new Set(cedears.map(p => (p.ticker as string).toUpperCase()))];
-        const cPrices: Record<string, number> = {};
-        await Promise.all(uniqueTickers.map(async t => {
-          try { const r = await fetch(`/api/yahoo?ticker=${t}`); if (r.ok) { const d = await r.json(); cPrices[t] = d.price; } } catch { /* skip */ }
-        }));
-        cedears.forEach(p => { const cost = Number(p.quantity) * Number(p.purchasePrice); cInv += cost; cCurr += Number(p.quantity) * (cPrices[(p.ticker as string).toUpperCase()] || Number(p.purchasePrice)); });
+        const posMap: Record<string, { totalQty: number; totalCost: number }> = {};
+        const sorted = [...cedears].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        sorted.forEach(p => {
+          const t = (p.ticker as string).toUpperCase();
+          if (!posMap[t]) posMap[t] = { totalQty: 0, totalCost: 0 };
+          
+          const isUsd = p.currency === "USD" || p.currency === "EXT" || p.currency === "MEP";
+          let actualPrice = Number(p.purchasePrice);
+          
+          if (isUsd) {
+            if (p.date === "2025-11-28" || p.date === "2024-11-28") {
+              actualPrice = Number(p.purchasePrice) * 1482;
+            } 
+            else if (p.date === "2026-01-28" || p.date === "2026-01-29") {
+              actualPrice = Number(p.purchasePrice) * 1472;
+            } else {
+              actualPrice = Number(p.purchasePrice) * usdUala;
+            }
+          }
+
+          const qty = Number(p.quantity);
+          if (qty > 0) {
+            const cost = qty * actualPrice;
+            posMap[t].totalQty += qty;
+            posMap[t].totalCost += cost;
+          } else {
+            const qtyToSubtract = Math.abs(qty);
+            if (posMap[t].totalQty > 0) {
+              const currentPPC = posMap[t].totalCost / posMap[t].totalQty;
+              posMap[t].totalQty -= qtyToSubtract;
+              posMap[t].totalCost = Math.max(0, posMap[t].totalQty * currentPPC);
+            } else {
+              posMap[t].totalQty -= qtyToSubtract;
+            }
+          }
+        });
+
+        const activePositions = Object.entries(posMap).filter(([_, data]) => Math.abs(data.totalQty) > 0.001);
+        if (activePositions.length > 0) {
+          const uniqueTickers = activePositions.map(([t]) => t);
+          const cPrices: Record<string, number> = {};
+          await Promise.all(uniqueTickers.map(async t => {
+            try { const r = await fetch(`/api/yahoo?ticker=${t}`); if (r.ok) { const d = await r.json(); cPrices[t] = d.price; } } catch { /* skip */ }
+          }));
+
+          activePositions.forEach(([ticker, data]) => {
+            cInv += data.totalCost;
+            cCurr += data.totalQty * (cPrices[ticker] || (data.totalQty > 0 ? data.totalCost / data.totalQty : 0));
+          });
+        }
       }
       setCedearsStats({ invested: cInv, current: cCurr });
 
-      // 2. Cripto Spot
+      // 2. Cripto Spot - Replicate correct positions math
       const criptoSnap = await getDocs(collection(db, "users", user.uid, "cripto_portfolio"));
       const cripto = criptoSnap.docs.map(d => d.data());
+      
       let crInv = 0, crCurr = 0;
       if (cripto.length > 0) {
-        const uniqueCrTickers = [...new Set(cripto.map(p => (p.ticker as string).toUpperCase()))];
-        const crPrices: Record<string, number> = {};
-        await Promise.all(uniqueCrTickers.map(async t => {
-          try { const r = await fetch(`/api/yahoo?ticker=${t}`); if (r.ok) { const d = await r.json(); crPrices[t] = d.price; } } catch { /* skip */ }
-        }));
-        cripto.forEach(p => { const cost = Number(p.quantity) * Number(p.purchasePrice); crInv += cost; crCurr += Number(p.quantity) * (crPrices[(p.ticker as string).toUpperCase()] || Number(p.purchasePrice)); });
+        const posMap: Record<string, { totalQty: number; invested: number }> = {};
+        const sorted = [...cripto].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        sorted.forEach(p => {
+          const t = (p.ticker as string).toUpperCase();
+          if (!posMap[t]) posMap[t] = { totalQty: 0, invested: 0 };
+          
+          const qty = Number(p.quantity);
+          const price = Number(p.purchasePrice);
+          if (qty > 0) {
+            const cost = qty * price;
+            posMap[t].totalQty += qty;
+            posMap[t].invested += cost;
+          } else {
+            const qtyToSubtract = Math.abs(qty);
+            if (posMap[t].totalQty > 0) {
+              const currentPPC = posMap[t].invested / posMap[t].totalQty;
+              posMap[t].totalQty -= qtyToSubtract;
+              posMap[t].invested = Math.max(0, posMap[t].totalQty * currentPPC);
+            } else {
+              posMap[t].totalQty -= qtyToSubtract;
+            }
+          }
+        });
+
+        const activeCripto = Object.entries(posMap).filter(([_, data]) => Math.abs(data.totalQty) > 0.0001);
+        if (activeCripto.length > 0) {
+          const uniqueCrTickers = activeCripto.map(([t]) => t);
+          const crPrices: Record<string, number> = {};
+          await Promise.all(uniqueCrTickers.map(async t => {
+            try { const r = await fetch(`/api/yahoo?ticker=${t}`); if (r.ok) { const d = await r.json(); crPrices[t] = d.price; } } catch { /* skip */ }
+          }));
+
+          activeCripto.forEach(([ticker, data]) => {
+            crInv += data.invested;
+            crCurr += data.totalQty * (crPrices[ticker] || (data.totalQty > 0 ? data.invested / data.totalQty : 0));
+          });
+        }
       }
       setCriptoSpotStats({ invested: crInv, current: crCurr });
 
