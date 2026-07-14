@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Bitcoin, ShieldCheck, Wallet, Briefcase, PiggyBank } from "lucide-react";
+import { ArrowRight, Bitcoin, ShieldCheck, Wallet, PiggyBank, TrendingUp } from "lucide-react";
 
 export default function Home() {
   return (
@@ -35,7 +35,7 @@ export default function Home() {
         <Link href="/cedears" className="group glass-panel rounded-3xl p-8 hover:-translate-y-1 transition-all duration-300 border-blue-500/10 hover:border-blue-500/30">
           <div className="flex items-center gap-4 mb-6">
             <div className="p-4 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-2xl text-blue-400 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 shadow-inner">
-              <Briefcase className="w-8 h-8" />
+              <Wallet className="w-8 h-8" />
             </div>
             <h2 className="text-xl font-semibold tracking-tight text-gray-100">Portfolio CEDEARs</h2>
           </div>
@@ -49,8 +49,9 @@ export default function Home() {
         
         <Link href="/portfolio-cripto" className="group glass-panel rounded-3xl p-8 hover:-translate-y-1 transition-all duration-300 border-teal-500/10 hover:border-teal-500/30">
           <div className="flex items-center gap-4 mb-6">
-            <div className="p-4 bg-gradient-to-br from-teal-500/20 to-emerald-500/20 rounded-2xl text-teal-400 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-inner">
-              <Wallet className="w-8 h-8" />
+            <div className="p-4 bg-gradient-to-br from-teal-500/20 to-emerald-500/20 rounded-2xl text-teal-400 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-inner flex items-center -space-x-2">
+              <Bitcoin className="w-8 h-8 relative z-10" />
+              <svg viewBox="0 0 32 32" className="w-8 h-8 fill-current text-purple-400"><path d="M15.925 23.969l-9.819-5.794L16 32l9.894-13.825-9.969 5.794zM16.075 0L6.181 16.481l9.819 5.806 9.894-5.806L16.075 0z"/></svg>
             </div>
             <h2 className="text-xl font-semibold tracking-tight text-gray-100">Portfolio Cripto</h2>
           </div>
@@ -64,9 +65,8 @@ export default function Home() {
 
         <Link href="/cripto" className="group glass-panel rounded-3xl p-8 hover:-translate-y-1 transition-all duration-300 border-orange-500/10 hover:border-orange-500/30">
           <div className="flex items-center gap-4 mb-6">
-            <div className="p-4 bg-gradient-to-br from-orange-500/20 to-purple-500/20 rounded-2xl text-orange-400 group-hover:scale-110 transition-transform duration-300 shadow-inner flex items-center -space-x-2">
-              <Bitcoin className="w-8 h-8 relative z-10" />
-              <svg viewBox="0 0 32 32" className="w-8 h-8 fill-current text-purple-400"><path d="M15.925 23.969l-9.819-5.794L16 32l9.894-13.825-9.969 5.794zM16.075 0L6.181 16.481l9.819 5.806 9.894-5.806L16.075 0z"/></svg>
+            <div className="p-4 bg-gradient-to-br from-orange-500/20 to-purple-500/20 rounded-2xl text-orange-400 group-hover:scale-110 transition-transform duration-300 shadow-inner">
+              <TrendingUp className="w-8 h-8" />
             </div>
             <h2 className="text-xl font-semibold tracking-tight text-gray-100">Estrategias Cripto</h2>
           </div>

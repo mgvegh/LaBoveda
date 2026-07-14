@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bitcoin, Wallet, Briefcase, PiggyBank } from "lucide-react";
+import { Bitcoin, Wallet, PiggyBank, TrendingUp } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -51,7 +51,7 @@ export default function Navbar() {
                       : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
                   )}
                 >
-                  <Briefcase className="w-5 h-5 sm:w-4 sm:h-4" />
+                  <Wallet className="w-5 h-5 sm:w-4 sm:h-4" />
                   <span className="hidden lg:inline">Portfolio CEDEARs</span>
                 </Link>
                 
@@ -64,7 +64,10 @@ export default function Navbar() {
                       : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
                   )}
                 >
-                  <Wallet className="w-5 h-5 sm:w-4 sm:h-4" />
+                  <div className="flex -space-x-1 items-center">
+                    <Bitcoin className="w-5 h-5 sm:w-4 sm:h-4 relative z-10" />
+                    <svg viewBox="0 0 32 32" className="w-5 h-5 sm:w-4 sm:h-4 fill-current text-purple-400"><path d="M15.925 23.969l-9.819-5.794L16 32l9.894-13.825-9.969 5.794zM16.075 0L6.181 16.481l9.819 5.806 9.894-5.806L16.075 0z"/></svg>
+                  </div>
                   <span className="hidden lg:inline">Portfolio Cripto</span>
                 </Link>
 
@@ -77,10 +80,7 @@ export default function Navbar() {
                       : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
                   )}
                 >
-                  <div className="flex -space-x-1 items-center">
-                    <Bitcoin className="w-5 h-5 sm:w-4 sm:h-4 relative z-10" />
-                    <svg viewBox="0 0 32 32" className="w-5 h-5 sm:w-4 sm:h-4 fill-current text-purple-400"><path d="M15.925 23.969l-9.819-5.794L16 32l9.894-13.825-9.969 5.794zM16.075 0L6.181 16.481l9.819 5.806 9.894-5.806L16.075 0z"/></svg>
-                  </div>
+                  <TrendingUp className="w-5 h-5 sm:w-4 sm:h-4" />
                   <span className="hidden lg:inline">Estrategias Cripto</span>
                 </Link>
 
