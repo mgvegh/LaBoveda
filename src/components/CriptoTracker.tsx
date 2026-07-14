@@ -129,9 +129,11 @@ export default function CriptoTracker() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 p-2 bg-white/5 rounded-2xl w-full sm:w-fit mb-6 shadow-inner">
-        <button onClick={() => setActiveStrategy("MS_BTC")} className={clsx("px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap w-full sm:w-auto text-center", !isAV ? "bg-orange-500/20 text-orange-400 shadow-sm" : "text-gray-400 hover:text-white")}>Estrategia MS BTC (Long)</button>
-        <button onClick={() => setActiveStrategy("AV_ETH")} className={clsx("px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap w-full sm:w-auto text-center", isAV ? "bg-purple-500/20 text-purple-400 shadow-sm" : "text-gray-400 hover:text-white")}>Estrategia Anti-Vitalik (Short)</button>
+      <div className="w-full mb-6">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 p-2 bg-white/5 rounded-2xl w-full sm:w-fit shadow-inner">
+          <button onClick={() => setActiveStrategy("MS_BTC")} className={clsx("px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap w-full sm:w-auto text-center", !isAV ? "bg-orange-500/20 text-orange-400 shadow-sm" : "text-gray-400 hover:text-white")}>Estrategia MS BTC (Long)</button>
+          <button onClick={() => setActiveStrategy("AV_ETH")} className={clsx("px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap w-full sm:w-auto text-center", isAV ? "bg-purple-500/20 text-purple-400 shadow-sm" : "text-gray-400 hover:text-white")}>Estrategia Anti-Vitalik (Short)</button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
