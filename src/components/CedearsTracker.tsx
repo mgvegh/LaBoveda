@@ -538,7 +538,7 @@ export default function CedearsTracker() {
             <input
               type="number"
               required
-              step="0.01"
+              step="any"
               min="0.0001"
               placeholder="2"
               value={qtyInput}
@@ -554,7 +554,7 @@ export default function CedearsTracker() {
             </label>
             <input
               type="number"
-              step="0.01"
+              step="any"
               required
               min="0"
               placeholder="50000"
