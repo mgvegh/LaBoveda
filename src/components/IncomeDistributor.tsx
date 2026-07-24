@@ -61,7 +61,7 @@ export default function IncomeDistributor() {
   const [isFetchingRate, setIsFetchingRate] = useState(false);
   
   const [newCatName, setNewCatName] = useState("");
-  const [newCatType, setNewCatType] = useState<string>("fixed_usd");
+  const [newCatType, setNewCatType] = useState<string>("fixed_ars");
   const [newCatValue, setNewCatValue] = useState("");
   const [absorbCategory, setAbsorbCategory] = useState("");
 
@@ -552,8 +552,8 @@ export default function IncomeDistributor() {
               onChange={e => setNewCatType(e.target.value)} 
               className="bg-transparent text-white text-xs focus:outline-none cursor-pointer px-2 py-1.5 sm:col-span-2"
             >
-              <option value="fixed_usd" className="bg-[#09090b]">USD FIJO</option>
               <option value="fixed_ars" className="bg-[#09090b]">ARS FIJO</option>
+              <option value="fixed_usd" className="bg-[#09090b]">USD FIJO</option>
               <option value="percentage" className="bg-[#09090b]">% DEL REMANENTE</option>
             </select>
             <div className="flex items-center gap-2 sm:col-span-2">
