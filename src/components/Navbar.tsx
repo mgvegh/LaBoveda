@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bitcoin, Wallet, PiggyBank, TrendingUp } from "lucide-react";
+import { Bitcoin, Wallet, PiggyBank, LayoutGrid } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -72,16 +72,16 @@ export default function Navbar() {
                 </Link>
 
                 <Link 
-                  href="/cripto" 
+                  href="/otras-herramientas" 
                   className={clsx(
                     "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl transition-all",
-                    pathname === "/cripto" 
-                      ? "bg-orange-500/15 text-orange-400 border border-orange-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
+                    pathname.startsWith("/otras-herramientas") 
+                      ? "bg-amber-500/15 text-amber-400 border border-amber-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
                       : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
                   )}
                 >
-                  <TrendingUp className="w-5 h-5 sm:w-4 sm:h-4" />
-                  <span className="hidden lg:inline">Estrategias Cripto</span>
+                  <LayoutGrid className="w-5 h-5 sm:w-4 sm:h-4" />
+                  <span className="hidden lg:inline">Otras Herramientas</span>
                 </Link>
 
                 {user && (

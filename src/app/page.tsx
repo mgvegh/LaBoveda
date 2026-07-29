@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Bitcoin, ShieldCheck, Wallet, PiggyBank, TrendingUp } from "lucide-react";
+import { ArrowRight, Bitcoin, ShieldCheck, Wallet, PiggyBank, LayoutGrid } from "lucide-react";
 
 export default function Home() {
   return (
@@ -63,18 +63,18 @@ export default function Home() {
           </div>
         </Link>
 
-        <Link href="/cripto" className="group glass-panel rounded-3xl p-8 hover:-translate-y-1 transition-all duration-300 border-orange-500/10 hover:border-orange-500/30">
+        <Link href="/otras-herramientas" className="group glass-panel rounded-3xl p-8 hover:-translate-y-1 transition-all duration-300 border-amber-500/10 hover:border-amber-500/30">
           <div className="flex items-center gap-4 mb-6">
-            <div className="p-4 bg-gradient-to-br from-orange-500/20 to-purple-500/20 rounded-2xl text-orange-400 group-hover:scale-110 transition-transform duration-300 shadow-inner">
-              <TrendingUp className="w-8 h-8" />
+            <div className="p-4 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-2xl text-amber-400 group-hover:scale-110 transition-transform duration-300 shadow-inner">
+              <LayoutGrid className="w-8 h-8" />
             </div>
-            <h2 className="text-xl font-semibold tracking-tight text-gray-100">Estrategias Cripto</h2>
+            <h2 className="text-xl font-semibold tracking-tight text-gray-100">Otras Herramientas</h2>
           </div>
           <p className="text-gray-400 mb-8 leading-relaxed text-sm">
-            Bitácora interactiva para MS BTC y Anti-Vitalik. Controlá tus balas y tomá decisiones sin emociones.
+            Accedé a utilidades adicionales para tu día a día, como estrategias de trading y análisis de consumo de combustible.
           </p>
-          <div className="flex items-center text-orange-400 text-sm font-semibold group-hover:text-amber-300 transition-colors">
-            Ver Estrategias <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          <div className="flex items-center text-amber-400 text-sm font-semibold group-hover:text-amber-300 transition-colors">
+            Explorar Herramientas <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </div>
         </Link>
       </div>

@@ -190,6 +190,10 @@ export default function ProfileButton() {
       const stratSnap = await getDoc(doc(db, "users", user.uid, "cripto_strategies", "state"));
       const criptoStrategies = stratSnap.exists() ? stratSnap.data() : null;
 
+      // 6. Fetch Fuel Records
+      const fuelSnap = await getDocs(collection(db, "users", user.uid, "fuel_records"));
+      const fuelRecords = fuelSnap.docs.map(d => d.data());
+
       const backupData = {
         version: "2.0",
         exportedAt: new Date().toISOString(),
@@ -198,7 +202,8 @@ export default function ProfileButton() {
         cedearsPurchases,
         cedearsCsvImports,
         criptoPortfolio,
-        criptoStrategies
+        criptoStrategies,
+        fuelRecords
       };
 
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
@@ -280,6 +285,17 @@ export default function ProfileButton() {
         // 5. Import Cripto Strategies State (overwrite document)
         if (backup.criptoStrategies) {
           await setDoc(doc(db, "users", user.uid, "cripto_strategies", "state"), backup.criptoStrategies);
+        }
+
+        // 6. Overwrite Fuel Records
+        const existingFuel = await getDocs(collection(db, "users", user.uid, "fuel_records"));
+        for (const docObj of existingFuel.docs) {
+          await deleteDoc(doc(db, "users", user.uid, "fuel_records", docObj.id));
+        }
+        if (backup.fuelRecords) {
+          for (const item of backup.fuelRecords) {
+            await addDoc(collection(db, "users", user.uid, "fuel_records"), item);
+          }
         }
 
         alert("¡Datos importados con éxito! Recargando para aplicar los cambios.");
