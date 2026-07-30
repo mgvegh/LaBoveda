@@ -1,6 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
-import { Plus, Trash2, RefreshCw, DollarSign, TrendingUp, Landmark, ArrowRightLeft, ListChecks, Coins, Users } from "lucide-react";
+import { Plus, Trash2, RefreshCw, DollarSign, TrendingUp, Landmark, ArrowRightLeft, ListChecks, Coins, Users, GripVertical, ChevronUp, ChevronDown } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -70,6 +69,11 @@ export default function IncomeDistributor() {
   const [newDebtAmount, setNewDebtAmount] = useState("");
   const [newDebtCurrency, setNewDebtCurrency] = useState<"ARS" | "USD">("ARS");
   const [debtorFilter, setDebtorFilter] = useState<string>("");
+
+  const [draggedExpenseIdx, setDraggedExpenseIdx] = useState<number | null>(null);
+  const [dragOverExpenseIdx, setDragOverExpenseIdx] = useState<number | null>(null);
+  const [draggedCategoryIdx, setDraggedCategoryIdx] = useState<number | null>(null);
+  const [dragOverCategoryIdx, setDragOverCategoryIdx] = useState<number | null>(null);
 
   const { user } = useAuth();
   const getDocRef = () => user ? doc(db, "users", user.uid, "income_config", "data") : null;
@@ -228,6 +232,36 @@ export default function IncomeDistributor() {
   const updateCategory = (id: string, updates: Partial<Category>) => setConfig(prev => ({ ...prev, categories: prev.categories.map(c => c.id === id ? { ...c, ...updates } : c) }));
   const removeExpense = (id: string) => setConfig(prev => ({ ...prev, expenses: prev.expenses.filter(e => e.id !== id) }));
   const updateExpense = (id: string, updates: Partial<Expense>) => setConfig(prev => ({ ...prev, expenses: prev.expenses.map(e => e.id === id ? { ...e, ...updates } : e) }));
+
+  const reorderCategories = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= config.categories.length || toIndex >= config.categories.length) return;
+    setConfig(prev => {
+      const updated = [...prev.categories];
+      const [moved] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, moved);
+      return { ...prev, categories: updated };
+    });
+  };
+
+  const moveCategory = (index: number, direction: "up" | "down") => {
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    reorderCategories(index, targetIndex);
+  };
+
+  const reorderExpenses = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= config.expenses.length || toIndex >= config.expenses.length) return;
+    setConfig(prev => {
+      const updated = [...prev.expenses];
+      const [moved] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, moved);
+      return { ...prev, expenses: updated };
+    });
+  };
+
+  const moveExpense = (index: number, direction: "up" | "down") => {
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    reorderExpenses(index, targetIndex);
+  };
 
   const toggleCompleted = (id: string) => {
     setConfig(prev => {
@@ -461,82 +495,174 @@ export default function IncomeDistributor() {
             )}
             
             {/* Gastos Fijos */}
-            {config.expenses.map(e => (
-              <div key={e.id} className="flex flex-col sm:flex-row sm:items-center gap-3 text-sm bg-black/20 p-3 rounded-xl border border-white/5 group">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="w-8 h-8 flex items-center justify-center bg-red-500/10 rounded-lg text-red-400 shrink-0"><DollarSign className="w-4 h-4" /></div>
-                  <div className="flex-1 min-w-0">
-                    <input
-                      type="text"
-                      value={e.name}
-                      onChange={ev => updateExpense(e.id, { name: ev.target.value })}
-                      className="bg-transparent text-gray-200 font-bold focus:outline-none focus:border-b focus:border-red-500/50 w-full"
-                    />
-                    <div className="text-[10px] text-gray-500 uppercase">Gasto Fijo</div>
+            {config.expenses.map((e, idx) => {
+              const isDragging = draggedExpenseIdx === idx;
+              const isOver = dragOverExpenseIdx === idx && draggedExpenseIdx !== idx;
+              return (
+                <div
+                  key={e.id}
+                  draggable
+                  onDragStart={(ev) => { setDraggedExpenseIdx(idx); ev.dataTransfer.effectAllowed = "move"; }}
+                  onDragOver={(ev) => { ev.preventDefault(); ev.dataTransfer.dropEffect = "move"; if (dragOverExpenseIdx !== idx) setDragOverExpenseIdx(idx); }}
+                  onDragLeave={() => { if (dragOverExpenseIdx === idx) setDragOverExpenseIdx(null); }}
+                  onDrop={(ev) => { ev.preventDefault(); if (draggedExpenseIdx !== null) reorderExpenses(draggedExpenseIdx, idx); setDraggedExpenseIdx(null); setDragOverExpenseIdx(null); }}
+                  onDragEnd={() => { setDraggedExpenseIdx(null); setDragOverExpenseIdx(null); }}
+                  className={`flex flex-col sm:flex-row sm:items-center gap-3 text-sm bg-black/20 p-3 rounded-xl border transition-all duration-200 group ${
+                    isDragging ? "opacity-40 border-dashed border-red-500/50 scale-[0.98]" :
+                    isOver ? "border-red-500 bg-red-500/10 shadow-lg shadow-red-500/20 ring-1 ring-red-500/50" :
+                    "border-white/5 hover:border-white/20"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <div className="cursor-grab active:cursor-grabbing text-gray-500 hover:text-white transition-colors p-1" title="Arrastrar para reordenar">
+                        <GripVertical className="w-4 h-4" />
+                      </div>
+                      <div className="flex flex-col opacity-40 group-hover:opacity-100 transition-opacity">
+                        <button
+                          type="button"
+                          disabled={idx === 0}
+                          onClick={() => moveExpense(idx, "up")}
+                          className="text-gray-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed p-0.5"
+                          title="Mover arriba"
+                        >
+                          <ChevronUp className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={idx === config.expenses.length - 1}
+                          onClick={() => moveExpense(idx, "down")}
+                          className="text-gray-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed p-0.5"
+                          title="Mover abajo"
+                        >
+                          <ChevronDown className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="w-8 h-8 flex items-center justify-center bg-red-500/10 rounded-lg text-red-400 shrink-0">
+                      <DollarSign className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <input
+                        type="text"
+                        value={e.name}
+                        onChange={ev => updateExpense(e.id, { name: ev.target.value })}
+                        className="bg-transparent text-gray-200 font-bold focus:outline-none focus:border-b focus:border-red-500/50 w-full"
+                      />
+                      <div className="text-[10px] text-gray-500 uppercase">Gasto Fijo</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+                    <div className="flex items-center bg-white/5 border border-white/10 rounded-lg px-2 flex-1 sm:flex-initial sm:w-40">
+                      <span className="text-gray-500 font-bold mr-1">$</span>
+                      <input
+                        type="number"
+                        value={e.amount || ""}
+                        onChange={ev => updateExpense(e.id, { amount: parseFloat(ev.target.value) || 0 })}
+                        className="w-full bg-transparent py-1.5 text-red-400 text-right font-mono font-bold text-xs focus:outline-none"
+                      />
+                      <select
+                        value={e.currency}
+                        onChange={ev => updateExpense(e.id, { currency: ev.target.value as "ARS"|"USD" })}
+                        className="ml-1 bg-transparent text-red-400 text-xs font-mono font-bold focus:outline-none cursor-pointer"
+                      >
+                        <option value="ARS" className="bg-[#09090b]">ARS</option>
+                        <option value="USD" className="bg-[#09090b]">USD</option>
+                      </select>
+                    </div>
+                    <button onClick={() => removeExpense(e.id)} className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded-lg bg-white/5 sm:bg-transparent sm:p-1 sm:opacity-0 group-hover:opacity-100 shrink-0" title="Eliminar gasto">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
-                  <div className="flex items-center bg-white/5 border border-white/10 rounded-lg px-2 flex-1 sm:flex-initial sm:w-40">
-                    <span className="text-gray-500 font-bold mr-1">$</span>
-                    <input
-                      type="number"
-                      value={e.amount || ""}
-                      onChange={ev => updateExpense(e.id, { amount: parseFloat(ev.target.value) || 0 })}
-                      className="w-full bg-transparent py-1.5 text-red-400 text-right font-mono font-bold text-xs focus:outline-none"
-                    />
-                    <select
-                      value={e.currency}
-                      onChange={ev => updateExpense(e.id, { currency: ev.target.value as "ARS"|"USD" })}
-                      className="ml-1 bg-transparent text-red-400 text-xs font-mono font-bold focus:outline-none cursor-pointer"
-                    >
-                      <option value="ARS" className="bg-[#09090b]">ARS</option>
-                      <option value="USD" className="bg-[#09090b]">USD</option>
-                    </select>
-                  </div>
-                  <button onClick={() => removeExpense(e.id)} className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded-lg bg-white/5 sm:bg-transparent sm:p-1 sm:opacity-0 group-hover:opacity-100 shrink-0"><Trash2 className="w-4 h-4" /></button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
 
             {/* Categorías */}
-            {config.categories.map(c => (
-              <div key={c.id} className="flex flex-col sm:flex-row sm:items-center gap-3 text-sm bg-black/20 p-3 rounded-xl border border-white/5 group">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="w-8 h-8 flex items-center justify-center bg-white/5 rounded-lg text-lg shrink-0">{c.icon}</div>
-                  <div className="flex-1 min-w-0">
-                    <input
-                      type="text"
-                      value={c.name}
-                      onChange={e => updateCategory(c.id, { name: e.target.value })}
-                      className="bg-transparent text-gray-200 font-bold focus:outline-none focus:border-b focus:border-violet-500/50 w-full"
-                    />
-                    <select
-                      value={c.type}
-                      onChange={e => updateCategory(c.id, { type: e.target.value as CategoryType })}
-                      className="bg-transparent text-[10px] text-gray-500 uppercase focus:outline-none w-fit cursor-pointer"
-                    >
-                      <option value="fixed_usd" className="bg-[#09090b]">USD Fijo</option>
-                      <option value="fixed_ars" className="bg-[#09090b]">ARS Fijo</option>
-                      <option value="percentage" className="bg-[#09090b]">% del Resto</option>
-                    </select>
+            {config.categories.map((c, idx) => {
+              const isDragging = draggedCategoryIdx === idx;
+              const isOver = dragOverCategoryIdx === idx && draggedCategoryIdx !== idx;
+              return (
+                <div
+                  key={c.id}
+                  draggable
+                  onDragStart={(ev) => { setDraggedCategoryIdx(idx); ev.dataTransfer.effectAllowed = "move"; }}
+                  onDragOver={(ev) => { ev.preventDefault(); ev.dataTransfer.dropEffect = "move"; if (dragOverCategoryIdx !== idx) setDragOverCategoryIdx(idx); }}
+                  onDragLeave={() => { if (dragOverCategoryIdx === idx) setDragOverCategoryIdx(null); }}
+                  onDrop={(ev) => { ev.preventDefault(); if (draggedCategoryIdx !== null) reorderCategories(draggedCategoryIdx, idx); setDraggedCategoryIdx(null); setDragOverCategoryIdx(null); }}
+                  onDragEnd={() => { setDraggedCategoryIdx(null); setDragOverCategoryIdx(null); }}
+                  className={`flex flex-col sm:flex-row sm:items-center gap-3 text-sm bg-black/20 p-3 rounded-xl border transition-all duration-200 group ${
+                    isDragging ? "opacity-40 border-dashed border-violet-500/50 scale-[0.98]" :
+                    isOver ? "border-violet-500 bg-violet-500/10 shadow-lg shadow-violet-500/20 ring-1 ring-violet-500/50" :
+                    "border-white/5 hover:border-white/20"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <div className="cursor-grab active:cursor-grabbing text-gray-500 hover:text-white transition-colors p-1" title="Arrastrar para reordenar">
+                        <GripVertical className="w-4 h-4" />
+                      </div>
+                      <div className="flex flex-col opacity-40 group-hover:opacity-100 transition-opacity">
+                        <button
+                          type="button"
+                          disabled={idx === 0}
+                          onClick={() => moveCategory(idx, "up")}
+                          className="text-gray-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed p-0.5"
+                          title="Mover arriba"
+                        >
+                          <ChevronUp className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={idx === config.categories.length - 1}
+                          onClick={() => moveCategory(idx, "down")}
+                          className="text-gray-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed p-0.5"
+                          title="Mover abajo"
+                        >
+                          <ChevronDown className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="w-8 h-8 flex items-center justify-center bg-white/5 rounded-lg text-lg shrink-0">
+                      {c.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <input
+                        type="text"
+                        value={c.name}
+                        onChange={e => updateCategory(c.id, { name: e.target.value })}
+                        className="bg-transparent text-gray-200 font-bold focus:outline-none focus:border-b focus:border-violet-500/50 w-full"
+                      />
+                      <select
+                        value={c.type}
+                        onChange={e => updateCategory(c.id, { type: e.target.value as CategoryType })}
+                        className="bg-transparent text-[10px] text-gray-500 uppercase focus:outline-none w-fit cursor-pointer"
+                      >
+                        <option value="fixed_usd" className="bg-[#09090b]">USD Fijo</option>
+                        <option value="fixed_ars" className="bg-[#09090b]">ARS Fijo</option>
+                        <option value="percentage" className="bg-[#09090b]">% del Resto</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+                    <div className="flex items-center bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 flex-1 sm:flex-initial sm:w-44">
+                      <input
+                        type="number"
+                        value={c.value || ""}
+                        onChange={e => updateCategory(c.id, { value: parseFloat(e.target.value) || 0 })}
+                        className="w-full bg-transparent text-white text-center font-bold text-xs focus:outline-none focus:border-violet-500"
+                      />
+                      <span className="text-[10px] text-gray-500 font-bold ml-1 uppercase">
+                        {c.type === "percentage" ? "%" : c.type === "fixed_usd" ? "USD" : "ARS"}
+                      </span>
+                    </div>
+                    <button onClick={() => removeCategory(c.id)} className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded-lg bg-white/5 sm:bg-transparent sm:p-1 sm:opacity-0 group-hover:opacity-100 shrink-0" title="Eliminar salida">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
-                  <div className="flex items-center bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 flex-1 sm:flex-initial sm:w-44">
-                    <input
-                      type="number"
-                      value={c.value || ""}
-                      onChange={e => updateCategory(c.id, { value: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-transparent text-white text-center font-bold text-xs focus:outline-none focus:border-violet-500"
-                    />
-                    <span className="text-[10px] text-gray-500 font-bold ml-1 uppercase">
-                      {c.type === "percentage" ? "%" : c.type === "fixed_usd" ? "USD" : "ARS"}
-                    </span>
-                  </div>
-                  <button onClick={() => removeCategory(c.id)} className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded-lg bg-white/5 sm:bg-transparent sm:p-1 sm:opacity-0 group-hover:opacity-100 shrink-0"><Trash2 className="w-4 h-4" /></button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="flex flex-col sm:grid sm:grid-cols-6 gap-2 bg-black/40 p-3 rounded-xl border border-white/5">
