@@ -55,6 +55,7 @@ export default function FuelTracker() {
   const [newVehiclePlate, setNewVehiclePlate] = useState("");
   const [newVehicleFuelType, setNewVehicleFuelType] = useState("Nafta Súper");
   const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
+  const [assignTargetVehicleId, setAssignTargetVehicleId] = useState<string>("");
 
   // Load Form State
   const [date, setDate] = useState<string>("");
@@ -280,6 +281,50 @@ export default function FuelTracker() {
     }
   };
 
+  // Batch assign all unassigned records to a target vehicle
+  const handleBatchAssignUnassigned = async (targetVehicleId: string) => {
+    if (!user || !targetVehicleId) return;
+    const unassigned = records.filter(r => !r.vehicleId);
+    if (unassigned.length === 0) return;
+
+    const targetV = vehicles.find(v => v.id === targetVehicleId);
+    const targetName = targetV ? (targetV.plate ? `${targetV.name} (${targetV.plate})` : targetV.name) : "el vehículo seleccionado";
+
+    if (!confirm(`¿Deseas asignar las ${unassigned.length} carga(s) sin auto a "${targetName}"?`)) return;
+
+    try {
+      setLoading(true);
+      for (const rec of unassigned) {
+        await updateDoc(doc(db, "users", user.uid, "fuel_records", rec.id), {
+          vehicleId: targetVehicleId
+        });
+      }
+      setAssignTargetVehicleId("");
+      await fetchRecords();
+      alert(`¡Se asignaron ${unassigned.length} cargas a "${targetName}" correctamente!`);
+    } catch (e) {
+      console.error("Error batch assigning records:", e);
+      alert("Error al asignar las cargas.");
+      setLoading(false);
+    }
+  };
+
+  // Assign a single unassigned record to a vehicle directly from table row
+  const handleAssignSingleRecord = async (recId: string, targetVehicleId: string) => {
+    if (!user || !targetVehicleId) return;
+    try {
+      setLoading(true);
+      await updateDoc(doc(db, "users", user.uid, "fuel_records", recId), {
+        vehicleId: targetVehicleId
+      });
+      await fetchRecords();
+    } catch (e) {
+      console.error("Error assigning single record:", e);
+      alert("Error al asignar el vehículo.");
+      setLoading(false);
+    }
+  };
+
   // Start Editing a Fuel Load
   const handleStartEdit = (rec: FuelRecord) => {
     setEditingRecordId(rec.id);
@@ -457,6 +502,7 @@ export default function FuelTracker() {
   };
 
   const metrics = getMetrics();
+  const unassignedCount = records.filter(r => !r.vehicleId).length;
 
   // Format chart data (chronological)
   const chartData = [...filteredRecords]
@@ -501,6 +547,9 @@ export default function FuelTracker() {
                     🚘 {v.name} {v.plate ? `[${v.plate}]` : ""}
                   </option>
                 ))}
+                {unassignedCount > 0 && (
+                  <option value="unassigned">⚠️ Cargas sin auto asignado ({unassignedCount})</option>
+                )}
               </select>
             </div>
           </div>
@@ -520,6 +569,40 @@ export default function FuelTracker() {
         </button>
       </div>
 
+      {/* Unassigned Loads Batch Assignment Alert Banner */}
+      {unassignedCount > 0 && vehicles.length > 0 && (
+        <div className="glass rounded-2xl p-4 border-amber-500/20 bg-amber-500/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-200">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
+            <span>
+              Tienes <strong className="text-white font-bold">{unassignedCount}</strong> carga(s) sin vehículo asignado.
+            </span>
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <span className="text-gray-400 whitespace-nowrap">Asignar todas a:</span>
+            <select
+              value={assignTargetVehicleId}
+              onChange={(e) => setAssignTargetVehicleId(e.target.value)}
+              className="bg-black/50 border border-amber-500/30 rounded-xl px-2.5 py-1 text-xs text-amber-100 focus:outline-none cursor-pointer"
+            >
+              <option value="">Seleccionar auto...</option>
+              {vehicles.map(v => (
+                <option key={v.id} value={v.id}>
+                  {v.name} {v.plate ? `(${v.plate})` : ""}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => handleBatchAssignUnassigned(assignTargetVehicleId)}
+              disabled={!assignTargetVehicleId || loading}
+              className="bg-amber-500 hover:bg-amber-400 text-black font-bold px-3.5 py-1 rounded-xl shadow transition-all disabled:opacity-50 whitespace-nowrap cursor-pointer"
+            >
+              Asignar Cargas
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Vehicle Management Modal */}
       {showVehicleModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
@@ -534,7 +617,7 @@ export default function FuelTracker() {
                   setShowVehicleModal(false);
                   setEditingVehicleId(null);
                 }}
-                className="text-gray-400 hover:text-gray-200 p-1 rounded-lg hover:bg-white/5"
+                className="text-gray-400 hover:text-gray-200 p-1 rounded-lg hover:bg-white/5 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -555,7 +638,7 @@ export default function FuelTracker() {
                         <button
                           type="button"
                           onClick={() => handleEditVehicleClick(v)}
-                          className="p-1 text-gray-400 hover:text-sky-400 hover:bg-white/5 rounded-md"
+                          className="p-1 text-gray-400 hover:text-sky-400 hover:bg-white/5 rounded-md cursor-pointer"
                           title="Editar vehículo"
                         >
                           <Pencil className="w-3.5 h-3.5" />
@@ -563,7 +646,7 @@ export default function FuelTracker() {
                         <button
                           type="button"
                           onClick={() => handleDeleteVehicle(v.id)}
-                          className="p-1 text-gray-400 hover:text-red-400 hover:bg-white/5 rounded-md"
+                          className="p-1 text-gray-400 hover:text-red-400 hover:bg-white/5 rounded-md cursor-pointer"
                           title="Eliminar vehículo"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -607,7 +690,7 @@ export default function FuelTracker() {
                   <select
                     value={newVehicleFuelType}
                     onChange={(e) => setNewVehicleFuelType(e.target.value)}
-                    className="w-full bg-[#18181b] border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-sky-500/50"
+                    className="w-full bg-[#18181b] border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-sky-500/50 cursor-pointer"
                   >
                     <option value="Nafta Súper">Nafta Súper</option>
                     <option value="Nafta Premium">Nafta Premium</option>
@@ -626,13 +709,13 @@ export default function FuelTracker() {
                     setShowVehicleModal(false);
                     setEditingVehicleId(null);
                   }}
-                  className="px-4 py-2 text-xs font-semibold text-gray-400 hover:text-gray-200 rounded-xl hover:bg-white/5"
+                  className="px-4 py-2 text-xs font-semibold text-gray-400 hover:text-gray-200 rounded-xl hover:bg-white/5 cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-white rounded-xl shadow-lg transition-all"
+                  className="px-5 py-2 text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-white rounded-xl shadow-lg transition-all cursor-pointer"
                 >
                   {editingVehicleId ? "Guardar Auto" : "Agregar Auto"}
                 </button>
@@ -795,45 +878,43 @@ export default function FuelTracker() {
         </div>
       </div>
 
-      {/* Main Grid: Form + Graph / Table */}
+      {/* Top Grid: Compact Refill Form + Consumption Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Left Column: Form & Graph */}
-        <div className="lg:col-span-5 space-y-6">
-          
-          {/* Refill Form */}
-          <div ref={formRef} className="glass rounded-3xl p-6 border-white/5 relative overflow-hidden transition-all">
+        {/* Left: Compact Refill Form */}
+        <div className="lg:col-span-5 space-y-4">
+          <div ref={formRef} className="glass rounded-3xl p-5 border-white/5 relative overflow-hidden transition-all">
             <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/5 rounded-full blur-3xl -z-10 pointer-events-none"></div>
             
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-sky-400" />
-                <h2 className="text-lg font-bold text-gray-200">
-                  {editingRecordId ? "Editar Carga de Combustible" : "Registrar Carga"}
+                <Sparkles className="w-4 h-4 text-sky-400" />
+                <h2 className="text-base font-bold text-gray-200">
+                  {editingRecordId ? "Editar Carga" : "Registrar Carga"}
                 </h2>
               </div>
               {editingRecordId && (
                 <button
                   type="button"
                   onClick={handleCancelEdit}
-                  className="text-xs text-amber-400 hover:text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg transition-all"
+                  className="text-[11px] text-amber-400 hover:text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg transition-all cursor-pointer"
                 >
-                  Cancelar Edición
+                  Cancelar
                 </button>
               )}
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3">
               {/* Vehicle Selection in Form */}
               {vehicles.length > 0 && (
-                <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400 font-medium flex items-center gap-1.5">
+                <div className="space-y-1">
+                  <label className="text-[11px] text-gray-400 font-medium flex items-center gap-1.5">
                     <Car className="w-3.5 h-3.5 text-gray-500" /> Vehículo
                   </label>
                   <select
                     value={formVehicleId}
                     onChange={(e) => setFormVehicleId(e.target.value)}
-                    className="w-full bg-[#18181b] border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-sky-500/50 transition-colors"
+                    className="w-full bg-[#18181b] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-sky-500/50 cursor-pointer"
                   >
                     {vehicles.map(v => (
                       <option key={v.id} value={v.id}>
@@ -844,10 +925,10 @@ export default function FuelTracker() {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 {/* Date */}
-                <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400 font-medium flex items-center gap-1.5">
+                <div className="space-y-1">
+                  <label className="text-[11px] text-gray-400 font-medium flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5 text-gray-500" /> Fecha
                   </label>
                   <input 
@@ -855,19 +936,19 @@ export default function FuelTracker() {
                     required
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full bg-black/35 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-sky-500/50 transition-colors"
+                    className="w-full bg-black/35 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-sky-500/50"
                   />
                 </div>
 
                 {/* Fuel Type */}
-                <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400 font-medium flex items-center gap-1.5">
+                <div className="space-y-1">
+                  <label className="text-[11px] text-gray-400 font-medium flex items-center gap-1.5">
                     <Fuel className="w-3.5 h-3.5 text-gray-500" /> Combustible
                   </label>
                   <select
                     value={fuelType}
                     onChange={(e) => setFuelType(e.target.value)}
-                    className="w-full bg-[#18181b] border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-sky-500/50 transition-colors"
+                    className="w-full bg-[#18181b] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-sky-500/50 cursor-pointer"
                   >
                     <option value="Nafta Súper">Nafta Súper</option>
                     <option value="Nafta Premium">Nafta Premium</option>
@@ -879,11 +960,11 @@ export default function FuelTracker() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 {/* Odometer (km) */}
-                <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400 font-medium flex items-center gap-1.5">
-                    <Gauge className="w-3.5 h-3.5 text-gray-500" /> Kilometraje
+                <div className="space-y-1">
+                  <label className="text-[11px] text-gray-400 font-medium flex items-center gap-1">
+                    <Gauge className="w-3 h-3 text-gray-500" /> Km
                   </label>
                   <input 
                     type="number"
@@ -891,13 +972,13 @@ export default function FuelTracker() {
                     placeholder="ej: 104500"
                     value={odometer}
                     onChange={(e) => setOdometer(e.target.value)}
-                    className="w-full bg-black/35 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-sky-500/50 transition-colors"
+                    className="w-full bg-black/35 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-sky-500/50"
                   />
                 </div>
 
                 {/* Liters */}
-                <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400 font-medium flex items-center gap-1.5 flex-nowrap">
+                <div className="space-y-1">
+                  <label className="text-[11px] text-gray-400 font-medium flex items-center gap-1">
                     Litros (L)
                   </label>
                   <input 
@@ -907,14 +988,14 @@ export default function FuelTracker() {
                     placeholder="ej: 42.5"
                     value={liters}
                     onChange={(e) => setLiters(e.target.value)}
-                    className="w-full bg-black/35 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-sky-500/50 transition-colors"
+                    className="w-full bg-black/35 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-sky-500/50"
                   />
                 </div>
 
                 {/* Cost */}
-                <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400 font-medium flex items-center gap-1.5">
-                    Costo Total ($)
+                <div className="space-y-1">
+                  <label className="text-[11px] text-gray-400 font-medium flex items-center gap-1">
+                    Costo ($)
                   </label>
                   <input 
                     type="number"
@@ -923,19 +1004,19 @@ export default function FuelTracker() {
                     placeholder="ej: 45000"
                     value={cost}
                     onChange={(e) => setCost(e.target.value)}
-                    className="w-full bg-black/35 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-sky-500/50 transition-colors"
+                    className="w-full bg-black/35 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-sky-500/50"
                   />
                 </div>
               </div>
 
               {/* Tank Full Toggle */}
-              <div className="flex items-center justify-between bg-black/25 border border-white/5 rounded-2xl px-4 py-3">
+              <div className="flex items-center justify-between bg-black/25 border border-white/5 rounded-xl px-3 py-2">
                 <div className="flex flex-col">
                   <span className="text-xs font-semibold text-gray-200 flex items-center gap-1">
                     ¿Tanque Lleno? 
                     <span className="text-[10px] text-gray-500 font-normal">(Recomendado)</span>
                   </span>
-                  <span className="text-[10px] text-gray-500">Permite calcular consumos precisos</span>
+                  <span className="text-[10px] text-gray-500">Mide consumos entre llenados</span>
                 </div>
                 <input 
                   type="checkbox"
@@ -946,68 +1027,62 @@ export default function FuelTracker() {
               </div>
 
               {/* Submit / Save Button */}
-              <div className="flex gap-2">
-                <button 
-                  type="submit"
-                  disabled={loading}
-                  className={`w-full text-white rounded-2xl py-3 px-4 text-sm font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-2 cursor-pointer ${
-                    editingRecordId
-                      ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:shadow-amber-500/10"
-                      : "bg-gradient-to-r from-sky-500 to-indigo-500 hover:shadow-sky-500/10"
-                  }`}
-                >
-                  {editingRecordId ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                  <span>{editingRecordId ? "Guardar Cambios" : "Agregar Carga"}</span>
-                </button>
-              </div>
+              <button 
+                type="submit"
+                disabled={loading}
+                className={`w-full text-white rounded-xl py-2.5 px-4 text-xs font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-1 cursor-pointer ${
+                  editingRecordId
+                    ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:shadow-amber-500/10"
+                    : "bg-gradient-to-r from-sky-500 to-indigo-500 hover:shadow-sky-500/10"
+                }`}
+              >
+                {editingRecordId ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                <span>{editingRecordId ? "Guardar Cambios" : "Agregar Carga"}</span>
+              </button>
             </form>
           </div>
 
           {/* Explanation Banner */}
-          <div className="glass rounded-3xl p-5 border-white/5 bg-sky-950/10 flex gap-3 text-xs text-gray-400">
-            <Info className="w-5 h-5 text-sky-400 shrink-0" />
-            <div className="space-y-1">
-              <span className="font-semibold text-gray-200">¿Cómo funciona la métrica de consumo?</span>
-              <p className="leading-relaxed">
-                El consumo promedio de un tramo se calcula cuando registras una carga con <strong className="text-sky-300">"Tanque Lleno"</strong>. La aplicación mide la distancia recorrida desde el llenado anterior del mismo vehículo y la divide por los litros cargados.
+          <div className="glass rounded-2xl p-4 border-white/5 bg-sky-950/10 flex gap-3 text-xs text-gray-400">
+            <Info className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+            <div className="space-y-0.5 text-[11px]">
+              <span className="font-semibold text-gray-200 block">Métrica de consumo</span>
+              <p className="leading-normal">
+                El consumo se calcula al cargar con <strong className="text-sky-300">"Tanque Lleno"</strong> midiendo los km desde el llenado anterior del mismo vehículo.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Historical Table & Chart */}
-        <div className="lg:col-span-7 space-y-6">
-          
-          {/* Chart Card */}
-          {chartData.length > 0 && (
-            <div className="glass rounded-3xl p-6 border-white/5">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-bold text-gray-200 flex items-center gap-2">
+        {/* Right: Consumption Chart */}
+        <div className="lg:col-span-7">
+          {chartData.length > 0 ? (
+            <div className="glass rounded-3xl p-5 border-white/5 h-full flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-bold text-gray-200 flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-sky-400" />
                   Histórico de Consumo y Costo
                 </h3>
-                <span className="text-[10px] text-gray-500">Datos en orden cronológico</span>
+                <span className="text-[10px] text-gray-500">Orden cronológico</span>
               </div>
               
-              <div className="h-60 w-full text-xs">
+              <div className="h-64 w-full text-xs mt-2">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                     <XAxis dataKey="date" stroke="#9ca3af" />
-                    {/* Left Y Axis for Consumption */}
                     <YAxis 
                       yAxisId="left" 
                       stroke="#38bdf8" 
                       domain={['auto', 'auto']}
                       label={{ value: unit, angle: -90, position: 'insideLeft', fill: '#38bdf8', offset: 10 }}
                     />
-                    {/* Right Y Axis for Fuel Price */}
                     <YAxis 
                       yAxisId="right" 
                       orientation="right" 
                       stroke="#f59e0b"
                       domain={['auto', 'auto']}
-                      label={{ value: 'Precio $/L', angle: 90, position: 'insideRight', fill: '#f59e0b', offset: 10 }}
+                      label={{ value: '$/L', angle: 90, position: 'insideRight', fill: '#f59e0b', offset: 10 }}
                     />
                     <Tooltip 
                       contentStyle={{ backgroundColor: "#18181b", borderColor: "rgba(255,255,255,0.1)", borderRadius: "12px", color: "#e5e7eb" }} 
@@ -1036,135 +1111,162 @@ export default function FuelTracker() {
                 </ResponsiveContainer>
               </div>
             </div>
-          )}
-
-          {/* Historical Refills Table */}
-          <div className="glass rounded-3xl border-white/5 overflow-hidden">
-            <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between">
-              <h3 className="text-base font-bold text-gray-200 flex items-center gap-2">
-                <Fuel className="w-4 h-4 text-sky-400" />
-                Historial de Cargas
-              </h3>
-              <span className="text-xs text-gray-400 bg-white/5 rounded-full px-2.5 py-1">
-                {filteredRecords.length} cargas
-              </span>
+          ) : (
+            <div className="glass rounded-3xl p-8 border-white/5 h-full flex flex-col items-center justify-center text-center text-gray-500 text-xs space-y-2">
+              <TrendingUp className="w-8 h-8 text-gray-600" />
+              <p>El gráfico se generará cuando registres tus cargas de combustible.</p>
             </div>
-
-            {loading && records.length === 0 ? (
-              <div className="py-12 text-center text-gray-500 text-sm">Cargando datos...</div>
-            ) : filteredRecords.length === 0 ? (
-              <div className="py-16 text-center text-gray-500 text-sm space-y-2">
-                <AlertCircle className="w-8 h-8 text-gray-600 mx-auto" />
-                <p>No se encontraron cargas registradas.</p>
-                <p className="text-xs text-gray-600">Comienza agregando tu primera carga en el formulario.</p>
-              </div>
-            ) : (
-              /* FIX HEADER OVERLAP: solid th background (#12141c) + sticky top-0 z-20 + border-separate border-spacing-0 */
-              <div className="overflow-x-auto max-h-[480px]">
-                <table className="w-full text-left text-sm text-gray-300 border-separate border-spacing-0">
-                  <thead className="text-xs text-gray-300 uppercase sticky top-0 z-20 shadow-md">
-                    <tr>
-                      <th className="px-4 py-3.5 bg-[#12141c] border-b border-white/10 font-semibold">Fecha</th>
-                      {selectedVehicleId === "all" && (
-                        <th className="px-4 py-3.5 bg-[#12141c] border-b border-white/10 font-semibold">Auto</th>
-                      )}
-                      <th className="px-4 py-3.5 bg-[#12141c] border-b border-white/10 font-semibold text-right">Odo. (km)</th>
-                      <th className="px-4 py-3.5 bg-[#12141c] border-b border-white/10 font-semibold text-right">Litros (L)</th>
-                      <th className="px-4 py-3.5 bg-[#12141c] border-b border-white/10 font-semibold text-right">Costo Total</th>
-                      <th className="px-4 py-3.5 bg-[#12141c] border-b border-white/10 font-semibold text-right">$/Litro</th>
-                      <th className="px-4 py-3.5 bg-[#12141c] border-b border-white/10 font-semibold text-center">Tipo / Carga</th>
-                      <th className="px-4 py-3.5 bg-[#12141c] border-b border-white/10 font-semibold text-right text-sky-400">Consumo</th>
-                      <th className="px-4 py-3.5 bg-[#12141c] border-b border-white/10 font-semibold text-center">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {filteredRecords.map((rec) => {
-                      const formattedDate = new Date(rec.date + "T12:00:00").toLocaleDateString("es-AR", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric"
-                      });
-                      const isBeingEdited = editingRecordId === rec.id;
-                      return (
-                        <tr 
-                          key={rec.id} 
-                          className={`transition-colors ${
-                            isBeingEdited ? "bg-amber-500/10 border-l-2 border-amber-400" : "hover:bg-white/2"
-                          }`}
-                        >
-                          <td className="px-4 py-3.5 font-medium whitespace-nowrap text-xs text-gray-400">
-                            {formattedDate}
-                          </td>
-                          {selectedVehicleId === "all" && (
-                            <td className="px-4 py-3.5 whitespace-nowrap text-xs text-sky-300/80 font-medium">
-                              {getVehicleName(rec.vehicleId)}
-                            </td>
-                          )}
-                          <td className="px-4 py-3.5 text-right font-mono text-xs">
-                            {rec.odometer.toLocaleString("es-AR")}
-                          </td>
-                          <td className="px-4 py-3.5 text-right font-mono text-xs">
-                            {rec.liters.toFixed(2)}
-                          </td>
-                          <td className="px-4 py-3.5 text-right font-mono text-xs text-emerald-400">
-                            ${rec.cost.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                          </td>
-                          <td className="px-4 py-3.5 text-right font-mono text-xs text-amber-400/90">
-                            ${rec.pricePerLiter.toFixed(1)}
-                          </td>
-                          <td className="px-4 py-3.5 text-center whitespace-nowrap">
-                            <span className="text-[10px] bg-white/5 border border-white/5 rounded px-2 py-0.5 text-gray-400 font-semibold mr-1">
-                              {rec.fuelType}
-                            </span>
-                            <span className={`text-[10px] rounded px-2 py-0.5 font-semibold ${
-                              rec.isFull 
-                                ? "bg-sky-500/10 border border-sky-500/20 text-sky-400" 
-                                : "bg-purple-500/10 border border-purple-500/20 text-purple-400"
-                            }`}>
-                              {rec.isFull ? "Lleno" : "Parcial"}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3.5 text-right font-bold text-sky-400 text-xs whitespace-nowrap">
-                            {rec.consumption ? (
-                              <div className="flex flex-col items-end">
-                                <span>{rec.consumption.toFixed(2)} <span className="text-[9px] font-normal text-gray-500">{unit}</span></span>
-                                {rec.distance && (
-                                  <span className="text-[9px] font-normal text-gray-500">
-                                    en {rec.distance} km
-                                  </span>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-gray-500 text-xs font-normal">---</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3.5 text-center whitespace-nowrap">
-                            <div className="flex items-center justify-center gap-1">
-                              <button
-                                onClick={() => handleStartEdit(rec)}
-                                className="p-1.5 text-gray-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-all cursor-pointer"
-                                title="Editar registro"
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(rec.id)}
-                                className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer"
-                                title="Eliminar registro"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+          )}
         </div>
+      </div>
+
+      {/* FULL WIDTH Historical Refills Table Card (col-span-12) */}
+      <div className="glass rounded-3xl border-white/5 overflow-hidden shadow-xl">
+        <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-black/20">
+          <h3 className="text-base font-bold text-gray-200 flex items-center gap-2">
+            <Fuel className="w-4 h-4 text-sky-400" />
+            Historial de Cargas
+          </h3>
+          <span className="text-xs text-gray-400 bg-white/5 rounded-full px-3 py-1 font-semibold">
+            {filteredRecords.length} cargas registradas
+          </span>
+        </div>
+
+        {loading && records.length === 0 ? (
+          <div className="py-12 text-center text-gray-500 text-sm">Cargando datos...</div>
+        ) : filteredRecords.length === 0 ? (
+          <div className="py-16 text-center text-gray-500 text-sm space-y-2">
+            <AlertCircle className="w-8 h-8 text-gray-600 mx-auto" />
+            <p>No se encontraron cargas registradas.</p>
+            <p className="text-xs text-gray-600">Comienza agregando tu primera carga en el formulario superior.</p>
+          </div>
+        ) : (
+          /* FULL WIDTH & INCREASED HEIGHT max-h-[600px] */
+          <div className="overflow-x-auto max-h-[600px]">
+            <table className="w-full text-left text-sm text-gray-300 border-separate border-spacing-0">
+              <thead className="text-xs text-gray-300 uppercase sticky top-0 z-20 shadow-md">
+                <tr>
+                  <th className="px-4 py-3 bg-[#12141c] border-b border-white/10 font-semibold">Fecha</th>
+                  <th className="px-4 py-3 bg-[#12141c] border-b border-white/10 font-semibold">Vehículo / Auto</th>
+                  <th className="px-4 py-3 bg-[#12141c] border-b border-white/10 font-semibold text-right">Odo. (km)</th>
+                  <th className="px-4 py-3 bg-[#12141c] border-b border-white/10 font-semibold text-right">Litros (L)</th>
+                  <th className="px-4 py-3 bg-[#12141c] border-b border-white/10 font-semibold text-right">Costo Total</th>
+                  <th className="px-4 py-3 bg-[#12141c] border-b border-white/10 font-semibold text-right">$/Litro</th>
+                  <th className="px-4 py-3 bg-[#12141c] border-b border-white/10 font-semibold text-center">Combustible / Tanque</th>
+                  <th className="px-4 py-3 bg-[#12141c] border-b border-white/10 font-semibold text-right text-sky-400">Consumo</th>
+                  <th className="px-4 py-3 bg-[#12141c] border-b border-white/10 font-semibold text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {filteredRecords.map((rec) => {
+                  const formattedDate = new Date(rec.date + "T12:00:00").toLocaleDateString("es-AR", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric"
+                  });
+                  const isBeingEdited = editingRecordId === rec.id;
+                  const hasNoVehicle = !rec.vehicleId;
+                  return (
+                    <tr 
+                      key={rec.id} 
+                      className={`transition-colors ${
+                        isBeingEdited ? "bg-amber-500/10 border-l-2 border-amber-400" : "hover:bg-white/5"
+                      }`}
+                    >
+                      <td className="px-4 py-3 font-medium whitespace-nowrap text-xs text-gray-400">
+                        {formattedDate}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-xs">
+                        {hasNoVehicle ? (
+                          vehicles.length > 0 ? (
+                            <select
+                              onChange={(e) => {
+                                if (e.target.value) handleAssignSingleRecord(rec.id, e.target.value);
+                              }}
+                              defaultValue=""
+                              className="bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-semibold rounded px-2 py-0.5 focus:outline-none cursor-pointer"
+                            >
+                              <option value="" disabled>⚠️ Asignar auto...</option>
+                              {vehicles.map(v => (
+                                <option key={v.id} value={v.id} className="bg-[#18181b] text-gray-200">
+                                  {v.name}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-semibold">
+                              Sin asignar
+                            </span>
+                          )
+                        ) : (
+                          <span className="text-sky-300/90 font-semibold">
+                            {getVehicleName(rec.vehicleId)}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono text-xs text-gray-200">
+                        {rec.odometer.toLocaleString("es-AR")}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono text-xs text-gray-200">
+                        {rec.liters.toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono text-xs text-emerald-400 font-semibold">
+                        ${rec.cost.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono text-xs text-amber-400/90">
+                        ${rec.pricePerLiter.toFixed(1)}
+                      </td>
+                      <td className="px-4 py-3 text-center whitespace-nowrap">
+                        <span className="text-[10px] bg-white/5 border border-white/5 rounded px-2 py-0.5 text-gray-400 font-semibold mr-1.5">
+                          {rec.fuelType}
+                        </span>
+                        <span className={`text-[10px] rounded px-2 py-0.5 font-semibold ${
+                          rec.isFull 
+                            ? "bg-sky-500/10 border border-sky-500/20 text-sky-400" 
+                            : "bg-purple-500/10 border border-purple-500/20 text-purple-400"
+                        }`}>
+                          {rec.isFull ? "Lleno" : "Parcial"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-sky-400 text-xs whitespace-nowrap">
+                        {rec.consumption ? (
+                          <div className="flex flex-col items-end">
+                            <span>{rec.consumption.toFixed(2)} <span className="text-[9px] font-normal text-gray-500">{unit}</span></span>
+                            {rec.distance && (
+                              <span className="text-[9px] font-normal text-gray-500">
+                                en {rec.distance} km
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-500 text-xs font-normal">---</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => handleStartEdit(rec)}
+                            className="p-1.5 text-gray-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-all cursor-pointer"
+                            title="Editar registro"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(rec.id)}
+                            className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer"
+                            title="Eliminar registro"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
