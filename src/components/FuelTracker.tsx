@@ -1,20 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { 
-  Fuel, Calendar, Gauge, Trash2, Plus, 
-  TrendingUp, Coins, Info, Filter, ArrowRight, RotateCcw,
-  Sparkles, CheckCircle2, AlertCircle
+  Fuel, Calendar, Gauge, Trash2, Plus, Pencil,
+  TrendingUp, Coins, Info, Filter, RotateCcw,
+  Sparkles, AlertCircle, Car, X, Check
 } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { db } from "@/lib/firebase";
 import { 
-  collection, addDoc, getDocs, deleteDoc, doc, query, orderBy 
+  collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy 
 } from "firebase/firestore";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, 
   CartesianGrid, Tooltip, Legend
 } from "recharts";
+
+type Vehicle = {
+  id: string;
+  name: string;          // e.g. "Peugeot 208", "Gol Trend"
+  plate?: string;         // e.g. "AA123BB"
+  defaultFuelType?: string; // e.g. "Nafta Súper"
+};
 
 type FuelRecord = {
   id: string;
@@ -24,6 +31,7 @@ type FuelRecord = {
   cost: number;       // total cost in ARS
   fuelType: string;   // Nafta Súper, Premium, Gasoil, GNC
   isFull: boolean;    // Is this a full tank?
+  vehicleId?: string; // ID of the associated vehicle
 };
 
 type ComputedRecord = FuelRecord & {
@@ -34,17 +42,29 @@ type ComputedRecord = FuelRecord & {
 };
 
 export default function FuelTracker() {
+  // Records & Computed State
   const [records, setRecords] = useState<FuelRecord[]>([]);
   const [computedRecords, setComputedRecords] = useState<ComputedRecord[]>([]);
   const [filteredRecords, setFilteredRecords] = useState<ComputedRecord[]>([]);
   
-  // Form State
+  // Vehicles State
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string>("all");
+  const [showVehicleModal, setShowVehicleModal] = useState(false);
+  const [newVehicleName, setNewVehicleName] = useState("");
+  const [newVehiclePlate, setNewVehiclePlate] = useState("");
+  const [newVehicleFuelType, setNewVehicleFuelType] = useState("Nafta Súper");
+  const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
+
+  // Load Form State
   const [date, setDate] = useState<string>("");
   const [odometer, setOdometer] = useState<string>("");
   const [liters, setLiters] = useState<string>("");
   const [cost, setCost] = useState<string>("");
   const [fuelType, setFuelType] = useState<string>("Nafta Súper");
   const [isFull, setIsFull] = useState<boolean>(true);
+  const [formVehicleId, setFormVehicleId] = useState<string>("");
+  const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   
   // Filter and Toggle State
   const [startDate, setStartDate] = useState<string>("");
@@ -54,8 +74,27 @@ export default function FuelTracker() {
   const [isClient, setIsClient] = useState(false);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const formRef = useRef<HTMLDivElement | null>(null);
 
-  // Load records from Firestore
+  // Load vehicles from Firestore
+  const fetchVehicles = async () => {
+    if (!user) return;
+    try {
+      const snap = await getDocs(collection(db, "users", user.uid, "vehicles"));
+      const vData: Vehicle[] = snap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Vehicle[];
+      setVehicles(vData);
+      if (vData.length > 0 && !formVehicleId) {
+        setFormVehicleId(vData[0].id);
+      }
+    } catch (e) {
+      console.error("Error fetching vehicles:", e);
+    }
+  };
+
+  // Load fuel records from Firestore
   const fetchRecords = async () => {
     if (!user) return;
     try {
@@ -78,74 +117,83 @@ export default function FuelTracker() {
 
   useEffect(() => {
     setIsClient(true);
-    // Set default date to today
     const today = new Date().toISOString().split("T")[0];
     setDate(today);
+    fetchVehicles();
     fetchRecords();
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Calculate segment consumptions based on standard algorithm
+  // Calculate segment consumptions based on standard algorithm GROUPED BY VEHICLE
   useEffect(() => {
     if (records.length === 0) {
       setComputedRecords([]);
       return;
     }
 
-    // Sort records by odometer ascending just to be absolutely sure
-    const sorted = [...records].sort((a, b) => a.odometer - b.odometer);
+    // Group records by vehicleId (fallback to "unassigned" for older records)
+    const groupedByVehicle: Record<string, FuelRecord[]> = {};
+    for (const r of records) {
+      const vId = r.vehicleId || "unassigned";
+      if (!groupedByVehicle[vId]) {
+        groupedByVehicle[vId] = [];
+      }
+      groupedByVehicle[vId].push(r);
+    }
+
     const computed: ComputedRecord[] = [];
 
-    for (let i = 0; i < sorted.length; i++) {
-      const current = sorted[i];
-      const pricePerLiter = current.cost / current.liters;
-      
-      const recordComp: ComputedRecord = {
-        ...current,
-        pricePerLiter
-      };
+    // Process consumption independently per vehicle
+    for (const vId in groupedByVehicle) {
+      const sorted = [...groupedByVehicle[vId]].sort((a, b) => a.odometer - b.odometer);
 
-      // We can only compute consumption if the current refill is "Full Tank" 
-      // and there exists a previous "Full Tank" refill in the history.
-      if (current.isFull) {
-        // Find previous full tank
-        let prevFullIndex = -1;
-        for (let j = i - 1; j >= 0; j--) {
-          if (sorted[j].isFull) {
-            prevFullIndex = j;
-            break;
-          }
-        }
+      for (let i = 0; i < sorted.length; i++) {
+        const current = sorted[i];
+        const pricePerLiter = current.liters > 0 ? current.cost / current.liters : 0;
+        
+        const recordComp: ComputedRecord = {
+          ...current,
+          pricePerLiter
+        };
 
-        if (prevFullIndex !== -1) {
-          const prevFull = sorted[prevFullIndex];
-          const distance = current.odometer - prevFull.odometer;
-          
-          // Sum up liters loaded in between (from prevFullIndex + 1 to i)
-          let totalLiters = 0;
-          let totalCost = 0;
-          for (let k = prevFullIndex + 1; k <= i; k++) {
-            totalLiters += sorted[k].liters;
-            totalCost += sorted[k].cost;
+        if (current.isFull) {
+          let prevFullIndex = -1;
+          for (let j = i - 1; j >= 0; j--) {
+            if (sorted[j].isFull) {
+              prevFullIndex = j;
+              break;
+            }
           }
 
-          if (distance > 0 && totalLiters > 0) {
-            const consumptionL100 = (totalLiters / distance) * 100;
-            const consumptionKmL = distance / totalLiters;
+          if (prevFullIndex !== -1) {
+            const prevFull = sorted[prevFullIndex];
+            const distance = current.odometer - prevFull.odometer;
             
-            recordComp.distance = distance;
-            recordComp.consumption = unit === "L/100km" ? consumptionL100 : consumptionKmL;
-            recordComp.costPerKm = totalCost / distance;
+            let totalLiters = 0;
+            let totalCost = 0;
+            for (let k = prevFullIndex + 1; k <= i; k++) {
+              totalLiters += sorted[k].liters;
+              totalCost += sorted[k].cost;
+            }
+
+            if (distance > 0 && totalLiters > 0) {
+              const consumptionL100 = (totalLiters / distance) * 100;
+              const consumptionKmL = distance / totalLiters;
+              
+              recordComp.distance = distance;
+              recordComp.consumption = unit === "L/100km" ? consumptionL100 : consumptionKmL;
+              recordComp.costPerKm = totalCost / distance;
+            }
           }
         }
-      }
 
-      computed.push(recordComp);
+        computed.push(recordComp);
+      }
     }
 
     setComputedRecords(computed);
   }, [records, unit]);
 
-  // Handle Filtering by Date Range
+  // Handle Filtering by Vehicle and Date Range
   useEffect(() => {
     if (computedRecords.length === 0) {
       setFilteredRecords([]);
@@ -154,6 +202,13 @@ export default function FuelTracker() {
 
     let filtered = [...computedRecords];
 
+    if (selectedVehicleId !== "all") {
+      filtered = filtered.filter(r => {
+        const rVId = r.vehicleId || "unassigned";
+        return rVId === selectedVehicleId;
+      });
+    }
+
     if (startDate) {
       filtered = filtered.filter(r => r.date >= startDate);
     }
@@ -161,11 +216,93 @@ export default function FuelTracker() {
       filtered = filtered.filter(r => r.date <= endDate);
     }
 
-    // Sort by odometer descending for table viewing, but keep ascending for some metrics/charts
+    // Sort by odometer descending for table viewing
     setFilteredRecords(filtered.sort((a, b) => b.odometer - a.odometer));
-  }, [computedRecords, startDate, endDate]);
+  }, [computedRecords, selectedVehicleId, startDate, endDate]);
 
-  // Handle Add Record
+  // Add / Edit Vehicle Handlers
+  const handleSaveVehicle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !newVehicleName.trim()) return;
+
+    try {
+      if (editingVehicleId) {
+        // Update existing vehicle
+        await updateDoc(doc(db, "users", user.uid, "vehicles", editingVehicleId), {
+          name: newVehicleName.trim(),
+          plate: newVehiclePlate.trim(),
+          defaultFuelType: newVehicleFuelType
+        });
+      } else {
+        // Add new vehicle
+        const newV = {
+          name: newVehicleName.trim(),
+          plate: newVehiclePlate.trim(),
+          defaultFuelType: newVehicleFuelType,
+          created_at: new Date().toISOString()
+        };
+        const ref = await addDoc(collection(db, "users", user.uid, "vehicles"), newV);
+        setFormVehicleId(ref.id);
+        if (selectedVehicleId === "all") setSelectedVehicleId(ref.id);
+      }
+
+      setNewVehicleName("");
+      setNewVehiclePlate("");
+      setEditingVehicleId(null);
+      setShowVehicleModal(false);
+      await fetchVehicles();
+    } catch (e) {
+      console.error("Error saving vehicle:", e);
+      alert("Error al guardar el vehículo.");
+    }
+  };
+
+  const handleEditVehicleClick = (v: Vehicle) => {
+    setEditingVehicleId(v.id);
+    setNewVehicleName(v.name);
+    setNewVehiclePlate(v.plate || "");
+    setNewVehicleFuelType(v.defaultFuelType || "Nafta Súper");
+    setShowVehicleModal(true);
+  };
+
+  const handleDeleteVehicle = async (vId: string) => {
+    if (!user) return;
+    if (!confirm("¿Deseas eliminar este vehículo? Los registros cargados se conservarán.")) return;
+
+    try {
+      await deleteDoc(doc(db, "users", user.uid, "vehicles", vId));
+      if (selectedVehicleId === vId) setSelectedVehicleId("all");
+      if (formVehicleId === vId) setFormVehicleId("");
+      await fetchVehicles();
+    } catch (e) {
+      console.error("Error deleting vehicle:", e);
+      alert("Error al eliminar el vehículo.");
+    }
+  };
+
+  // Start Editing a Fuel Load
+  const handleStartEdit = (rec: FuelRecord) => {
+    setEditingRecordId(rec.id);
+    setDate(rec.date);
+    setOdometer(rec.odometer.toString());
+    setLiters(rec.liters.toString());
+    setCost(rec.cost.toString());
+    setFuelType(rec.fuelType);
+    setIsFull(rec.isFull);
+    setFormVehicleId(rec.vehicleId || (vehicles[0]?.id || ""));
+    formRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRecordId(null);
+    setOdometer("");
+    setLiters("");
+    setCost("");
+    const today = new Date().toISOString().split("T")[0];
+    setDate(today);
+  };
+
+  // Submit Add or Edit Fuel Load
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -179,33 +316,47 @@ export default function FuelTracker() {
       return;
     }
 
-    if (records.some(r => r.odometer === odomVal)) {
-      alert("Ya existe una carga registrada con ese kilometraje exacto.");
+    // Check duplicate odometer (except when editing current record)
+    const duplicate = records.find(r => r.odometer === odomVal && r.id !== editingRecordId && (r.vehicleId || "unassigned") === (formVehicleId || "unassigned"));
+    if (duplicate) {
+      alert("Ya existe una carga registrada con ese kilometraje exacto para este vehículo.");
       return;
     }
 
     try {
       setLoading(true);
-      const newRec = {
+      const recordPayload = {
         date,
         odometer: odomVal,
         liters: litVal,
         cost: costVal,
         fuelType,
         isFull,
-        created_at: new Date().toISOString()
+        vehicleId: formVehicleId || (vehicles[0]?.id || "")
       };
 
-      await addDoc(collection(db, "users", user.uid, "fuel_records"), newRec);
+      if (editingRecordId) {
+        // Update existing record
+        await updateDoc(doc(db, "users", user.uid, "fuel_records", editingRecordId), recordPayload);
+        setEditingRecordId(null);
+      } else {
+        // Create new record
+        await addDoc(collection(db, "users", user.uid, "fuel_records"), {
+          ...recordPayload,
+          created_at: new Date().toISOString()
+        });
+      }
       
       // Reset form fields
       setOdometer("");
       setLiters("");
       setCost("");
-      
+      const today = new Date().toISOString().split("T")[0];
+      setDate(today);
+
       await fetchRecords();
     } catch (e) {
-      console.error("Error adding fuel record:", e);
+      console.error("Error saving fuel record:", e);
       alert("Error al guardar el registro.");
       setLoading(false);
     }
@@ -219,6 +370,7 @@ export default function FuelTracker() {
     try {
       setLoading(true);
       await deleteDoc(doc(db, "users", user.uid, "fuel_records", id));
+      if (editingRecordId === id) handleCancelEdit();
       await fetchRecords();
     } catch (e) {
       console.error("Error deleting fuel record:", e);
@@ -235,7 +387,6 @@ export default function FuelTracker() {
 
   // Calculate summary metrics on the CURRENT filtered subset of data
   const getMetrics = () => {
-    // For calculation, we need them in chronological order
     const chronRecords = [...filteredRecords].sort((a, b) => a.odometer - b.odometer);
     
     if (chronRecords.length < 2) {
@@ -244,7 +395,7 @@ export default function FuelTracker() {
         totalCost: chronRecords.reduce((acc, r) => acc + r.cost, 0),
         totalLiters: chronRecords.reduce((acc, r) => acc + r.liters, 0),
         totalDistance: 0,
-        avgPricePerLiter: chronRecords.length > 0 
+        avgPricePerLiter: chronRecords.length > 0 && chronRecords.reduce((acc, r) => acc + r.liters, 0) > 0
           ? chronRecords.reduce((acc, r) => acc + r.cost, 0) / chronRecords.reduce((acc, r) => acc + r.liters, 0)
           : 0,
         avgCostPerKm: 0,
@@ -252,7 +403,6 @@ export default function FuelTracker() {
       };
     }
 
-    // Find first full tank and last full tank in the selected subset
     const fullTanks = chronRecords.filter(r => r.isFull);
     
     let avgConsumption = 0;
@@ -263,13 +413,11 @@ export default function FuelTracker() {
       const firstFull = fullTanks[0];
       const lastFull = fullTanks[fullTanks.length - 1];
       
-      // Find indices in chronRecords
       const firstIndex = chronRecords.findIndex(r => r.id === firstFull.id);
       const lastIndex = chronRecords.findIndex(r => r.id === lastFull.id);
       
       calcDistance = lastFull.odometer - firstFull.odometer;
       
-      // Sum up liters loaded in between (excluding first index itself, but including last index)
       for (let k = firstIndex + 1; k <= lastIndex; k++) {
         calcLiters += chronRecords[k].liters;
       }
@@ -284,13 +432,11 @@ export default function FuelTracker() {
     const totalCost = chronRecords.reduce((acc, r) => acc + r.cost, 0);
     const totalLiters = chronRecords.reduce((acc, r) => acc + r.liters, 0);
     
-    // Overall absolute distance covers the entire span of filtered records
     const absoluteDistance = chronRecords[chronRecords.length - 1].odometer - chronRecords[0].odometer;
     
     const avgPricePerLiter = totalLiters > 0 ? totalCost / totalLiters : 0;
     const avgCostPerKm = absoluteDistance > 0 ? totalCost / absoluteDistance : 0;
 
-    // Average distance between refills
     const distances: number[] = [];
     for (let i = 1; i < chronRecords.length; i++) {
       distances.push(chronRecords[i].odometer - chronRecords[i - 1].odometer);
@@ -323,10 +469,179 @@ export default function FuelTracker() {
       Odo: r.odometer
     }));
 
+  // Map vehicle ID to Vehicle Name helper
+  const getVehicleName = (vId?: string) => {
+    if (!vId) return "Sin asignar";
+    const v = vehicles.find(item => item.id === vId);
+    return v ? (v.plate ? `${v.name} (${v.plate})` : v.name) : "Vehículo";
+  };
+
   if (!isClient) return null;
 
   return (
     <div className="space-y-6">
+
+      {/* Vehicle Selection Header Bar */}
+      <div className="glass rounded-3xl p-5 border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-900/60 to-sky-950/20">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-sky-500/10 border border-sky-500/20 rounded-2xl text-sky-400">
+            <Car className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Vehículo Seleccionado</h2>
+            <div className="flex items-center gap-2 mt-0.5">
+              <select
+                value={selectedVehicleId}
+                onChange={(e) => setSelectedVehicleId(e.target.value)}
+                className="bg-black/40 border border-white/10 rounded-xl px-3 py-1.5 text-sm font-bold text-sky-400 focus:outline-none focus:border-sky-500/50 cursor-pointer"
+              >
+                <option value="all">🚗 Todos los vehículos ({records.length} cargas)</option>
+                {vehicles.map(v => (
+                  <option key={v.id} value={v.id}>
+                    🚘 {v.name} {v.plate ? `[${v.plate}]` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => {
+            setEditingVehicleId(null);
+            setNewVehicleName("");
+            setNewVehiclePlate("");
+            setShowVehicleModal(true);
+          }}
+          className="flex items-center gap-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Gestionar / Nuevo Auto</span>
+        </button>
+      </div>
+
+      {/* Vehicle Management Modal */}
+      {showVehicleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="glass bg-[#12141c] border border-white/10 rounded-3xl p-6 w-full max-w-md space-y-5 shadow-2xl relative">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <h3 className="text-base font-bold text-gray-100 flex items-center gap-2">
+                <Car className="w-5 h-5 text-sky-400" />
+                {editingVehicleId ? "Editar Auto" : "Agregar Nuevo Auto"}
+              </h3>
+              <button 
+                onClick={() => {
+                  setShowVehicleModal(false);
+                  setEditingVehicleId(null);
+                }}
+                className="text-gray-400 hover:text-gray-200 p-1 rounded-lg hover:bg-white/5"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* List of Existing Vehicles */}
+            {vehicles.length > 0 && !editingVehicleId && (
+              <div className="space-y-2">
+                <span className="text-xs text-gray-400 font-medium">Tus vehículos registrados:</span>
+                <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
+                  {vehicles.map(v => (
+                    <div key={v.id} className="flex items-center justify-between bg-black/30 border border-white/5 rounded-xl px-3 py-2 text-xs">
+                      <div>
+                        <span className="font-semibold text-gray-200">{v.name}</span>
+                        {v.plate && <span className="ml-2 text-gray-400 text-[11px]">({v.plate})</span>}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleEditVehicleClick(v)}
+                          className="p-1 text-gray-400 hover:text-sky-400 hover:bg-white/5 rounded-md"
+                          title="Editar vehículo"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteVehicle(v.id)}
+                          className="p-1 text-gray-400 hover:text-red-400 hover:bg-white/5 rounded-md"
+                          title="Eliminar vehículo"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Vehicle Form */}
+            <form onSubmit={handleSaveVehicle} className="space-y-3 pt-1">
+              <div>
+                <label className="text-xs text-gray-400 font-medium block mb-1">
+                  Nombre / Modelo <span className="text-sky-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="ej: Peugeot 208 Active"
+                  value={newVehicleName}
+                  onChange={(e) => setNewVehicleName(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-sky-500/50"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-400 font-medium block mb-1">Patente (Opcional)</label>
+                  <input
+                    type="text"
+                    placeholder="ej: AF123CD"
+                    value={newVehiclePlate}
+                    onChange={(e) => setNewVehiclePlate(e.target.value)}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-sky-500/50"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 font-medium block mb-1">Combustible Usual</label>
+                  <select
+                    value={newVehicleFuelType}
+                    onChange={(e) => setNewVehicleFuelType(e.target.value)}
+                    className="w-full bg-[#18181b] border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-sky-500/50"
+                  >
+                    <option value="Nafta Súper">Nafta Súper</option>
+                    <option value="Nafta Premium">Nafta Premium</option>
+                    <option value="Gasoil Súper">Gasoil Súper</option>
+                    <option value="Gasoil Premium">Gasoil Premium</option>
+                    <option value="GNC">GNC</option>
+                    <option value="Otro">Otro</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowVehicleModal(false);
+                    setEditingVehicleId(null);
+                  }}
+                  className="px-4 py-2 text-xs font-semibold text-gray-400 hover:text-gray-200 rounded-xl hover:bg-white/5"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-white rounded-xl shadow-lg transition-all"
+                >
+                  {editingVehicleId ? "Guardar Auto" : "Agregar Auto"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {/* Consumption KPI */}
@@ -447,7 +762,7 @@ export default function FuelTracker() {
           {(startDate || endDate) && (
             <button 
               onClick={resetFilters}
-              className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-200 bg-white/5 hover:bg-white/10 rounded-lg px-2 py-1 transition-all"
+              className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-200 bg-white/5 hover:bg-white/10 rounded-lg px-2 py-1 transition-all cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Limpiar</span>
@@ -459,7 +774,7 @@ export default function FuelTracker() {
         <div className="flex items-center gap-2 bg-black/40 border border-white/5 p-1 rounded-xl w-full md:w-auto justify-center">
           <button 
             onClick={() => setUnit("L/100km")}
-            className={`px-4 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+            className={`px-4 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
               unit === "L/100km" 
                 ? "bg-sky-500/20 text-sky-400 border border-sky-500/30 shadow-sm"
                 : "text-gray-400 hover:text-gray-200"
@@ -469,7 +784,7 @@ export default function FuelTracker() {
           </button>
           <button 
             onClick={() => setUnit("km/L")}
-            className={`px-4 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+            className={`px-4 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
               unit === "km/L" 
                 ? "bg-sky-500/20 text-sky-400 border border-sky-500/30 shadow-sm"
                 : "text-gray-400 hover:text-gray-200"
@@ -487,14 +802,48 @@ export default function FuelTracker() {
         <div className="lg:col-span-5 space-y-6">
           
           {/* Refill Form */}
-          <div className="glass rounded-3xl p-6 border-white/5 relative overflow-hidden">
+          <div ref={formRef} className="glass rounded-3xl p-6 border-white/5 relative overflow-hidden transition-all">
             <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/5 rounded-full blur-3xl -z-10 pointer-events-none"></div>
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="w-5 h-5 text-sky-400" />
-              <h2 className="text-lg font-bold text-gray-200">Registrar Carga</h2>
+            
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-sky-400" />
+                <h2 className="text-lg font-bold text-gray-200">
+                  {editingRecordId ? "Editar Carga de Combustible" : "Registrar Carga"}
+                </h2>
+              </div>
+              {editingRecordId && (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="text-xs text-amber-400 hover:text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg transition-all"
+                >
+                  Cancelar Edición
+                </button>
+              )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Vehicle Selection in Form */}
+              {vehicles.length > 0 && (
+                <div className="space-y-1.5">
+                  <label className="text-xs text-gray-400 font-medium flex items-center gap-1.5">
+                    <Car className="w-3.5 h-3.5 text-gray-500" /> Vehículo
+                  </label>
+                  <select
+                    value={formVehicleId}
+                    onChange={(e) => setFormVehicleId(e.target.value)}
+                    className="w-full bg-[#18181b] border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-sky-500/50 transition-colors"
+                  >
+                    {vehicles.map(v => (
+                      <option key={v.id} value={v.id}>
+                        {v.name} {v.plate ? `(${v.plate})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 {/* Date */}
                 <div className="space-y-1.5">
@@ -592,19 +941,25 @@ export default function FuelTracker() {
                   type="checkbox"
                   checked={isFull}
                   onChange={(e) => setIsFull(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+                  className="w-4 h-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500 cursor-pointer"
                 />
               </div>
 
-              {/* Submit Button */}
-              <button 
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-sky-500 to-indigo-500 text-white rounded-2xl py-3 px-4 text-sm font-semibold hover:shadow-lg hover:shadow-sky-500/10 hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-2 cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Agregar Carga</span>
-              </button>
+              {/* Submit / Save Button */}
+              <div className="flex gap-2">
+                <button 
+                  type="submit"
+                  disabled={loading}
+                  className={`w-full text-white rounded-2xl py-3 px-4 text-sm font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-2 cursor-pointer ${
+                    editingRecordId
+                      ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:shadow-amber-500/10"
+                      : "bg-gradient-to-r from-sky-500 to-indigo-500 hover:shadow-sky-500/10"
+                  }`}
+                >
+                  {editingRecordId ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                  <span>{editingRecordId ? "Guardar Cambios" : "Agregar Carga"}</span>
+                </button>
+              </div>
             </form>
           </div>
 
@@ -614,7 +969,7 @@ export default function FuelTracker() {
             <div className="space-y-1">
               <span className="font-semibold text-gray-200">¿Cómo funciona la métrica de consumo?</span>
               <p className="leading-relaxed">
-                El consumo promedio de un tramo se calcula cuando registras una carga con <strong className="text-sky-300">"Tanque Lleno"</strong>. La aplicación mide la distancia recorrida desde el llenado anterior y la divide por los litros cargados para reponer ese combustible. Las cargas parciales intermedias se acumularán y sumarán sus litros en el siguiente llenado completo.
+                El consumo promedio de un tramo se calcula cuando registras una carga con <strong className="text-sky-300">"Tanque Lleno"</strong>. La aplicación mide la distancia recorrida desde el llenado anterior del mismo vehículo y la divide por los litros cargados.
               </p>
             </div>
           </div>
@@ -704,18 +1059,22 @@ export default function FuelTracker() {
                 <p className="text-xs text-gray-600">Comienza agregando tu primera carga en el formulario.</p>
               </div>
             ) : (
+              /* FIX HEADER OVERLAP: solid th background (#12141c) + sticky top-0 z-20 + border-separate border-spacing-0 */
               <div className="overflow-x-auto max-h-[480px]">
-                <table className="w-full text-left text-sm text-gray-300">
-                  <thead className="text-xs text-gray-400 uppercase bg-white/5 sticky top-0 z-10">
+                <table className="w-full text-left text-sm text-gray-300 border-separate border-spacing-0">
+                  <thead className="text-xs text-gray-300 uppercase sticky top-0 z-20 shadow-md">
                     <tr>
-                      <th className="px-4 py-3.5">Fecha</th>
-                      <th className="px-4 py-3.5 text-right">Odo. (km)</th>
-                      <th className="px-4 py-3.5 text-right">Litros (L)</th>
-                      <th className="px-4 py-3.5 text-right">Costo Total</th>
-                      <th className="px-4 py-3.5 text-right">$/Litro</th>
-                      <th className="px-4 py-3.5 text-center">Tipo / Tipo Carga</th>
-                      <th className="px-4 py-3.5 text-right text-sky-400">Consumo</th>
-                      <th className="px-4 py-3.5 text-center">Acción</th>
+                      <th className="px-4 py-3.5 bg-[#12141c] border-b border-white/10 font-semibold">Fecha</th>
+                      {selectedVehicleId === "all" && (
+                        <th className="px-4 py-3.5 bg-[#12141c] border-b border-white/10 font-semibold">Auto</th>
+                      )}
+                      <th className="px-4 py-3.5 bg-[#12141c] border-b border-white/10 font-semibold text-right">Odo. (km)</th>
+                      <th className="px-4 py-3.5 bg-[#12141c] border-b border-white/10 font-semibold text-right">Litros (L)</th>
+                      <th className="px-4 py-3.5 bg-[#12141c] border-b border-white/10 font-semibold text-right">Costo Total</th>
+                      <th className="px-4 py-3.5 bg-[#12141c] border-b border-white/10 font-semibold text-right">$/Litro</th>
+                      <th className="px-4 py-3.5 bg-[#12141c] border-b border-white/10 font-semibold text-center">Tipo / Carga</th>
+                      <th className="px-4 py-3.5 bg-[#12141c] border-b border-white/10 font-semibold text-right text-sky-400">Consumo</th>
+                      <th className="px-4 py-3.5 bg-[#12141c] border-b border-white/10 font-semibold text-center">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
@@ -725,11 +1084,22 @@ export default function FuelTracker() {
                         month: "2-digit",
                         year: "numeric"
                       });
+                      const isBeingEdited = editingRecordId === rec.id;
                       return (
-                        <tr key={rec.id} className="hover:bg-white/2 transition-colors">
+                        <tr 
+                          key={rec.id} 
+                          className={`transition-colors ${
+                            isBeingEdited ? "bg-amber-500/10 border-l-2 border-amber-400" : "hover:bg-white/2"
+                          }`}
+                        >
                           <td className="px-4 py-3.5 font-medium whitespace-nowrap text-xs text-gray-400">
                             {formattedDate}
                           </td>
+                          {selectedVehicleId === "all" && (
+                            <td className="px-4 py-3.5 whitespace-nowrap text-xs text-sky-300/80 font-medium">
+                              {getVehicleName(rec.vehicleId)}
+                            </td>
+                          )}
                           <td className="px-4 py-3.5 text-right font-mono text-xs">
                             {rec.odometer.toLocaleString("es-AR")}
                           </td>
@@ -768,14 +1138,23 @@ export default function FuelTracker() {
                               <span className="text-gray-500 text-xs font-normal">---</span>
                             )}
                           </td>
-                          <td className="px-4 py-3.5 text-center">
-                            <button
-                              onClick={() => handleDelete(rec.id)}
-                              className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
-                              title="Eliminar registro"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                          <td className="px-4 py-3.5 text-center whitespace-nowrap">
+                            <div className="flex items-center justify-center gap-1">
+                              <button
+                                onClick={() => handleStartEdit(rec)}
+                                className="p-1.5 text-gray-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-all cursor-pointer"
+                                title="Editar registro"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(rec.id)}
+                                className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer"
+                                title="Eliminar registro"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );

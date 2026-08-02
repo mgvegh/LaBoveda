@@ -194,6 +194,10 @@ export default function ProfileButton() {
       const fuelSnap = await getDocs(collection(db, "users", user.uid, "fuel_records"));
       const fuelRecords = fuelSnap.docs.map(d => d.data());
 
+      // 7. Fetch Vehicles
+      const vehiclesSnap = await getDocs(collection(db, "users", user.uid, "vehicles"));
+      const vehicles = vehiclesSnap.docs.map(d => d.data());
+
       const backupData = {
         version: "2.0",
         exportedAt: new Date().toISOString(),
@@ -203,7 +207,8 @@ export default function ProfileButton() {
         cedearsCsvImports,
         criptoPortfolio,
         criptoStrategies,
-        fuelRecords
+        fuelRecords,
+        vehicles
       };
 
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
@@ -295,6 +300,17 @@ export default function ProfileButton() {
         if (backup.fuelRecords) {
           for (const item of backup.fuelRecords) {
             await addDoc(collection(db, "users", user.uid, "fuel_records"), item);
+          }
+        }
+
+        // 7. Overwrite Vehicles
+        const existingVehicles = await getDocs(collection(db, "users", user.uid, "vehicles"));
+        for (const docObj of existingVehicles.docs) {
+          await deleteDoc(doc(db, "users", user.uid, "vehicles", docObj.id));
+        }
+        if (backup.vehicles) {
+          for (const item of backup.vehicles) {
+            await addDoc(collection(db, "users", user.uid, "vehicles"), item);
           }
         }
 
