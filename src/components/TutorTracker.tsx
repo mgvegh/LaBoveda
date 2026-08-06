@@ -798,20 +798,36 @@ export default function TutorTracker() {
               </div>
             </div>
 
-            {/* Save button — aligned to bottom-right */}
-            <button
-              id="btn-save-class"
-              type="submit"
-              disabled={formSaving}
-              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold text-sm hover:from-emerald-400 hover:to-teal-400 transition-all disabled:opacity-60 shadow-lg shadow-emerald-900/30 self-end"
-            >
-              {formSaving
-                ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                : <Check className="w-4 h-4" />}
-              {editingId
-                ? "Actualizar Clase"
-                : formRepeat > 1 ? `Guardar ${formRepeat} Clases` : "Guardar Clase"}
-            </button>
+            {/* Action buttons — aligned to bottom-right */}
+            <div className="flex items-center gap-3 self-end">
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm("¿Seguro que querés eliminar esta clase?")) {
+                      handleDelete(editingId);
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 text-red-400 rounded-xl font-semibold text-sm hover:bg-red-500/20 hover:text-red-300 transition-all border border-red-500/20"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Eliminar
+                </button>
+              )}
+              <button
+                id="btn-save-class"
+                type="submit"
+                disabled={formSaving}
+                className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold text-sm hover:from-emerald-400 hover:to-teal-400 transition-all disabled:opacity-60 shadow-lg shadow-emerald-900/30"
+              >
+                {formSaving
+                  ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  : <Check className="w-4 h-4" />}
+                {editingId
+                  ? "Actualizar Clase"
+                  : formRepeat > 1 ? `Guardar ${formRepeat} Clases` : "Guardar Clase"}
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -1052,20 +1068,9 @@ export default function TutorTracker() {
               <div className="flex items-center gap-3">
                 <span className="text-gray-100 font-bold text-base">{formatARS(cls.amount)}</span>
                 <button onClick={() => openEditForm(cls)}
-                  className="p-1.5 rounded-lg bg-white/5 hover:bg-blue-500/20 text-gray-400 hover:text-blue-400 transition-all" title="Editar">
+                  className="p-1.5 rounded-lg bg-white/5 hover:bg-blue-500/20 text-gray-400 hover:text-blue-400 transition-all" title="Editar / Ver detalles">
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
-                {deletingId === cls.id ? (
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => handleDelete(cls.id)} className="p-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all"><Check className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => setDeletingId(null)} className="p-1.5 rounded-lg bg-white/5 text-gray-400"><X className="w-3.5 h-3.5" /></button>
-                  </div>
-                ) : (
-                  <button onClick={() => setDeletingId(cls.id)}
-                    className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-all" title="Eliminar">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
               </div>
             </div>
           ))}
