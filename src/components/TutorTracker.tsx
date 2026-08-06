@@ -558,7 +558,7 @@ export default function TutorTracker() {
     const tutorName = user?.displayName || user?.email || "Tutor";
 
     const htmlContent = `
-      <div class="tutor-report-content">
+      <div id="report-capture-area" class="tutor-report-content">
         <table class="header-bar" style="width: 100%; border: none; margin-bottom: 20px;">
           <tr>
             <td style="width: 70px; border: none; padding: 0; text-align: left; vertical-align: top;">
@@ -592,45 +592,28 @@ export default function TutorTracker() {
     setShowReportPreview(true);
   }
 
-  async function handleDownloadOrSharePDF(action: "download" | "share") {
-    if (typeof window === "undefined" || !reportHTML) return;
+  async function handleDownloadOrShareImage(action: "download" | "share") {
+    const node = document.getElementById("report-capture-area");
+    if (!node) return;
     const { monthLabelCap } = handlePrint() || { monthLabelCap: "" };
     
     setIsSharing(true);
     try {
-      // @ts-ignore
-      const html2pdf = (await import("html2pdf.js")).default;
-      const filename = `Informe_CET_${monthLabelCap.replace(/ /g, "_")}.pdf`;
-      
-      const opt = {
-        margin: 10,
-        filename: filename,
-        image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const }
-      };
-      
-      const pdfHTML = `
-        <style>
-          .tutor-report-content th,
-          .tutor-report-content td,
-          .tutor-report-content .logo-title,
-          .tutor-report-content .student-name,
-          .tutor-report-content .grand-total,
-          .tutor-report-content .header-bar td div {
-            position: relative;
-            top: -4px;
-          }
-        </style>
-        ${reportHTML}
-      `;
+      const htmlToImage = await import("html-to-image");
+      const filename = `Informe_CET_${monthLabelCap.replace(/ /g, "_")}.png`;
+      const options = { quality: 1, backgroundColor: '#ffffff', pixelRatio: 2 };
       
       if (action === "download") {
-        await html2pdf().set(opt).from(pdfHTML).save();
+        const dataUrl = await htmlToImage.toPng(node, options);
+        const link = document.createElement("a");
+        link.download = filename;
+        link.href = dataUrl;
+        link.click();
       } else {
-        const pdfBlob = await html2pdf().set(opt).from(pdfHTML).output('blob');
-        const file = new File([pdfBlob], filename, { type: "application/pdf" });
+        const blob = await htmlToImage.toBlob(node, options);
+        if (!blob) throw new Error("No se pudo generar la imagen.");
         
+        const file = new File([blob], filename, { type: "image/png" });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
             files: [file],
@@ -639,12 +622,16 @@ export default function TutorTracker() {
           });
         } else {
           // Fallback to download if sharing is not supported
-          await html2pdf().set(opt).from(pdfHTML).save();
+          const dataUrl = await htmlToImage.toPng(node, options);
+          const link = document.createElement("a");
+          link.download = filename;
+          link.href = dataUrl;
+          link.click();
         }
       }
     } catch (e) {
-      console.error("Error generating PDF:", e);
-      alert("Hubo un error al generar o compartir el PDF.");
+      console.error("Error generating Image:", e);
+      alert("Hubo un error al generar o compartir la imagen.");
     } finally {
       setIsSharing(false);
     }
@@ -1245,14 +1232,14 @@ export default function TutorTracker() {
             
             <div className="p-4 border-t border-white/10 bg-black/40 flex flex-wrap gap-3 justify-end">
               <button
-                onClick={() => handleDownloadOrSharePDF("download")}
+                onClick={() => handleDownloadOrShareImage("download")}
                 disabled={isSharing}
                 className="flex-1 md:flex-none items-center justify-center gap-2 px-5 py-3 rounded-xl border border-white/20 text-gray-200 hover:bg-white/10 transition-all font-medium disabled:opacity-50 flex"
               >
-                {isSharing ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Printer className="w-4 h-4" />} Descargar PDF
+                {isSharing ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Printer className="w-4 h-4" />} Descargar Imagen
               </button>
               <button
-                onClick={() => handleDownloadOrSharePDF("share")}
+                onClick={() => handleDownloadOrShareImage("share")}
                 disabled={isSharing}
                 className="flex-1 md:flex-none items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-bold hover:from-emerald-400 hover:to-teal-400 transition-all disabled:opacity-50 shadow-lg shadow-emerald-900/30 flex"
               >
