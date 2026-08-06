@@ -5,7 +5,7 @@ import {
   GraduationCap, Trash2, Pencil, Printer, Settings,
   ChevronLeft, ChevronRight, X, Check, BookOpen, Clock,
   Monitor, Users, Building2, User, Save, AlertCircle,
-  CalendarDays, LayoutGrid, Timer, ChevronDown, Repeat2
+  CalendarDays, LayoutGrid, Timer, ChevronDown, Repeat2, Share2
 } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { db } from "@/lib/firebase";
@@ -264,6 +264,7 @@ export default function TutorTracker() {
   const [settings, setSettings] = useState<TutorSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
 
   // ── View state
   const [activeView, setActiveView] = useState<"calendar" | "list">("calendar");
@@ -552,6 +553,9 @@ export default function TutorTracker() {
     let printRoot = document.getElementById("tutor-print-root");
     if (!printRoot) { printRoot = document.createElement("div"); document.body.appendChild(printRoot); }
     printRoot.id = "tutor-print-root";
+    
+    const tutorName = user?.displayName || user?.email || "Tutor";
+    
     printRoot.innerHTML = `
       <div class="header-bar">
         <div style="display: flex; align-items: center; gap: 16px;">
@@ -568,9 +572,69 @@ export default function TutorTracker() {
       </div>
       ${studentsHTML}
       <div class="grand-total">TOTAL A COBRAR: ${formatARS(grandTotal)}</div>
-      <div class="footer">Documento generado automáticamente — Centro de Estudios Turing</div>
+      <div class="footer">
+        <div>Documento generado automáticamente — Centro de Estudios Turing</div>
+        <div style="margin-top: 4px; font-weight: bold;">Tutor: ${tutorName}</div>
+      </div>
     `;
+    return { printRoot, monthLabelCap };
+  }
+
+  function triggerPrint() {
+    handlePrint();
     window.print();
+  }
+
+  async function handleSharePDF() {
+    if (typeof window === "undefined") return;
+    const res = handlePrint();
+    if (!res) return;
+    const { printRoot, monthLabelCap } = res;
+    
+    setIsSharing(true);
+    try {
+      // @ts-ignore
+      const html2pdf = (await import("html2pdf.js")).default;
+      const filename = `Informe_CET_${monthLabelCap}_${new Date().getFullYear()}.pdf`;
+      
+      const opt = {
+        margin: 10,
+        filename: filename,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const }
+      };
+      
+      // Remove display:none enforcement just for capturing
+      printRoot.style.setProperty("display", "block", "important");
+      printRoot.style.position = "absolute";
+      printRoot.style.left = "-9999px";
+      printRoot.style.top = "-9999px";
+      
+      const pdfBlob = await html2pdf().set(opt).from(printRoot).output('blob');
+      
+      printRoot.style.position = "";
+      printRoot.style.left = "";
+      printRoot.style.top = "";
+      printRoot.style.display = "";
+
+      const file = new File([pdfBlob], filename, { type: "application/pdf" });
+      
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: "Informe CET",
+          text: `Adjunto mi informe de clases del mes de ${monthLabelCap}.`,
+        });
+      } else {
+        html2pdf().set(opt).from(printRoot).save();
+      }
+    } catch (e) {
+      console.error("Error sharing PDF:", e);
+      alert("Hubo un error al generar o compartir el PDF.");
+    } finally {
+      setIsSharing(false);
+    }
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -950,13 +1014,24 @@ export default function TutorTracker() {
           3. ACTION BAR
       ═══════════════════════════════════════════════════════ */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <button
-          id="btn-print-report"
-          onClick={handlePrint}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm hover:from-blue-500 hover:to-indigo-500 transition-all shadow-lg shadow-blue-900/30 hover:scale-105 active:scale-95"
-        >
-          <Printer className="w-4 h-4" /> Informe CET
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            id="btn-print-report"
+            onClick={triggerPrint}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm hover:from-blue-500 hover:to-indigo-500 transition-all shadow-lg shadow-blue-900/30 hover:scale-105 active:scale-95"
+          >
+            <Printer className="w-4 h-4" /> Informe CET
+          </button>
+          
+          <button
+            id="btn-share-report"
+            onClick={handleSharePDF}
+            disabled={isSharing}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold text-sm hover:from-emerald-400 hover:to-teal-400 transition-all shadow-lg shadow-emerald-900/30 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+          >
+            {isSharing ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Share2 className="w-4 h-4" />} Compartir
+          </button>
+        </div>
 
         <div className="flex items-center gap-1 glass-panel rounded-xl p-1">
           <button
