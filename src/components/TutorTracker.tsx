@@ -599,35 +599,57 @@ export default function TutorTracker() {
     
     setIsSharing(true);
     try {
-      const htmlToImage = await import("html-to-image");
+      // @ts-ignore
+      const html2canvas = (await import("html2canvas")).default;
       const filename = `Informe_CET_${monthLabelCap.replace(/ /g, "_")}.png`;
-      const options = { quality: 1, backgroundColor: '#ffffff', pixelRatio: 2 };
+      
+      const canvas = await html2canvas(node, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        onclone: (clonedDoc) => {
+          const style = clonedDoc.createElement('style');
+          style.innerHTML = `
+            .tutor-report-content th,
+            .tutor-report-content td,
+            .tutor-report-content .logo-title,
+            .tutor-report-content .student-name,
+            .tutor-report-content .grand-total,
+            .tutor-report-content .header-bar td div {
+              position: relative !important;
+              top: -4px !important;
+            }
+          `;
+          clonedDoc.head.appendChild(style);
+        }
+      });
+      
+      const dataUrl = canvas.toDataURL("image/png");
       
       if (action === "download") {
-        const dataUrl = await htmlToImage.toPng(node, options);
         const link = document.createElement("a");
         link.download = filename;
         link.href = dataUrl;
         link.click();
       } else {
-        const blob = await htmlToImage.toBlob(node, options);
-        if (!blob) throw new Error("No se pudo generar la imagen.");
-        
-        const file = new File([blob], filename, { type: "image/png" });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: "Informe CET",
-            text: `Adjunto mi informe de clases del mes de ${monthLabelCap}.`,
-          });
-        } else {
-          // Fallback to download if sharing is not supported
-          const dataUrl = await htmlToImage.toPng(node, options);
-          const link = document.createElement("a");
-          link.download = filename;
-          link.href = dataUrl;
-          link.click();
-        }
+        canvas.toBlob(async (blob: Blob | null) => {
+          if (!blob) throw new Error("No se pudo generar la imagen.");
+          
+          const file = new File([blob], filename, { type: "image/png" });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: "Informe CET",
+              text: `Adjunto mi informe de clases del mes de ${monthLabelCap}.`,
+            });
+          } else {
+            // Fallback to download
+            const link = document.createElement("a");
+            link.download = filename;
+            link.href = dataUrl;
+            link.click();
+          }
+        }, "image/png");
       }
     } catch (e) {
       console.error("Error generating Image:", e);
