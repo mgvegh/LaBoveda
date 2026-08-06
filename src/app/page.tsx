@@ -69,15 +69,9 @@ const cards = [
 
 export default function Home() {
   return (
-    <div className="flex flex-col gap-10 items-center justify-center min-h-[85vh]">
+    <div className="flex flex-col gap-6 items-center justify-center min-h-[80vh] pt-4">
       {/* ── Hero ─────────────────────────────────────────────────── */}
-      <div className="text-center space-y-5 max-w-3xl">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold tracking-wide"
-          style={{ borderColor: "var(--border-strong)", color: "var(--fg-muted)" }}>
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          Versión 3.0
-        </div>
-
+      <div className="text-center space-y-4 max-w-3xl">
         <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-tight">
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-blue-400 to-emerald-400">
             Tu centro de control
@@ -85,10 +79,6 @@ export default function Home() {
           <br />
           <span style={{ color: "var(--fg)" }}>financiero personal</span>
         </h1>
-
-        <p className="text-lg max-w-2xl mx-auto leading-relaxed" style={{ color: "var(--fg-muted)" }}>
-          Portfolio, cripto, ingresos, clases y más. Todo sincronizado en la nube, siempre a mano.
-        </p>
       </div>
 
       {/* ── Cards grid ───────────────────────────────────────────── */}

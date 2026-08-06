@@ -345,8 +345,12 @@ export default function ProfileButton() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-[#0f0f13] border border-white/10 rounded-2xl shadow-xl shadow-black/50 overflow-hidden z-50 text-left flex flex-col">
-          <div className="p-4 border-b border-white/5 bg-white/[0.02]">
+        <div
+          data-profile-dropdown
+          className="absolute right-0 mt-2 w-80 rounded-2xl shadow-xl shadow-black/30 overflow-hidden z-50 text-left flex flex-col"
+          style={{ background: "var(--dropdown-bg)", border: "1px solid var(--dropdown-border)" }}
+        >
+            <div className="p-4 border-b" style={{ borderColor: "var(--border)", background: "var(--glass-bg)" }}>
             <p className="text-xs text-gray-500 font-medium tracking-wide uppercase">Bóveda Privada</p>
             <p className="text-sm font-bold text-gray-200 truncate" title={user.email ?? ""}>{user.email}</p>
           </div>
@@ -406,7 +410,7 @@ export default function ProfileButton() {
             )}
           </div>
           
-          <div className="p-4 border-t border-white/5 bg-white/[0.01] space-y-3">
+          <div className="p-4 border-t space-y-3" style={{ borderColor: "var(--border)", background: "var(--glass-bg)" }}>
             <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Migración de Datos</h4>
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -432,7 +436,7 @@ export default function ProfileButton() {
             </div>
           </div>
 
-          <div className="p-2 border-t border-white/5 bg-black/40 space-y-1">
+          <div className="p-2 border-t space-y-1" style={{ borderColor: "var(--border)", background: "rgba(0,0,0,0.06)" }}>
             {isAdmin && (
               <Link href="/admin" onClick={() => setIsOpen(false)} className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors">
                 <ShieldCheck className="w-4 h-4" /> Panel Admin

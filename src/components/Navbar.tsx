@@ -104,58 +104,63 @@ export default function Navbar() {
 
           {/* ── Nav items ────────────────────────────────────────── */}
           {pathname !== "/login" && (
-            <div className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto scrollbar-hide">
-              {navItems.map((item) => {
-                const active = isActive(item.href);
-                const Icon = item.icon;
+            <div className="flex items-center gap-1">
+              {/* Scrollable nav links */}
+              <div className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto scrollbar-hide">
+                {navItems.map((item) => {
+                  const active = isActive(item.href);
+                  const Icon = item.icon;
 
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={clsx(
-                      "flex items-center gap-1.5 px-2.5 sm:px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 whitespace-nowrap shrink-0",
-                      active
-                        ? [item.activeClass, item.darkActiveClass]
-                        : "hover:bg-black/5 dark:hover:bg-white/5",
-                    )}
-                    style={
-                      active
-                        ? undefined
-                        : { color: "var(--fg-muted)" }
-                    }
-                  >
-                    {item.href === "/portfolio-cripto" ? (
-                      <div className="flex -space-x-1 items-center">
-                        <Bitcoin className="w-4 h-4 relative z-10" />
-                        <svg viewBox="0 0 32 32" className="w-4 h-4 fill-current text-purple-400">
-                          <path d="M15.925 23.969l-9.819-5.794L16 32l9.894-13.825-9.969 5.794zM16.075 0L6.181 16.481l9.819 5.806 9.894-5.806L16.075 0z" />
-                        </svg>
-                      </div>
-                    ) : (
-                      Icon && <Icon className="w-4 h-4 shrink-0" />
-                    )}
-                    <span className="hidden lg:inline">{item.label}</span>
-                  </Link>
-                );
-              })}
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={clsx(
+                        "flex items-center gap-1.5 px-2.5 sm:px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 whitespace-nowrap shrink-0",
+                        active
+                          ? [item.activeClass, item.darkActiveClass]
+                          : "hover:bg-black/5 dark:hover:bg-white/5",
+                      )}
+                      style={
+                        active
+                          ? undefined
+                          : { color: "var(--fg-muted)" }
+                      }
+                    >
+                      {item.href === "/portfolio-cripto" ? (
+                        <div className="flex -space-x-1 items-center">
+                          <Bitcoin className="w-4 h-4 relative z-10" />
+                          <svg viewBox="0 0 32 32" className="w-4 h-4 fill-current text-purple-400">
+                            <path d="M15.925 23.969l-9.819-5.794L16 32l9.894-13.825-9.969 5.794zM16.075 0L6.181 16.481l9.819 5.806 9.894-5.806L16.075 0z" />
+                          </svg>
+                        </div>
+                      ) : (
+                        Icon && <Icon className="w-4 h-4 shrink-0" />
+                      )}
+                      <span className="hidden lg:inline">{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
 
-              {/* ── Theme toggle ─────────────────────────────────── */}
-              <button
-                id="btn-theme-toggle"
-                onClick={toggleTheme}
-                title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-                className="ml-1 p-2 rounded-xl transition-all duration-200 hover:bg-black/5 dark:hover:bg-white/5"
-                style={{ color: "var(--fg-muted)" }}
-              >
-                {theme === "dark" ? (
-                  <Sun className="w-4 h-4" />
-                ) : (
-                  <Moon className="w-4 h-4" />
-                )}
-              </button>
+              {/* ── Theme toggle + Profile — outside overflow container ── */}
+              <div className="flex items-center gap-1 shrink-0 ml-1">
+                <button
+                  id="btn-theme-toggle"
+                  onClick={toggleTheme}
+                  title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+                  className="p-2 rounded-xl transition-all duration-200 hover:bg-black/5 dark:hover:bg-white/5"
+                  style={{ color: "var(--fg-muted)" }}
+                >
+                  {theme === "dark" ? (
+                    <Sun className="w-4 h-4" />
+                  ) : (
+                    <Moon className="w-4 h-4" />
+                  )}
+                </button>
 
-              {user && <ProfileButton />}
+                {user && <ProfileButton />}
+              </div>
             </div>
           )}
         </div>

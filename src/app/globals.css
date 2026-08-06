@@ -47,6 +47,10 @@
 
   --badge-active-bg:    rgba(99, 120, 200, 0.18);
   --badge-active-border:rgba(99, 120, 200, 0.35);
+
+  /* Profile dropdown */
+  --dropdown-bg:  #0f1628;
+  --dropdown-border: rgba(99, 120, 200, 0.18);
 }
 
 /* ─── Light Mode ─────────────────────────────────────────────────────────── */
@@ -78,6 +82,10 @@
 
   --badge-active-bg:    rgba(99, 120, 200, 0.12);
   --badge-active-border:rgba(99, 120, 200, 0.30);
+
+  /* Profile dropdown */
+  --dropdown-bg:  #ffffff;
+  --dropdown-border: rgba(99, 120, 200, 0.20);
 }
 
 /* ─── Base ───────────────────────────────────────────────────────────────── */
@@ -117,4 +125,42 @@ body {
 
 @utility text-subtle {
   color: var(--fg-subtle);
+}
+
+/* ─── Light mode: remap Tailwind gray scale ──────────────────────────────── */
+/*
+  Components throughout the app use text-gray-100/200/300/400/500 assuming
+  a dark background. In light mode we invert this mapping so those classes
+  produce readable dark-on-light colors instead of invisible white-on-white.
+*/
+
+.light .text-gray-100  { color: #0d1333; }
+.light .text-gray-200  { color: #1e2a4a; }
+.light .text-gray-300  { color: #2d3a5e; }
+.light .text-gray-400  { color: #4a5578; }
+.light .text-gray-500  { color: #6b7a99; }
+.light .text-gray-600  { color: #8b99bb; }
+
+/* White text → dark in light mode */
+.light .text-white     { color: #0d1333; }
+
+/* Semi-transparent whites → semi-transparent blacks */
+.light .border-white\/5  { border-color: rgba(0,0,0,0.05); }
+.light .border-white\/8  { border-color: rgba(0,0,0,0.08); }
+.light .border-white\/10 { border-color: rgba(0,0,0,0.10); }
+.light .border-white\/20 { border-color: rgba(0,0,0,0.15); }
+
+.light .bg-white\/5   { background-color: rgba(0,0,0,0.04); }
+.light .bg-white\/10  { background-color: rgba(0,0,0,0.06); }
+.light .bg-white\/\[0\.02\] { background-color: rgba(0,0,0,0.02); }
+.light .bg-white\/\[0\.01\] { background-color: rgba(0,0,0,0.01); }
+
+/* Dark backgrounds used in modal footers etc → light equivalents */
+.light .bg-black\/40  { background-color: rgba(0,0,0,0.06); }
+.light .bg-black\/60  { background-color: rgba(0,0,0,0.35); }
+
+/* Profile dropdown override in light mode */
+.light [data-profile-dropdown] {
+  background: var(--dropdown-bg);
+  border-color: var(--dropdown-border);
 }
