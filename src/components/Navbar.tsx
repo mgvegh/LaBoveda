@@ -1,10 +1,9 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bitcoin, Wallet, PiggyBank, LayoutGrid, GraduationCap, Sun, Moon } from "lucide-react";
+import { Bitcoin, Wallet, PiggyBank, LayoutGrid, GraduationCap } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/components/AuthProvider";
-import { useTheme } from "@/components/ThemeProvider";
 import Image from "next/image";
 import ProfileButton from "@/components/ProfileButton";
 
@@ -13,51 +12,39 @@ const navItems = [
     href: "/ingresos",
     label: "Ingresos",
     icon: PiggyBank,
-    color: "violet",
-    activeClass: "bg-violet-500/15 text-violet-500 border border-violet-500/25",
-    darkActiveClass: "dark:bg-violet-500/15 dark:text-violet-400 dark:border-violet-500/20",
+    activeClass: "bg-violet-500/15 text-violet-400 border border-violet-500/20",
   },
   {
     href: "/cedears",
     label: "CEDEARs",
     icon: Wallet,
-    color: "blue",
-    activeClass: "bg-blue-500/15 text-blue-600 border border-blue-500/25",
-    darkActiveClass: "dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/20",
+    activeClass: "bg-blue-500/15 text-blue-400 border border-blue-500/20",
   },
   {
     href: "/portfolio-cripto",
     label: "Cripto",
-    icon: null, // custom dual icon
-    color: "teal",
-    activeClass: "bg-teal-500/15 text-teal-600 border border-teal-500/25",
-    darkActiveClass: "dark:bg-teal-500/15 dark:text-teal-400 dark:border-teal-500/20",
+    icon: null,
+    activeClass: "bg-teal-500/15 text-teal-400 border border-teal-500/20",
   },
   {
     href: "/otras-herramientas/clases",
     label: "Clases",
     icon: GraduationCap,
-    color: "emerald",
-    activeClass: "bg-emerald-500/15 text-emerald-600 border border-emerald-500/25",
-    darkActiveClass: "dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/20",
+    activeClass: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20",
   },
   {
     href: "/otras-herramientas",
     label: "Más",
     icon: LayoutGrid,
-    color: "amber",
-    activeClass: "bg-amber-500/15 text-amber-600 border border-amber-500/25",
-    darkActiveClass: "dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/20",
+    activeClass: "bg-amber-500/15 text-amber-400 border border-amber-500/20",
   },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const { theme, toggleTheme } = useTheme();
 
   const isActive = (href: string) => {
-    // "Más" catches all /otras-herramientas/* EXCEPT /clases
     if (href === "/otras-herramientas") {
       return (
         pathname.startsWith("/otras-herramientas") &&
@@ -92,14 +79,9 @@ export default function Navbar() {
               height={40}
               className="rounded-lg object-contain"
             />
-            <div className="hidden sm:block">
-              <span className="font-bold tracking-tight text-base" style={{ color: "var(--fg)" }}>
-                La Bóveda
-              </span>
-              <span className="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gradient-to-r from-violet-500/20 to-blue-500/20 text-blue-400 border border-blue-500/20 align-middle">
-                v3.0
-              </span>
-            </div>
+            <span className="hidden sm:block font-bold tracking-tight text-base" style={{ color: "var(--fg)" }}>
+              La Bóveda
+            </span>
           </Link>
 
           {/* ── Nav items ────────────────────────────────────────── */}
@@ -117,15 +99,9 @@ export default function Navbar() {
                       href={item.href}
                       className={clsx(
                         "flex items-center gap-1.5 px-2.5 sm:px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 whitespace-nowrap shrink-0",
-                        active
-                          ? [item.activeClass, item.darkActiveClass]
-                          : "hover:bg-black/5 dark:hover:bg-white/5",
+                        active ? item.activeClass : "hover:bg-white/5",
                       )}
-                      style={
-                        active
-                          ? undefined
-                          : { color: "var(--fg-muted)" }
-                      }
+                      style={active ? undefined : { color: "var(--fg-muted)" }}
                     >
                       {item.href === "/portfolio-cripto" ? (
                         <div className="flex -space-x-1 items-center">
@@ -143,24 +119,12 @@ export default function Navbar() {
                 })}
               </div>
 
-              {/* ── Theme toggle + Profile — outside overflow container ── */}
-              <div className="flex items-center gap-1 shrink-0 ml-1">
-                <button
-                  id="btn-theme-toggle"
-                  onClick={toggleTheme}
-                  title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-                  className="p-2 rounded-xl transition-all duration-200 hover:bg-black/5 dark:hover:bg-white/5"
-                  style={{ color: "var(--fg-muted)" }}
-                >
-                  {theme === "dark" ? (
-                    <Sun className="w-4 h-4" />
-                  ) : (
-                    <Moon className="w-4 h-4" />
-                  )}
-                </button>
-
-                {user && <ProfileButton />}
-              </div>
+              {/* Profile — outside overflow container */}
+              {user && (
+                <div className="shrink-0 ml-1">
+                  <ProfileButton />
+                </div>
+              )}
             </div>
           )}
         </div>

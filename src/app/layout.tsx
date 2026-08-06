@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 import Navbar from "@/components/Navbar";
 import { AuthProvider } from "@/components/AuthProvider";
 import Footer from "@/components/Footer";
-import { ThemeProvider } from "@/components/ThemeProvider";
+
 
 export default function RootLayout({
   children,
@@ -35,15 +35,13 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${geistSans.variable} ${geistMono.variable} antialiased dark`}>
       <body className="min-h-screen flex flex-col font-sans">
-        <ThemeProvider>
-          <AuthProvider>
-            <Navbar />
-            <main className="flex-1 w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-              {children}
-            </main>
-            <Footer />
-          </AuthProvider>
-        </ThemeProvider>
+        <AuthProvider>
+          <Navbar />
+          <main className="flex-1 w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            {children}
+          </main>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );
