@@ -632,28 +632,37 @@ export default function TutorTracker() {
         link.href = dataUrl;
         link.click();
       } else {
-        canvas.toBlob(async (blob: Blob | null) => {
-          if (!blob) throw new Error("No se pudo generar la imagen.");
-          
-          const file = new File([blob], filename, { type: "image/png" });
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+        if (!blob) throw new Error("No se pudo generar la imagen.");
+        
+        const file = new File([blob], filename, { type: "image/png" });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
             await navigator.share({
               files: [file],
               title: "Informe CET",
               text: `Adjunto mi informe de clases del mes de ${monthLabelCap}.`,
             });
-          } else {
-            // Fallback to download
-            const link = document.createElement("a");
-            link.download = filename;
-            link.href = dataUrl;
-            link.click();
+          } catch (shareError: any) {
+            if (shareError.name !== 'AbortError') {
+              console.error("Share failed:", shareError);
+              const link = document.createElement("a");
+              link.download = filename;
+              link.href = dataUrl;
+              link.click();
+            }
           }
-        }, "image/png");
+        } else {
+          // Fallback download
+          const link = document.createElement("a");
+          link.download = filename;
+          link.href = dataUrl;
+          link.click();
+        }
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Error generating Image:", e);
-      alert("Hubo un error al generar o compartir la imagen.");
+      alert("Error: " + (e?.message || "Hubo un error al generar o compartir la imagen."));
     } finally {
       setIsSharing(false);
     }
