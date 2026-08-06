@@ -119,14 +119,14 @@ function ensurePrintStyles() {
   style.textContent = `
     .tutor-report-content { background: white; padding: 15px 25px; font-family: Arial, sans-serif; color: #111; }
     .tutor-report-content table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
-    .tutor-report-content th { background: #1e293b; color: white; padding: 8px 10px; text-align: center; vertical-align: middle; }
-    .tutor-report-content td { padding: 6px 10px; border-bottom: 1px solid #e2e8f0; text-align: center; vertical-align: middle; }
+    .tutor-report-content th { background: #1e293b; color: white; padding: 10px; text-align: center; vertical-align: middle; }
+    .tutor-report-content td { padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; vertical-align: middle; }
     .tutor-report-content tr:nth-child(even) td { background: #f8fafc; }
     .tutor-report-content .subtotal-row td { font-weight: bold; background: #eff6ff; }
-    .tutor-report-content .header-bar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 2px solid #1e3a5f; padding-bottom: 12px; }
+    .tutor-report-content .header-bar { margin-bottom: 20px; border-bottom: 2px solid #1e3a5f; padding-bottom: 12px; }
     .tutor-report-content .logo-title { font-size: 24px; font-weight: bold; color: #1e3a5f; }
     .tutor-report-content .student-section { margin-top: 16px; }
-    .tutor-report-content .student-title { font-size: 15px; font-weight: bold; color: #1e3a5f; margin-bottom: 6px; border-left: 3px solid #3b82f6; padding-left: 8px; }
+    .tutor-report-content .student-title { font-size: 15px; font-weight: bold; color: #1e3a5f; margin-bottom: 6px; border-left: 3px solid #3b82f6; padding-left: 8px; line-height: 1.2; padding-top: 2px; padding-bottom: 2px; }
     .tutor-report-content .grand-total { margin-top: 24px; padding: 12px 16px; background: #1e3a5f; color: white; text-align: right; font-size: 16px; font-weight: bold; border-radius: 4px; }
     .tutor-report-content .footer { margin-top: 24px; font-size: 11px; color: #999; text-align: center; }
   `;
@@ -537,7 +537,7 @@ export default function TutorTracker() {
           <div class="student-section">
             <div class="student-title">${studentName}</div>
             <table>
-              <thead><tr><th>Fecha y Hora</th><th>Materia</th><th>Modalidad</th><th>Duración</th><th style="text-align:right;">Valor</th></tr></thead>
+              <thead><tr><th>Fecha y Hora</th><th>Materia</th><th>Modalidad</th><th>Duración</th><th>Valor</th></tr></thead>
               <tbody>${rows}
                 <tr class="subtotal-row">
                   <td colspan="4" style="text-align:right; padding-right: 16px;">Subtotal (${clsList.length} clase${clsList.length !== 1 ? "s" : ""})</td>
@@ -552,19 +552,21 @@ export default function TutorTracker() {
 
     const htmlContent = `
       <div class="tutor-report-content">
-        <div class="header-bar">
-          <div style="display: flex; align-items: center; gap: 16px;">
-            <img src="/logo.jpg" alt="CET Logo" style="width: 54px; height: 54px; object-fit: contain; border-radius: 8px;" />
-            <div>
+        <table class="header-bar" style="width: 100%; border: none; margin-bottom: 20px;">
+          <tr>
+            <td style="width: 70px; border: none; padding: 0; text-align: left; vertical-align: middle;">
+              <img src="/logo.jpg" alt="CET Logo" style="width: 54px; height: 54px; object-fit: contain; border-radius: 8px; display: block;" />
+            </td>
+            <td style="border: none; padding: 0; text-align: left; vertical-align: middle;">
               <div class="logo-title">Centro de Estudios Turing</div>
-              <div style="font-size:14px;color:#555;margin-top:2px;font-weight:500;">Informe de Clases — ${monthLabelCap}</div>
-            </div>
-          </div>
-          <div style="text-align:right;font-size:12px;color:#666;display:flex;flex-direction:column;justify-content:center;">
-            <div>Generado: ${new Date().toLocaleDateString("es-AR")}</div>
-            <div style="margin-top:2px;">${cetMonthClasses.length} clase${cetMonthClasses.length !== 1 ? "s" : ""} registrada${cetMonthClasses.length !== 1 ? "s" : ""}</div>
-          </div>
-        </div>
+              <div style="font-size:14px;color:#555;margin-top:4px;font-weight:500;">Informe de Clases — ${monthLabelCap}</div>
+            </td>
+            <td style="border: none; padding: 0; text-align: right; vertical-align: middle; font-size: 12px; color: #666;">
+              <div>Generado: ${new Date().toLocaleDateString("es-AR")}</div>
+              <div style="margin-top:4px;">${cetMonthClasses.length} clase${cetMonthClasses.length !== 1 ? "s" : ""} registrada${cetMonthClasses.length !== 1 ? "s" : ""}</div>
+            </td>
+          </tr>
+        </table>
         ${studentsHTML}
         <div class="grand-total">TOTAL A COBRAR: ${formatARS(grandTotal)}</div>
         <div class="footer">
