@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, TrendingUp, Fuel, GraduationCap } from "lucide-react";
+import { ArrowRight, TrendingUp, Fuel } from "lucide-react";
 
 export default function OtrasHerramientas() {
   return (
@@ -8,63 +8,51 @@ export default function OtrasHerramientas() {
         <h1 className="text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">
           Otras Herramientas
         </h1>
-        <p className="text-gray-400">
-          Accedé a herramientas secundarias y utilidades complementarias para tu día a día.
+        <p style={{ color: "var(--fg-muted)" }}>
+          Herramientas complementarias para el día a día.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        <Link 
-          href="/otras-herramientas/cripto" 
-          className="group glass-panel rounded-3xl p-8 hover:-translate-y-1 transition-all duration-300 border-orange-500/10 hover:border-orange-500/30"
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <Link
+          href="/otras-herramientas/cripto"
+          className="group glass-panel rounded-2xl p-7 flex flex-col gap-5 hover:-translate-y-1 transition-all duration-300 hover:border-orange-500/40"
         >
-          <div className="flex items-center gap-4 mb-6">
-            <div className="p-4 bg-gradient-to-br from-orange-500/20 to-purple-500/20 rounded-2xl text-orange-400 group-hover:scale-110 transition-transform duration-300 shadow-inner">
-              <TrendingUp className="w-8 h-8" />
+          <div className="h-0.5 w-10 rounded-full bg-gradient-to-r from-orange-500 to-purple-500 opacity-70 group-hover:w-16 group-hover:opacity-100 transition-all duration-300" />
+          <div className="flex items-start gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-orange-500/20 to-purple-500/20 text-orange-400 shrink-0 group-hover:scale-110 transition-transform duration-300">
+              <TrendingUp className="w-6 h-6" />
             </div>
-            <h2 className="text-xl font-semibold tracking-tight text-gray-100">Estrategias Cripto</h2>
+            <h2 className="text-lg font-semibold tracking-tight pt-1" style={{ color: "var(--fg)" }}>
+              Estrategias Cripto
+            </h2>
           </div>
-          <p className="text-gray-400 mb-8 leading-relaxed text-sm">
+          <p className="text-sm leading-relaxed flex-1" style={{ color: "var(--fg-muted)" }}>
             Bitácora interactiva para MS BTC y Anti-Vitalik. Controlá tus balas y tomá decisiones matemáticas sin emociones.
           </p>
-          <div className="flex items-center text-orange-400 text-sm font-semibold group-hover:text-amber-300 transition-colors">
+          <div className="flex items-center text-sm font-semibold text-orange-400 group-hover:text-amber-300 transition-colors">
             Gestionar Balas <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </div>
         </Link>
 
-        <Link 
-          href="/otras-herramientas/combustible" 
-          className="group glass-panel rounded-3xl p-8 hover:-translate-y-1 transition-all duration-300 border-sky-500/10 hover:border-sky-500/30"
+        <Link
+          href="/otras-herramientas/combustible"
+          className="group glass-panel rounded-2xl p-7 flex flex-col gap-5 hover:-translate-y-1 transition-all duration-300 hover:border-sky-500/40"
         >
-          <div className="flex items-center gap-4 mb-6">
-            <div className="p-4 bg-gradient-to-br from-sky-500/20 to-indigo-500/20 rounded-2xl text-sky-400 group-hover:scale-110 transition-transform duration-300 shadow-inner">
-              <Fuel className="w-8 h-8" />
+          <div className="h-0.5 w-10 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 opacity-70 group-hover:w-16 group-hover:opacity-100 transition-all duration-300" />
+          <div className="flex items-start gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-sky-500/20 to-indigo-500/20 text-sky-400 shrink-0 group-hover:scale-110 transition-transform duration-300">
+              <Fuel className="w-6 h-6" />
             </div>
-            <h2 className="text-xl font-semibold tracking-tight text-gray-100">Consumo de Combustible</h2>
+            <h2 className="text-lg font-semibold tracking-tight pt-1" style={{ color: "var(--fg)" }}>
+              Consumo de Combustible
+            </h2>
           </div>
-          <p className="text-gray-400 mb-8 leading-relaxed text-sm">
+          <p className="text-sm leading-relaxed flex-1" style={{ color: "var(--fg-muted)" }}>
             Registrá tus cargas, medí el consumo promedio por tramo y analizá el rendimiento del combustible de tu auto.
           </p>
-          <div className="flex items-center text-sky-400 text-sm font-semibold group-hover:text-sky-300 transition-colors">
+          <div className="flex items-center text-sm font-semibold text-sky-400 group-hover:text-sky-300 transition-colors">
             Analizar Consumo <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </Link>
-
-        <Link 
-          href="/otras-herramientas/clases" 
-          className="group glass-panel rounded-3xl p-8 hover:-translate-y-1 transition-all duration-300 border-emerald-500/10 hover:border-emerald-500/30"
-        >
-          <div className="flex items-center gap-4 mb-6">
-            <div className="p-4 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-2xl text-emerald-400 group-hover:scale-110 transition-transform duration-300 shadow-inner">
-              <GraduationCap className="w-8 h-8" />
-            </div>
-            <h2 className="text-xl font-semibold tracking-tight text-gray-100">Clases Particulares</h2>
-          </div>
-          <p className="text-gray-400 mb-8 leading-relaxed text-sm">
-            Agendá tus clases privadas y del CET. Controlá alumnos, materias, modalidades y generá informes mensuales para cobrar.
-          </p>
-          <div className="flex items-center text-emerald-400 text-sm font-semibold group-hover:text-emerald-300 transition-colors">
-            Gestionar Clases <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </div>
         </Link>
       </div>

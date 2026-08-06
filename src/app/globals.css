@@ -1,11 +1,13 @@
 @import "tailwindcss";
 
+/* ─── Design Tokens ──────────────────────────────────────────────────────── */
+
 @theme inline {
-  --color-background: #09090b;
-  --color-foreground: #fafafa;
-  --color-card: #18181b;
-  --color-card-foreground: #fafafa;
-  --color-border: #27272a;
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --color-card: var(--card-bg);
+  --color-card-foreground: var(--fg);
+  --color-border: var(--border);
   --color-primary: #3b82f6;
   --color-primary-foreground: #ffffff;
   --color-success: #10b981;
@@ -15,30 +17,104 @@
   --font-mono: var(--font-geist-mono);
 }
 
-:root {
+/* ─── Dark Mode (default) ────────────────────────────────────────────────── */
+
+:root,
+.dark {
   color-scheme: dark;
+
+  --bg:           #080d1a;
+  --bg-gradient:  radial-gradient(ellipse 80% 50% at 50% -10%, rgba(56,75,155,0.25) 0%, transparent 70%),
+                  radial-gradient(ellipse 60% 40% at 80% 80%, rgba(16,100,90,0.12) 0%, transparent 60%);
+  --fg:           #f1f5ff;
+  --fg-muted:     #8b99bb;
+  --fg-subtle:    #4a5578;
+
+  --card-bg:      rgba(15, 22, 45, 0.65);
+  --card-bg-hover:rgba(20, 30, 58, 0.80);
+  --card-border:  rgba(99, 120, 200, 0.15);
+  --card-border-hover: rgba(99, 120, 200, 0.35);
+  --card-shadow:  0 4px 24px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255,255,255,0.04) inset;
+
+  --border:       rgba(255, 255, 255, 0.08);
+  --border-strong:rgba(255, 255, 255, 0.14);
+
+  --glass-bg:     rgba(12, 18, 38, 0.55);
+  --glass-border: rgba(120, 140, 220, 0.14);
+
+  --navbar-bg:    rgba(8, 13, 26, 0.85);
+  --navbar-border:rgba(99, 120, 200, 0.12);
+
+  --badge-active-bg:    rgba(99, 120, 200, 0.18);
+  --badge-active-border:rgba(99, 120, 200, 0.35);
 }
+
+/* ─── Light Mode ─────────────────────────────────────────────────────────── */
+
+.light {
+  color-scheme: light;
+
+  --bg:           #f0f4ff;
+  --bg-gradient:  radial-gradient(ellipse 80% 50% at 50% -10%, rgba(147,166,255,0.18) 0%, transparent 70%),
+                  radial-gradient(ellipse 60% 40% at 80% 80%, rgba(52,211,153,0.08) 0%, transparent 60%);
+  --fg:           #0d1333;
+  --fg-muted:     #4a5578;
+  --fg-subtle:    #8b99bb;
+
+  --card-bg:      rgba(255, 255, 255, 0.82);
+  --card-bg-hover:rgba(255, 255, 255, 0.96);
+  --card-border:  rgba(99, 120, 200, 0.18);
+  --card-border-hover: rgba(99, 120, 200, 0.40);
+  --card-shadow:  0 4px 24px rgba(80, 100, 200, 0.10), 0 1px 0 rgba(255,255,255,0.9) inset;
+
+  --border:       rgba(0, 0, 0, 0.08);
+  --border-strong:rgba(0, 0, 0, 0.14);
+
+  --glass-bg:     rgba(255, 255, 255, 0.70);
+  --glass-border: rgba(99, 120, 200, 0.20);
+
+  --navbar-bg:    rgba(240, 244, 255, 0.90);
+  --navbar-border:rgba(99, 120, 200, 0.18);
+
+  --badge-active-bg:    rgba(99, 120, 200, 0.12);
+  --badge-active-border:rgba(99, 120, 200, 0.30);
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────────── */
 
 body {
-  background-color: var(--color-background);
-  color: var(--color-foreground);
+  background-color: var(--bg);
+  color: var(--fg);
   font-family: var(--font-sans);
-  background-image: radial-gradient(circle at 50% 0%, #17171a 0%, #09090b 70%);
+  background-image: var(--bg-gradient);
   background-attachment: fixed;
   min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* ─── Utility classes ────────────────────────────────────────────────────── */
+
 @utility glass {
-  background: rgba(24, 24, 27, 0.4);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 @utility glass-panel {
-  background: linear-gradient(135deg, rgba(39, 39, 42, 0.6) 0%, rgba(24, 24, 27, 0.4) 100%);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+@utility text-muted {
+  color: var(--fg-muted);
+}
+
+@utility text-subtle {
+  color: var(--fg-subtle);
 }

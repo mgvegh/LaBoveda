@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "La Bóveda",
-  description: "Protección y gestión de activos financieros: CEDEARs y Cripto.",
+  description: "Centro de control financiero personal: CEDEARs, Cripto, Ingresos y más.",
   icons: {
     icon: "/logo.png",
     apple: "/logo.png",
@@ -25,6 +25,7 @@ export const metadata: Metadata = {
 import Navbar from "@/components/Navbar";
 import { AuthProvider } from "@/components/AuthProvider";
 import Footer from "@/components/Footer";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 export default function RootLayout({
   children,
@@ -34,13 +35,15 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${geistSans.variable} ${geistMono.variable} antialiased dark`}>
       <body className="min-h-screen flex flex-col font-sans">
-        <AuthProvider>
-          <Navbar />
-          <main className="flex-1 w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            {children}
-          </main>
-          <Footer />
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <Navbar />
+            <main className="flex-1 w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+              {children}
+            </main>
+            <Footer />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
