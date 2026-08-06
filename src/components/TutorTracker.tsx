@@ -755,17 +755,21 @@ export default function TutorTracker() {
             />
           </div>
 
-          {/* Repeat — only when creating */}
-          {!editingId && (
-            <div className="md:col-span-2 xl:col-span-3">
+          {/* Repeat + Submit — same row */}
+          <div className="md:col-span-2 xl:col-span-3 flex flex-wrap items-end justify-between gap-4">
+
+            {/* Repeat selector */}
+            <div className={editingId ? "opacity-40 pointer-events-none" : ""}>
               <label className="block text-xs text-gray-400 mb-1.5 uppercase tracking-wide flex items-center gap-1.5">
                 <Repeat2 className="w-3.5 h-3.5" /> Repetir
+                {editingId && <span className="normal-case text-[10px] text-gray-600">— no disponible al editar</span>}
               </label>
               <div className="flex flex-wrap items-center gap-3">
                 <select
                   id="form-repeat"
                   value={formRepeat}
                   onChange={e => setFormRepeat(Number(e.target.value))}
+                  disabled={!!editingId}
                   className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-gray-100 text-sm focus:outline-none focus:border-emerald-500/50 transition-all [color-scheme:dark]"
                 >
                   <option value={1}>1 vez (sin repetir)</option>
@@ -774,7 +778,7 @@ export default function TutorTracker() {
                   ))}
                 </select>
 
-                {formRepeat > 1 && (
+                {formRepeat > 1 && !editingId && (
                   <>
                     <span className="text-gray-500 text-sm">con frecuencia</span>
                     <select
@@ -793,15 +797,13 @@ export default function TutorTracker() {
                 )}
               </div>
             </div>
-          )}
 
-          {/* Submit */}
-          <div className="md:col-span-2 xl:col-span-3 flex justify-end">
+            {/* Save button — aligned to bottom-right */}
             <button
               id="btn-save-class"
               type="submit"
               disabled={formSaving}
-              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold text-sm hover:from-emerald-400 hover:to-teal-400 transition-all disabled:opacity-60 shadow-lg shadow-emerald-900/30"
+              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold text-sm hover:from-emerald-400 hover:to-teal-400 transition-all disabled:opacity-60 shadow-lg shadow-emerald-900/30 self-end"
             >
               {formSaving
                 ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -1050,7 +1052,7 @@ export default function TutorTracker() {
               <div className="flex items-center gap-3">
                 <span className="text-gray-100 font-bold text-base">{formatARS(cls.amount)}</span>
                 <button onClick={() => openEditForm(cls)}
-                  className="p-1.5 rounded-lg bg-white/5 hover:bg-blue-500/20 text-gray-400 hover:text-blue-400 transition-all opacity-0 group-hover:opacity-100" title="Editar">
+                  className="p-1.5 rounded-lg bg-white/5 hover:bg-blue-500/20 text-gray-400 hover:text-blue-400 transition-all" title="Editar">
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
                 {deletingId === cls.id ? (
@@ -1060,7 +1062,7 @@ export default function TutorTracker() {
                   </div>
                 ) : (
                   <button onClick={() => setDeletingId(cls.id)}
-                    className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-all opacity-0 group-hover:opacity-100" title="Eliminar">
+                    className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-all" title="Eliminar">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 )}
