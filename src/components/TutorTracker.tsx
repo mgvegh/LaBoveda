@@ -400,8 +400,10 @@ export default function TutorTracker() {
     const [datePart, timePart] = cls.dateTime.split("T");
     setFormDate(datePart ?? todayDate());
     setFormStartTime(timePart?.slice(0, 5) ?? nowTime());
-    setFormDuration(cls.duration ?? 60);
-    setFormAmount(String(cls.amount));
+    const duration = cls.duration ?? 60;
+    setFormDuration(duration);
+    const hourlyRate = cls.amount / (duration / 60);
+    setFormAmount(String(hourlyRate));
     setFormNotes(cls.notes ?? "");
     setFormRepeat(1);
     setFormFrequency("weekly");
@@ -424,7 +426,7 @@ export default function TutorTracker() {
       modality: formModality,
       type: formType,
       duration: formDuration,
-      amount: Number(formAmount) || 0,
+      amount: (Number(formAmount) || 0) * (formDuration / 60),
       notes: formNotes.trim(),
     };
 
@@ -721,11 +723,11 @@ export default function TutorTracker() {
             </div>
           </div>
 
-          {/* Amount */}
+          {/* Hourly Rate */}
           <div>
             <label className="block text-xs text-gray-400 mb-1.5 uppercase tracking-wide">
-              Valor (ARS)
-              {formType === "CET" && <span className="ml-2 text-emerald-500/70 normal-case text-[10px]">autocompletado</span>}
+              Valor por hora (ARS)
+              {formType === "CET" && <span className="ml-2 text-emerald-500/70 normal-case text-[10px]">fijo según tarifas</span>}
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
@@ -735,10 +737,16 @@ export default function TutorTracker() {
                 min="0"
                 value={formAmount}
                 onChange={e => setFormAmount(e.target.value)}
+                disabled={formType === "CET"}
                 placeholder="0"
-                className="w-full bg-white/5 border border-white/10 rounded-xl pl-7 pr-4 py-2.5 text-gray-100 text-sm focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                className={`w-full bg-white/5 border border-white/10 rounded-xl pl-7 pr-4 py-2.5 text-gray-100 text-sm focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all ${formType === "CET" ? "opacity-60 cursor-not-allowed" : ""}`}
               />
             </div>
+            {Number(formAmount) > 0 && formDuration !== 60 && (
+              <div className="text-emerald-400/80 text-xs mt-1.5 font-medium flex justify-end">
+                Total: $ {((Number(formAmount) || 0) * (formDuration / 60)).toLocaleString("es-AR")}
+              </div>
+            )}
           </div>
 
           {/* Notes */}
