@@ -43,7 +43,6 @@ const DEFAULT_SETTINGS: TutorSettings = {
 
 // Duration options in minutes (30-min steps)
 const DURATION_OPTIONS = [
-  { label: "30 min",     value: 30  },
   { label: "1 hora",     value: 60  },
   { label: "1 h 30 min", value: 90  },
   { label: "2 horas",    value: 120 },
