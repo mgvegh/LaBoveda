@@ -1067,20 +1067,20 @@ export default function TutorTracker() {
           </button>
         </div>
         
-        <div className="w-full md:w-auto grid grid-cols-2 md:flex items-center gap-y-5 gap-x-2 md:gap-4 text-sm md:divide-x md:divide-white/10">
-          <div className="text-center px-2 border-r border-white/10 md:border-none">
+        <div className="w-full md:w-auto grid grid-cols-2 md:flex items-center text-sm md:gap-4 md:divide-x md:divide-white/10">
+          <div className="text-center py-2 md:py-0 px-2 border-b border-r border-white/10 md:border-none">
             <p className="text-gray-500 text-[10px] md:text-xs uppercase tracking-wide truncate">Clases</p>
             <p className="text-gray-100 font-bold text-base md:text-lg">{monthClasses.length}</p>
           </div>
-          <div className="text-center px-2 border-transparent md:border-white/10 md:border-l">
+          <div className="text-center py-2 md:py-0 px-2 border-b border-white/10 md:border-none md:border-l">
             <p className="text-gray-500 text-[10px] md:text-xs uppercase tracking-wide truncate">Total</p>
             <p className="text-gray-100 font-bold text-base md:text-lg truncate">{formatARS(totalMonth)}</p>
           </div>
-          <div className="text-center px-2 border-r border-t border-white/10 pt-4 mt-1 md:pt-0 md:mt-0 md:border-t-0 md:border-r-0">
+          <div className="text-center py-2 md:py-0 px-2 border-r border-white/10 md:border-none">
             <p className="text-gray-500 text-[10px] md:text-xs uppercase tracking-wide truncate">CET</p>
             <p className="text-emerald-400 font-bold text-base md:text-lg truncate">{formatARS(totalCET)}</p>
           </div>
-          <div className="text-center px-2 border-t border-white/10 pt-4 mt-1 md:pt-0 md:mt-0 md:border-t-0 md:border-l md:border-white/10">
+          <div className="text-center py-2 md:py-0 px-2 md:border-none md:border-l md:border-white/10">
             <p className="text-gray-500 text-[10px] md:text-xs uppercase tracking-wide truncate">Privadas</p>
             <p className="text-amber-400 font-bold text-base md:text-lg truncate">{formatARS(totalPrivate)}</p>
           </div>
