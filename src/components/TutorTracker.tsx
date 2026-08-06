@@ -119,8 +119,8 @@ function ensurePrintStyles() {
   style.textContent = `
     .tutor-report-content { background: white; padding: 15px 25px; font-family: Arial, sans-serif; color: #111; }
     .tutor-report-content table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
-    .tutor-report-content th { background: #1e293b; color: white; padding: 8px 10px; text-align: left; }
-    .tutor-report-content td { padding: 6px 10px; border-bottom: 1px solid #e2e8f0; }
+    .tutor-report-content th { background: #1e293b; color: white; padding: 8px 10px; text-align: center; vertical-align: middle; }
+    .tutor-report-content td { padding: 6px 10px; border-bottom: 1px solid #e2e8f0; text-align: center; vertical-align: middle; }
     .tutor-report-content tr:nth-child(even) td { background: #f8fafc; }
     .tutor-report-content .subtotal-row td { font-weight: bold; background: #eff6ff; }
     .tutor-report-content .header-bar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 2px solid #1e3a5f; padding-bottom: 12px; }
@@ -531,7 +531,7 @@ export default function TutorTracker() {
               <td>${c.subject}</td>
               <td>${c.modality === "presencial" ? "Presencial" : "Virtual"}</td>
               <td>${formatDuration(c.duration ?? 60)}</td>
-              <td style="text-align:right;">${formatARS(c.amount)}</td>
+              <td>${formatARS(c.amount)}</td>
             </tr>`).join("");
         return `
           <div class="student-section">
@@ -540,8 +540,8 @@ export default function TutorTracker() {
               <thead><tr><th>Fecha y Hora</th><th>Materia</th><th>Modalidad</th><th>Duración</th><th style="text-align:right;">Valor</th></tr></thead>
               <tbody>${rows}
                 <tr class="subtotal-row">
-                  <td colspan="4">Subtotal (${clsList.length} clase${clsList.length !== 1 ? "s" : ""})</td>
-                  <td style="text-align:right;">${formatARS(studentTotal)}</td>
+                  <td colspan="4" style="text-align:right; padding-right: 16px;">Subtotal (${clsList.length} clase${clsList.length !== 1 ? "s" : ""})</td>
+                  <td style="text-align:center;">${formatARS(studentTotal)}</td>
                 </tr>
               </tbody>
             </table>
@@ -569,7 +569,7 @@ export default function TutorTracker() {
         <div class="grand-total">TOTAL A COBRAR: ${formatARS(grandTotal)}</div>
         <div class="footer">
           <div>Documento generado automáticamente — Centro de Estudios Turing</div>
-          <div style="margin-top: 4px; font-weight: bold;">Tutor: ${tutorName}</div>
+          <div style="margin-top: 4px; font-weight: bold;">Profesor: ${tutorName}</div>
         </div>
       </div>
     `;
@@ -591,7 +591,7 @@ export default function TutorTracker() {
     try {
       // @ts-ignore
       const html2pdf = (await import("html2pdf.js")).default;
-      const filename = `Informe_CET_${monthLabelCap}_${new Date().getFullYear()}.pdf`;
+      const filename = `Informe_CET_${monthLabelCap.replace(/ /g, "_")}.pdf`;
       
       const opt = {
         margin: 10,
@@ -1052,37 +1052,35 @@ export default function TutorTracker() {
       {/* ═══════════════════════════════════════════════════════
           4. MONTH NAVIGATOR + STATS
       ═══════════════════════════════════════════════════════ */}
-      <div className="glass-panel rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <button id="btn-prev-month" onClick={prevMonth} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all">
-            <ChevronLeft className="w-4 h-4" />
+      <div className="glass-panel rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-4">
+        <div className="flex items-center justify-center md:justify-start gap-4 w-full md:w-auto">
+          <button id="btn-prev-month" onClick={prevMonth} className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all">
+            <ChevronLeft className="w-5 h-5 md:w-4 md:h-4" />
           </button>
-          <span className="text-gray-100 font-semibold capitalize text-lg min-w-[180px] text-center">
+          <span className="text-gray-100 font-bold capitalize text-lg md:text-lg min-w-[160px] text-center tracking-wide">
             {getMonthName(selectedMonth.month, selectedMonth.year)}
           </span>
-          <button id="btn-next-month" onClick={nextMonth} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all">
-            <ChevronRight className="w-4 h-4" />
+          <button id="btn-next-month" onClick={nextMonth} className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all">
+            <ChevronRight className="w-5 h-5 md:w-4 md:h-4" />
           </button>
         </div>
-        <div className="w-full md:w-auto grid grid-cols-4 md:flex items-center gap-2 md:gap-4 text-sm divide-x divide-white/10 md:divide-none">
-          <div className="text-center px-1">
+        
+        <div className="w-full md:w-auto grid grid-cols-2 md:flex items-center gap-y-5 gap-x-2 md:gap-4 text-sm md:divide-x md:divide-white/10">
+          <div className="text-center px-2 border-r border-white/10 md:border-none">
             <p className="text-gray-500 text-[10px] md:text-xs uppercase tracking-wide truncate">Clases</p>
             <p className="text-gray-100 font-bold text-base md:text-lg">{monthClasses.length}</p>
           </div>
-          <div className="hidden md:block w-px bg-white/10 h-8" />
-          <div className="text-center px-1">
+          <div className="text-center px-2 border-transparent md:border-white/10 md:border-l">
+            <p className="text-gray-500 text-[10px] md:text-xs uppercase tracking-wide truncate">Total</p>
+            <p className="text-gray-100 font-bold text-base md:text-lg truncate">{formatARS(totalMonth)}</p>
+          </div>
+          <div className="text-center px-2 border-r border-t border-white/10 pt-4 mt-1 md:pt-0 md:mt-0 md:border-t-0 md:border-r-0">
             <p className="text-gray-500 text-[10px] md:text-xs uppercase tracking-wide truncate">CET</p>
             <p className="text-emerald-400 font-bold text-base md:text-lg truncate">{formatARS(totalCET)}</p>
           </div>
-          <div className="hidden md:block w-px bg-white/10 h-8" />
-          <div className="text-center px-1">
+          <div className="text-center px-2 border-t border-white/10 pt-4 mt-1 md:pt-0 md:mt-0 md:border-t-0 md:border-l md:border-white/10">
             <p className="text-gray-500 text-[10px] md:text-xs uppercase tracking-wide truncate">Privadas</p>
             <p className="text-amber-400 font-bold text-base md:text-lg truncate">{formatARS(totalPrivate)}</p>
-          </div>
-          <div className="hidden md:block w-px bg-white/10 h-8" />
-          <div className="text-center px-1">
-            <p className="text-gray-500 text-[10px] md:text-xs uppercase tracking-wide truncate">Total</p>
-            <p className="text-gray-100 font-bold text-base md:text-lg truncate">{formatARS(totalMonth)}</p>
           </div>
         </div>
       </div>
@@ -1110,8 +1108,9 @@ export default function TutorTracker() {
                     {dayClasses.slice(0, 3).map(cls => (
                       <div key={cls.id} onClick={() => openEditForm(cls)}
                         title={`${cls.studentName} — ${cls.subject} (${formatDuration(cls.duration ?? 60)})`}
-                        className={`text-[10px] md:text-xs leading-tight px-1.5 py-1 rounded-md cursor-pointer line-clamp-2 font-medium transition-opacity hover:opacity-80 ${cls.type === "CET" ? "bg-emerald-500/20 text-emerald-300" : "bg-amber-500/20 text-amber-300"}`}>
-                        {cls.studentName}
+                        className={`text-[12px] md:text-xs text-center md:text-left leading-tight px-1.5 py-1 rounded-md cursor-pointer line-clamp-2 font-medium transition-opacity hover:opacity-80 ${cls.type === "CET" ? "bg-emerald-500/20 text-emerald-300" : "bg-amber-500/20 text-amber-300"}`}>
+                        <span className="md:hidden font-bold">{cls.studentName.charAt(0).toUpperCase()}</span>
+                        <span className="hidden md:inline">{cls.studentName}</span>
                       </div>
                     ))}
                     {dayClasses.length > 3 && <div className="text-[10px] md:text-xs text-gray-500 px-1 font-medium">+{dayClasses.length - 3} más</div>}
