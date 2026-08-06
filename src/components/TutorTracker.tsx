@@ -139,14 +139,20 @@ function ensurePrintStyles() {
 
 // ─── Custom Combobox ────────────────────────────────────────────────────────
 
-function StudentCombobox({
+function AutocompleteCombobox({
+  id,
   value,
   onChange,
   options,
+  placeholder,
+  icon: Icon,
 }: {
+  id: string;
   value: string;
   onChange: (v: string) => void;
   options: string[];
+  placeholder: string;
+  icon: React.ElementType;
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -168,16 +174,16 @@ function StudentCombobox({
 
   return (
     <div ref={containerRef} className="relative">
-      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none z-10" />
+      <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none z-10" />
       <input
         ref={inputRef}
-        id="form-student-name"
+        id={id}
         required
         type="text"
         value={value}
         onChange={e => { onChange(e.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}
-        placeholder="Nombre del alumno"
+        placeholder={placeholder}
         className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-9 py-2.5 text-gray-100 text-sm focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
       />
       <button
@@ -579,11 +585,6 @@ export default function TutorTracker() {
   return (
     <div className="space-y-5">
 
-      {/* ── Subject datalist (alumnos usan combobox custom) ──── */}
-      <datalist id="dl-subjects">
-        {uniqueSubjects.map(s => <option key={s} value={s} />)}
-      </datalist>
-
       {/* ═══════════════════════════════════════════════════════
           1. FORM — always visible at top
       ═══════════════════════════════════════════════════════ */}
@@ -613,29 +614,27 @@ export default function TutorTracker() {
           {/* Student — custom combobox */}
           <div>
             <label className="block text-xs text-gray-400 mb-1.5 uppercase tracking-wide">Alumno *</label>
-            <StudentCombobox
+            <AutocompleteCombobox
+              id="form-student-name"
               value={formStudentName}
               onChange={setFormStudentName}
               options={uniqueStudents}
+              placeholder="Nombre del alumno"
+              icon={User}
             />
           </div>
 
-          {/* Subject — datalist */}
+          {/* Subject — custom combobox */}
           <div>
             <label className="block text-xs text-gray-400 mb-1.5 uppercase tracking-wide">Materia *</label>
-            <div className="relative">
-              <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-              <input
-                id="form-subject"
-                required
-                type="text"
-                list="dl-subjects"
-                value={formSubject}
-                onChange={e => setFormSubject(e.target.value)}
-                placeholder="Ej: Matemáticas, Física..."
-                className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-gray-100 text-sm focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-              />
-            </div>
+            <AutocompleteCombobox
+              id="form-subject"
+              value={formSubject}
+              onChange={setFormSubject}
+              options={uniqueSubjects}
+              placeholder="Ej: Matemáticas, Física..."
+              icon={BookOpen}
+            />
           </div>
 
           {/* Date */}
