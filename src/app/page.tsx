@@ -42,7 +42,7 @@ const cards = [
     accentLine: "from-teal-500 to-emerald-500",
   },
   {
-    href: "/otras-herramientas/clases",
+    href: "/clases",
     icon: GraduationCap,
     title: "Clases Particulares",
     description: "Agendá clases del CET y privadas. Controlá alumnos, materias y generá informes mensuales para cobrar.",

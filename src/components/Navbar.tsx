@@ -27,7 +27,7 @@ const navItems = [
     activeClass: "bg-teal-500/15 text-teal-400 border border-teal-500/20",
   },
   {
-    href: "/otras-herramientas/clases",
+    href: "/clases",
     label: "Clases",
     icon: GraduationCap,
     activeClass: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20",
@@ -48,11 +48,11 @@ export default function Navbar() {
     if (href === "/otras-herramientas") {
       return (
         pathname.startsWith("/otras-herramientas") &&
-        !pathname.startsWith("/otras-herramientas/clases")
+        !pathname.startsWith("/clases")
       );
     }
-    if (href === "/otras-herramientas/clases") {
-      return pathname.startsWith("/otras-herramientas/clases");
+    if (href === "/clases") {
+      return pathname.startsWith("/clases");
     }
     return pathname === href;
   };
