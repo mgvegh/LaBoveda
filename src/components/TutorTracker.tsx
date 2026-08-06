@@ -117,24 +117,18 @@ function ensurePrintStyles() {
   const style = document.createElement("style");
   style.id = PRINT_STYLE_ID;
   style.textContent = `
-    @page { margin: 0; }
-    @media print {
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; }
-      body > *:not(#tutor-print-root) { display: none !important; }
-      #tutor-print-root { display: block !important; position: relative; background: white; z-index: 99999; padding: 15mm 20mm; font-family: Arial, sans-serif; color: #111; min-height: 100vh; }
-      #tutor-print-root table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
-      #tutor-print-root th { background: #1e293b; color: white; padding: 8px 10px; text-align: left; }
-      #tutor-print-root td { padding: 6px 10px; border-bottom: 1px solid #e2e8f0; }
-      #tutor-print-root tr:nth-child(even) td { background: #f8fafc; }
-      #tutor-print-root .subtotal-row td { font-weight: bold; background: #eff6ff; }
-      #tutor-print-root .header-bar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 2px solid #1e3a5f; padding-bottom: 12px; }
-      #tutor-print-root .logo-title { font-size: 24px; font-weight: bold; color: #1e3a5f; }
-      #tutor-print-root .student-section { margin-top: 16px; }
-      #tutor-print-root .student-title { font-size: 15px; font-weight: bold; color: #1e3a5f; margin-bottom: 6px; border-left: 3px solid #3b82f6; padding-left: 8px; }
-      #tutor-print-root .grand-total { margin-top: 24px; padding: 12px 16px; background: #1e3a5f; color: white; text-align: right; font-size: 16px; font-weight: bold; border-radius: 4px; }
-      #tutor-print-root .footer { margin-top: 24px; font-size: 11px; color: #999; text-align: center; }
-    }
-    @media screen { #tutor-print-root { display: none !important; } }
+    .tutor-report-content { background: white; padding: 15px 25px; font-family: Arial, sans-serif; color: #111; }
+    .tutor-report-content table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+    .tutor-report-content th { background: #1e293b; color: white; padding: 8px 10px; text-align: left; }
+    .tutor-report-content td { padding: 6px 10px; border-bottom: 1px solid #e2e8f0; }
+    .tutor-report-content tr:nth-child(even) td { background: #f8fafc; }
+    .tutor-report-content .subtotal-row td { font-weight: bold; background: #eff6ff; }
+    .tutor-report-content .header-bar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 2px solid #1e3a5f; padding-bottom: 12px; }
+    .tutor-report-content .logo-title { font-size: 24px; font-weight: bold; color: #1e3a5f; }
+    .tutor-report-content .student-section { margin-top: 16px; }
+    .tutor-report-content .student-title { font-size: 15px; font-weight: bold; color: #1e3a5f; margin-bottom: 6px; border-left: 3px solid #3b82f6; padding-left: 8px; }
+    .tutor-report-content .grand-total { margin-top: 24px; padding: 12px 16px; background: #1e3a5f; color: white; text-align: right; font-size: 16px; font-weight: bold; border-radius: 4px; }
+    .tutor-report-content .footer { margin-top: 24px; font-size: 11px; color: #999; text-align: center; }
   `;
   document.head.appendChild(style);
 }
@@ -278,6 +272,10 @@ export default function TutorTracker() {
   const [settingsPresencial, setSettingsPresencial] = useState("");
   const [settingsVirtual, setSettingsVirtual] = useState("");
   const [savingSettings, setSavingSettings] = useState(false);
+
+  // ── Report Preview
+  const [showReportPreview, setShowReportPreview] = useState(false);
+  const [reportHTML, setReportHTML] = useState("");
 
   // ── Form state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -550,46 +548,44 @@ export default function TutorTracker() {
           </div>`;
       }).join("");
 
-    let printRoot = document.getElementById("tutor-print-root");
-    if (!printRoot) { printRoot = document.createElement("div"); document.body.appendChild(printRoot); }
-    printRoot.id = "tutor-print-root";
-    
     const tutorName = user?.displayName || user?.email || "Tutor";
-    
-    printRoot.innerHTML = `
-      <div class="header-bar">
-        <div style="display: flex; align-items: center; gap: 16px;">
-          <img src="/logo.jpg" alt="CET Logo" style="width: 54px; height: 54px; object-fit: contain; border-radius: 8px;" />
-          <div>
-            <div class="logo-title">Centro de Estudios Turing</div>
-            <div style="font-size:14px;color:#555;margin-top:2px;font-weight:500;">Informe de Clases — ${monthLabelCap}</div>
+
+    const htmlContent = `
+      <div class="tutor-report-content">
+        <div class="header-bar">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <img src="/logo.jpg" alt="CET Logo" style="width: 54px; height: 54px; object-fit: contain; border-radius: 8px;" />
+            <div>
+              <div class="logo-title">Centro de Estudios Turing</div>
+              <div style="font-size:14px;color:#555;margin-top:2px;font-weight:500;">Informe de Clases — ${monthLabelCap}</div>
+            </div>
+          </div>
+          <div style="text-align:right;font-size:12px;color:#666;display:flex;flex-direction:column;justify-content:center;">
+            <div>Generado: ${new Date().toLocaleDateString("es-AR")}</div>
+            <div style="margin-top:2px;">${cetMonthClasses.length} clase${cetMonthClasses.length !== 1 ? "s" : ""} registrada${cetMonthClasses.length !== 1 ? "s" : ""}</div>
           </div>
         </div>
-        <div style="text-align:right;font-size:12px;color:#666;display:flex;flex-direction:column;justify-content:center;">
-          <div>Generado: ${new Date().toLocaleDateString("es-AR")}</div>
-          <div style="margin-top:2px;">${cetMonthClasses.length} clase${cetMonthClasses.length !== 1 ? "s" : ""} registrada${cetMonthClasses.length !== 1 ? "s" : ""}</div>
+        ${studentsHTML}
+        <div class="grand-total">TOTAL A COBRAR: ${formatARS(grandTotal)}</div>
+        <div class="footer">
+          <div>Documento generado automáticamente — Centro de Estudios Turing</div>
+          <div style="margin-top: 4px; font-weight: bold;">Tutor: ${tutorName}</div>
         </div>
       </div>
-      ${studentsHTML}
-      <div class="grand-total">TOTAL A COBRAR: ${formatARS(grandTotal)}</div>
-      <div class="footer">
-        <div>Documento generado automáticamente — Centro de Estudios Turing</div>
-        <div style="margin-top: 4px; font-weight: bold;">Tutor: ${tutorName}</div>
-      </div>
     `;
-    return { printRoot, monthLabelCap };
+    return { htmlContent, monthLabelCap };
   }
 
-  function triggerPrint() {
-    handlePrint();
-    window.print();
-  }
-
-  async function handleSharePDF() {
-    if (typeof window === "undefined") return;
+  function openReportPreview() {
     const res = handlePrint();
     if (!res) return;
-    const { printRoot, monthLabelCap } = res;
+    setReportHTML(res.htmlContent);
+    setShowReportPreview(true);
+  }
+
+  async function handleDownloadOrSharePDF(action: "download" | "share") {
+    if (typeof window === "undefined" || !reportHTML) return;
+    const { monthLabelCap } = handlePrint() || { monthLabelCap: "" };
     
     setIsSharing(true);
     try {
@@ -605,37 +601,32 @@ export default function TutorTracker() {
         jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const }
       };
       
-      // Remove display:none enforcement just for capturing
-      printRoot.style.setProperty("display", "block", "important");
-      printRoot.style.position = "absolute";
-      printRoot.style.left = "-9999px";
-      printRoot.style.top = "-9999px";
-      
-      const pdfBlob = await html2pdf().set(opt).from(printRoot).output('blob');
-      
-      printRoot.style.position = "";
-      printRoot.style.left = "";
-      printRoot.style.top = "";
-      printRoot.style.display = "";
-
-      const file = new File([pdfBlob], filename, { type: "application/pdf" });
-      
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: "Informe CET",
-          text: `Adjunto mi informe de clases del mes de ${monthLabelCap}.`,
-        });
+      if (action === "download") {
+        await html2pdf().set(opt).from(reportHTML).save();
       } else {
-        html2pdf().set(opt).from(printRoot).save();
+        const pdfBlob = await html2pdf().set(opt).from(reportHTML).output('blob');
+        const file = new File([pdfBlob], filename, { type: "application/pdf" });
+        
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: "Informe CET",
+            text: `Adjunto mi informe de clases del mes de ${monthLabelCap}.`,
+          });
+        } else {
+          // Fallback to download if sharing is not supported
+          await html2pdf().set(opt).from(reportHTML).save();
+        }
       }
     } catch (e) {
-      console.error("Error sharing PDF:", e);
+      console.error("Error generating PDF:", e);
       alert("Hubo un error al generar o compartir el PDF.");
     } finally {
       setIsSharing(false);
     }
   }
+
+
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -917,34 +908,52 @@ export default function TutorTracker() {
       {/* ═══════════════════════════════════════════════════════
           2. CET RATES BAR — with embedded ⚙ settings
       ═══════════════════════════════════════════════════════ */}
-      <div className="glass-panel rounded-2xl px-5 py-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-            <span className="text-gray-400 font-medium">Tarifas CET:</span>
+      <div className="glass-panel rounded-2xl px-5 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center gap-4 text-sm w-full md:w-auto">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <span className="text-gray-400 font-medium text-base md:text-sm">Tarifas CET:</span>
+            </div>
+            {/* Botón de configuración móvil */}
+            <button
+              onClick={() => {
+                setSettingsPresencial(String(settings.cetRatePresencial));
+                setSettingsVirtual(String(settings.cetRateVirtual));
+                setShowSettings(true);
+              }}
+              className="md:hidden flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium text-gray-400 hover:text-emerald-400 hover:border-emerald-500/30 transition-all"
+              style={{ borderColor: "var(--border)" }}
+            >
+              <Settings className="w-3.5 h-3.5" /> Configurar
+            </button>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5 text-blue-400" />
-            <span className="text-gray-400 text-xs">Presencial:</span>
-            <span className="text-emerald-400 font-semibold">{formatARS(settings.cetRatePresencial)}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Monitor className="w-3.5 h-3.5 text-purple-400" />
-            <span className="text-gray-400 text-xs">Virtual:</span>
-            <span className="text-purple-400 font-semibold">{formatARS(settings.cetRateVirtual)}</span>
+          
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-blue-400" />
+              <span className="text-gray-400 text-xs">Presencial:</span>
+              <span className="text-emerald-400 font-semibold">{formatARS(settings.cetRatePresencial)}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Monitor className="w-3.5 h-3.5 text-purple-400" />
+              <span className="text-gray-400 text-xs">Virtual:</span>
+              <span className="text-purple-400 font-semibold">{formatARS(settings.cetRateVirtual)}</span>
+            </div>
           </div>
           {settings.cetRatePresencial === 0 && settings.cetRateVirtual === 0 && (
             <span className="text-amber-400 text-xs">⚠ Configurá las tarifas</span>
           )}
         </div>
+        
+        {/* Botón de configuración escritorio */}
         <button
-          id="btn-settings"
           onClick={() => {
             setSettingsPresencial(String(settings.cetRatePresencial));
             setSettingsVirtual(String(settings.cetRateVirtual));
             setShowSettings(true);
           }}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium text-gray-400 hover:text-emerald-400 hover:border-emerald-500/30 transition-all"
+          className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium text-gray-400 hover:text-emerald-400 hover:border-emerald-500/30 transition-all"
           style={{ borderColor: "var(--border)" }}
           title="Configurar tarifas CET"
         >
@@ -1014,24 +1023,13 @@ export default function TutorTracker() {
           3. ACTION BAR
       ═══════════════════════════════════════════════════════ */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <button
-            id="btn-print-report"
-            onClick={triggerPrint}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm hover:from-blue-500 hover:to-indigo-500 transition-all shadow-lg shadow-blue-900/30 hover:scale-105 active:scale-95"
-          >
-            <Printer className="w-4 h-4" /> Informe CET
-          </button>
-          
-          <button
-            id="btn-share-report"
-            onClick={handleSharePDF}
-            disabled={isSharing}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold text-sm hover:from-emerald-400 hover:to-teal-400 transition-all shadow-lg shadow-emerald-900/30 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
-          >
-            {isSharing ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Share2 className="w-4 h-4" />} Compartir
-          </button>
-        </div>
+        <button
+          id="btn-print-report"
+          onClick={openReportPreview}
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm hover:from-blue-500 hover:to-indigo-500 transition-all shadow-lg shadow-blue-900/30 hover:scale-105 active:scale-95"
+        >
+          <Printer className="w-4 h-4" /> Informe CET
+        </button>
 
         <div className="flex items-center gap-1 glass-panel rounded-xl p-1">
           <button
@@ -1066,25 +1064,25 @@ export default function TutorTracker() {
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
-        <div className="flex flex-wrap gap-4 text-sm">
-          <div className="text-center">
-            <p className="text-gray-500 text-xs uppercase tracking-wide">Clases</p>
-            <p className="text-gray-100 font-bold text-lg">{monthClasses.length}</p>
+        <div className="w-full md:w-auto grid grid-cols-4 md:flex items-center gap-2 md:gap-4 text-sm divide-x divide-white/10 md:divide-none">
+          <div className="text-center px-1">
+            <p className="text-gray-500 text-[10px] md:text-xs uppercase tracking-wide truncate">Clases</p>
+            <p className="text-gray-100 font-bold text-base md:text-lg">{monthClasses.length}</p>
           </div>
-          <div className="w-px bg-white/10" />
-          <div className="text-center">
-            <p className="text-gray-500 text-xs uppercase tracking-wide">CET</p>
-            <p className="text-emerald-400 font-bold text-lg">{formatARS(totalCET)}</p>
+          <div className="hidden md:block w-px bg-white/10 h-8" />
+          <div className="text-center px-1">
+            <p className="text-gray-500 text-[10px] md:text-xs uppercase tracking-wide truncate">CET</p>
+            <p className="text-emerald-400 font-bold text-base md:text-lg truncate">{formatARS(totalCET)}</p>
           </div>
-          <div className="w-px bg-white/10" />
-          <div className="text-center">
-            <p className="text-gray-500 text-xs uppercase tracking-wide">Privadas</p>
-            <p className="text-amber-400 font-bold text-lg">{formatARS(totalPrivate)}</p>
+          <div className="hidden md:block w-px bg-white/10 h-8" />
+          <div className="text-center px-1">
+            <p className="text-gray-500 text-[10px] md:text-xs uppercase tracking-wide truncate">Privadas</p>
+            <p className="text-amber-400 font-bold text-base md:text-lg truncate">{formatARS(totalPrivate)}</p>
           </div>
-          <div className="w-px bg-white/10" />
-          <div className="text-center">
-            <p className="text-gray-500 text-xs uppercase tracking-wide">Total</p>
-            <p className="text-gray-100 font-bold text-lg">{formatARS(totalMonth)}</p>
+          <div className="hidden md:block w-px bg-white/10 h-8" />
+          <div className="text-center px-1">
+            <p className="text-gray-500 text-[10px] md:text-xs uppercase tracking-wide truncate">Total</p>
+            <p className="text-gray-100 font-bold text-base md:text-lg truncate">{formatARS(totalMonth)}</p>
           </div>
         </div>
       </div>
@@ -1108,15 +1106,15 @@ export default function TutorTracker() {
               return (
                 <div key={day} className={`rounded-xl p-1.5 md:p-2 min-h-[60px] md:min-h-[80px] border transition-colors ${isToday ? "border-emerald-500/40 bg-emerald-500/5" : dayClasses.length > 0 ? "border-white/10 bg-white/3" : "border-transparent"}`}>
                   <div className={`text-xs font-semibold mb-1 w-6 h-6 flex items-center justify-center rounded-full ${isToday ? "bg-emerald-500 text-white" : "text-gray-400"}`}>{day}</div>
-                  <div className="space-y-0.5">
+                  <div className="space-y-1">
                     {dayClasses.slice(0, 3).map(cls => (
                       <div key={cls.id} onClick={() => openEditForm(cls)}
                         title={`${cls.studentName} — ${cls.subject} (${formatDuration(cls.duration ?? 60)})`}
-                        className={`text-[10px] leading-tight px-1.5 py-0.5 rounded-md cursor-pointer truncate font-medium transition-opacity hover:opacity-80 ${cls.type === "CET" ? "bg-emerald-500/20 text-emerald-300" : "bg-amber-500/20 text-amber-300"}`}>
-                        {cls.studentName.split(" ")[0]}
+                        className={`text-[10px] md:text-xs leading-tight px-1.5 py-1 rounded-md cursor-pointer line-clamp-2 font-medium transition-opacity hover:opacity-80 ${cls.type === "CET" ? "bg-emerald-500/20 text-emerald-300" : "bg-amber-500/20 text-amber-300"}`}>
+                        {cls.studentName}
                       </div>
                     ))}
-                    {dayClasses.length > 3 && <div className="text-[10px] text-gray-500 px-1">+{dayClasses.length - 3} más</div>}
+                    {dayClasses.length > 3 && <div className="text-[10px] md:text-xs text-gray-500 px-1 font-medium">+{dayClasses.length - 3} más</div>}
                   </div>
                 </div>
               );
@@ -1132,41 +1130,113 @@ export default function TutorTracker() {
       )}
 
       {activeView === "list" && (
-        <div className="space-y-3">
+        <div className="space-y-6">
           {monthClasses.length === 0 ? (
             <div className="glass-panel rounded-2xl p-12 text-center text-gray-500">
               <GraduationCap className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p>No hay clases en este mes.</p>
             </div>
-          ) : monthClasses.map(cls => (
-            <div key={cls.id}
-              className={`glass-panel rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 group transition-all ${editingId === cls.id ? "border-emerald-500/40 ring-1 ring-emerald-500/20" : "hover:border-white/15"}`}>
-              <div className="flex items-start gap-3 min-w-0">
-                <div className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${cls.type === "CET" ? "bg-emerald-400" : "bg-amber-400"}`} />
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-gray-100">{cls.studentName}</span>
-                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${cls.type === "CET" ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"}`}>{cls.type}</span>
-                    <span className={`text-[11px] px-2 py-0.5 rounded-full ${cls.modality === "presencial" ? "bg-blue-500/15 text-blue-400" : "bg-purple-500/15 text-purple-400"}`}>
-                      {cls.modality === "presencial" ? "Presencial" : "Virtual"}
-                    </span>
+          ) : (
+            (() => {
+              const nowMs = new Date().getTime();
+              const upcomingClasses = monthClasses.filter(c => new Date(c.dateTime).getTime() >= nowMs).sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+              const pastClasses = monthClasses.filter(c => new Date(c.dateTime).getTime() < nowMs).sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
+
+              const renderClassCard = (cls: TutorClass) => (
+                <div key={cls.id}
+                  className={`glass-panel rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group transition-all ${editingId === cls.id ? "border-emerald-500/40 ring-1 ring-emerald-500/20" : "hover:border-white/15"}`}>
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className={`mt-1.5 w-2.5 h-2.5 rounded-full flex-shrink-0 ${cls.type === "CET" ? "bg-emerald-400" : "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]"}`} />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-gray-100">{cls.studentName}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${cls.type === "CET" ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"}`}>{cls.type}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${cls.modality === "presencial" ? "bg-blue-500/15 text-blue-400" : "bg-purple-500/15 text-purple-400"}`}>
+                          {cls.modality === "presencial" ? "Presencial" : "Virtual"}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-300 mt-1 font-medium">{cls.subject}</p>
+                      <div className="flex items-center gap-2 text-xs text-gray-400 mt-1.5 flex-wrap">
+                        <span className="flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5" /> {formatDateDisplay(cls.dateTime)}</span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {formatTimeDisplay(cls.dateTime)} → {addMinutesToTime(cls.dateTime.slice(11, 16), cls.duration ?? 60)}</span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1"><Timer className="w-3.5 h-3.5" /> {formatDuration(cls.duration ?? 60)}</span>
+                      </div>
+                      {cls.notes && <p className="text-xs text-gray-500 mt-2 italic bg-white/5 p-2 rounded-lg border border-white/5">{cls.notes}</p>}
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-400 mt-0.5">{cls.subject}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {formatDateDisplay(cls.dateTime)} · {formatTimeDisplay(cls.dateTime)} → {addMinutesToTime(cls.dateTime.slice(11, 16), cls.duration ?? 60)} · {formatDuration(cls.duration ?? 60)}
-                  </p>
-                  {cls.notes && <p className="text-xs text-gray-600 mt-0.5 italic">{cls.notes}</p>}
+                  <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4 pt-3 sm:pt-0 border-t border-white/5 sm:border-t-0 mt-2 sm:mt-0">
+                    <span className="text-gray-100 font-bold text-lg bg-white/5 px-3 py-1.5 rounded-xl border border-white/10">{formatARS(cls.amount)}</span>
+                    <button onClick={() => openEditForm(cls)}
+                      className="p-2.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 border border-blue-500/20 hover:border-blue-500/40 transition-all flex items-center gap-2" title="Editar clase">
+                      <Pencil className="w-4 h-4" /> <span className="text-sm font-medium sm:hidden">Editar</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-gray-100 font-bold text-base">{formatARS(cls.amount)}</span>
-                <button onClick={() => openEditForm(cls)}
-                  className="p-1.5 rounded-lg bg-white/5 hover:bg-blue-500/20 text-gray-400 hover:text-blue-400 transition-all" title="Editar / Ver detalles">
-                  <Pencil className="w-3.5 h-3.5" />
-                </button>
-              </div>
+              );
+
+              return (
+                <>
+                  {upcomingClasses.length > 0 && (
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest pl-2 mb-4 flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-emerald-400" /> Próximas Clases
+                      </h3>
+                      {upcomingClasses.map(renderClassCard)}
+                    </div>
+                  )}
+                  {pastClasses.length > 0 && (
+                    <div className="space-y-3 pt-6 mt-6 border-t border-white/5">
+                      <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest pl-2 mb-4 flex items-center gap-2">
+                        <Check className="w-4 h-4" /> Clases Pasadas
+                      </h3>
+                      <div className="opacity-75 hover:opacity-100 transition-opacity">
+                        {pastClasses.map(renderClassCard)}
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()
+          )}
+        </div>
+      )}
+
+      {/* ── Report Preview Modal ──────────────────────────────────── */}
+      {showReportPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="glass-panel rounded-2xl w-full max-w-4xl h-[90vh] flex flex-col shadow-2xl border border-white/10 overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-white/10 bg-black/40">
+              <h3 className="font-bold text-gray-100 flex items-center gap-2">
+                <Printer className="w-5 h-5 text-blue-400" /> Vista Previa del Informe
+              </h3>
+              <button onClick={() => setShowReportPreview(false)} className="text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 p-1.5 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
             </div>
-          ))}
+            
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-white print-preview-container" style={{ color: "black" }}>
+              <div dangerouslySetInnerHTML={{ __html: reportHTML }} />
+            </div>
+            
+            <div className="p-4 border-t border-white/10 bg-black/40 flex flex-wrap gap-3 justify-end">
+              <button
+                onClick={() => handleDownloadOrSharePDF("download")}
+                disabled={isSharing}
+                className="flex-1 md:flex-none items-center justify-center gap-2 px-5 py-3 rounded-xl border border-white/20 text-gray-200 hover:bg-white/10 transition-all font-medium disabled:opacity-50 flex"
+              >
+                {isSharing ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Printer className="w-4 h-4" />} Descargar PDF
+              </button>
+              <button
+                onClick={() => handleDownloadOrSharePDF("share")}
+                disabled={isSharing}
+                className="flex-1 md:flex-none items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-bold hover:from-emerald-400 hover:to-teal-400 transition-all disabled:opacity-50 shadow-lg shadow-emerald-900/30 flex"
+              >
+                {isSharing ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Share2 className="w-4 h-4" />} Compartir
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
