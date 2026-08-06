@@ -117,10 +117,12 @@ function ensurePrintStyles() {
   const style = document.createElement("style");
   style.id = PRINT_STYLE_ID;
   style.textContent = `
+    @page { margin: 0; }
     @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; }
       body > *:not(#tutor-print-root) { display: none !important; }
-      #tutor-print-root { display: block !important; position: fixed; inset: 0; background: white; z-index: 99999; padding: 32px; font-family: Arial, sans-serif; color: #111; }
-      #tutor-print-root table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      #tutor-print-root { display: block !important; position: relative; background: white; z-index: 99999; padding: 15mm 20mm; font-family: Arial, sans-serif; color: #111; min-height: 100vh; }
+      #tutor-print-root table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
       #tutor-print-root th { background: #1e293b; color: white; padding: 8px 10px; text-align: left; }
       #tutor-print-root td { padding: 6px 10px; border-bottom: 1px solid #e2e8f0; }
       #tutor-print-root tr:nth-child(even) td { background: #f8fafc; }
@@ -552,8 +554,17 @@ export default function TutorTracker() {
     printRoot.id = "tutor-print-root";
     printRoot.innerHTML = `
       <div class="header-bar">
-        <div><div class="logo-title">Centro de Estudios Turing</div><div style="font-size:13px;color:#666;margin-top:4px;">Informe de Clases — ${monthLabelCap}</div></div>
-        <div style="text-align:right;font-size:12px;color:#666;">Generado: ${new Date().toLocaleDateString("es-AR")}<br/>${cetMonthClasses.length} clase${cetMonthClasses.length !== 1 ? "s" : ""} registrada${cetMonthClasses.length !== 1 ? "s" : ""}</div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <img src="/logo.png" alt="CET Logo" style="width: 54px; height: 54px; object-fit: contain; border-radius: 8px;" />
+          <div>
+            <div class="logo-title">Centro de Estudios Turing</div>
+            <div style="font-size:14px;color:#555;margin-top:2px;font-weight:500;">Informe de Clases — ${monthLabelCap}</div>
+          </div>
+        </div>
+        <div style="text-align:right;font-size:12px;color:#666;display:flex;flex-direction:column;justify-content:center;">
+          <div>Generado: ${new Date().toLocaleDateString("es-AR")}</div>
+          <div style="margin-top:2px;">${cetMonthClasses.length} clase${cetMonthClasses.length !== 1 ? "s" : ""} registrada${cetMonthClasses.length !== 1 ? "s" : ""}</div>
+        </div>
       </div>
       ${studentsHTML}
       <div class="grand-total">TOTAL A COBRAR: ${formatARS(grandTotal)}</div>
