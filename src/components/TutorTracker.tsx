@@ -605,7 +605,22 @@ export default function TutorTracker() {
       const canvas = await html2canvas(node, {
         scale: 2,
         useCORS: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        onclone: (clonedDoc) => {
+          const style = clonedDoc.createElement('style');
+          style.innerHTML = `
+            .tutor-report-content th,
+            .tutor-report-content td,
+            .tutor-report-content .logo-title,
+            .tutor-report-content .student-name,
+            .tutor-report-content .grand-total,
+            .tutor-report-content .header-bar td div {
+              position: relative !important;
+              top: 3px !important;
+            }
+          `;
+          clonedDoc.head.appendChild(style);
+        }
       });
       
       const dataUrl = canvas.toDataURL("image/png");
