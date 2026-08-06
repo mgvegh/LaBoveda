@@ -555,7 +555,7 @@ export default function TutorTracker() {
     printRoot.innerHTML = `
       <div class="header-bar">
         <div style="display: flex; align-items: center; gap: 16px;">
-          <img src="/logo.png" alt="CET Logo" style="width: 54px; height: 54px; object-fit: contain; border-radius: 8px;" />
+          <img src="/logo.jpg" alt="CET Logo" style="width: 54px; height: 54px; object-fit: contain; border-radius: 8px;" />
           <div>
             <div class="logo-title">Centro de Estudios Turing</div>
             <div style="font-size:14px;color:#555;margin-top:2px;font-weight:500;">Informe de Clases — ${monthLabelCap}</div>
