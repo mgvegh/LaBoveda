@@ -567,6 +567,7 @@ export default function TutorTracker() {
             <td style="border: none; padding: 8px 0 0 0; text-align: left; vertical-align: top;">
               <div class="logo-title" style="margin: 0; line-height: 1;">Centro de Estudios Turing</div>
               <div style="font-size:14px;color:#555;margin-top:6px;font-weight:500; line-height: 1;">Informe de Clases — ${monthLabelCap}</div>
+              <div style="font-size:12px;color:#777;margin-top:4px;font-weight:600; line-height: 1;">Profesor: ${tutorName}</div>
             </td>
             <td style="border: none; padding: 8px 0 0 0; text-align: right; vertical-align: top; font-size: 12px; color: #666;">
               <div style="margin: 0; line-height: 1;">Generado: ${new Date().toLocaleDateString("es-AR")}</div>
@@ -578,7 +579,6 @@ export default function TutorTracker() {
         <div class="grand-total">TOTAL A COBRAR: ${formatARS(grandTotal)}</div>
         <div class="footer">
           <div>Documento generado automáticamente — Centro de Estudios Turing</div>
-          <div style="margin-top: 4px; font-weight: bold;">Profesor: ${tutorName}</div>
         </div>
       </div>
     `;
@@ -610,10 +610,25 @@ export default function TutorTracker() {
         jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const }
       };
       
+      const pdfHTML = `
+        <style>
+          .tutor-report-content th,
+          .tutor-report-content td,
+          .tutor-report-content .logo-title,
+          .tutor-report-content .student-name,
+          .tutor-report-content .grand-total,
+          .tutor-report-content .header-bar td div {
+            position: relative;
+            top: -4px;
+          }
+        </style>
+        ${reportHTML}
+      `;
+      
       if (action === "download") {
-        await html2pdf().set(opt).from(reportHTML).save();
+        await html2pdf().set(opt).from(pdfHTML).save();
       } else {
-        const pdfBlob = await html2pdf().set(opt).from(reportHTML).output('blob');
+        const pdfBlob = await html2pdf().set(opt).from(pdfHTML).output('blob');
         const file = new File([pdfBlob], filename, { type: "application/pdf" });
         
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -624,7 +639,7 @@ export default function TutorTracker() {
           });
         } else {
           // Fallback to download if sharing is not supported
-          await html2pdf().set(opt).from(reportHTML).save();
+          await html2pdf().set(opt).from(pdfHTML).save();
         }
       }
     } catch (e) {
