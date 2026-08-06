@@ -1,5 +1,5 @@
 "use client";
-import html2canvas from "html2canvas";
+import * as htmlToImage from "html-to-image";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
@@ -601,13 +601,9 @@ export default function TutorTracker() {
     setIsSharing(true);
     try {
       const filename = `Informe_CET_${monthLabelCap.replace(/ /g, "_")}.png`;
+      const options = { quality: 1, backgroundColor: '#ffffff', pixelRatio: 2 };
       
-      const canvas = await html2canvas(node, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff'});
-      
-      const dataUrl = canvas.toDataURL("image/png");
+      const dataUrl = await htmlToImage.toPng(node, options);
       
       if (action === "download") {
         const link = document.createElement("a");
@@ -615,8 +611,8 @@ export default function TutorTracker() {
         link.href = dataUrl;
         link.click();
       } else {
-        const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
-        if (!blob) throw new Error("No se pudo generar la imagen.");
+        const blob = await htmlToImage.toBlob(node, options);
+        if (!blob) throw new Error("No se pudo generar el blob de la imagen.");
         
         const file = new File([blob], filename, { type: "image/png" });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -650,6 +646,7 @@ export default function TutorTracker() {
     } finally {
       setIsSharing(false);
     }
+  }
   }
 
 
