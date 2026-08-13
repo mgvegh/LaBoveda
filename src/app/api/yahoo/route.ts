@@ -52,15 +52,21 @@ async function tryArgentineFallback(ticker: string) {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const ticker = searchParams.get('ticker');
+  const rawTicker = searchParams.get('ticker');
 
-  if (!ticker) {
+  if (!rawTicker) {
     return NextResponse.json({ error: 'Ticker is required' }, { status: 400 });
+  }
+
+  // Sanitización de entrada contra SSRF e inyección de rutas
+  const ticker = rawTicker.trim().replace(/[^A-Za-z0-9\.\-\_\^]/g, '').slice(0, 20);
+  if (!ticker) {
+    return NextResponse.json({ error: 'Invalid ticker format' }, { status: 400 });
   }
 
   try {
     // Adding standard User-Agent to prevent 403 Forbidden from Yahoo
-    const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1m`, {
+    const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1m`, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       },

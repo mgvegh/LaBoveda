@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Trash2, RefreshCw, DollarSign, TrendingUp, Landmark, ArrowRightLeft, ListChecks, Coins, Users, GripVertical, ChevronUp, ChevronDown } from "lucide-react";
+import { Plus, Trash2, RefreshCw, DollarSign, TrendingUp, Landmark, ArrowRightLeft, ListChecks, Coins, Users, GripVertical, ChevronUp, ChevronDown, Save, Check, AlertCircle } from "lucide-react";
+import clsx from "clsx";
 import { useAuth } from "@/components/AuthProvider";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -75,9 +76,37 @@ export default function IncomeDistributor() {
   const [dragOverExpenseIdx, setDragOverExpenseIdx] = useState<number | null>(null);
   const [draggedCategoryIdx, setDraggedCategoryIdx] = useState<number | null>(null);
   const [dragOverCategoryIdx, setDragOverCategoryIdx] = useState<number | null>(null);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   const { user } = useAuth();
   const getDocRef = () => user ? doc(db, "users", user.uid, "income_config", "data") : null;
+
+  const handleManualSave = async () => {
+    if (!user) return;
+    setSaveStatus("saving");
+    const docRef = getDocRef();
+
+    // 1. Guardar copia local inmediata
+    const storageKey = `boveda_income_${user.uid}`;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({ ...config, lastIncome: totalIncome }));
+    } catch (e) {
+      console.warn("Error guardando copia local:", e);
+    }
+
+    // 2. Guardar en Firebase Firestore
+    try {
+      if (docRef) {
+        await setDoc(docRef, { ...config, lastIncome: totalIncome }, { merge: true });
+      }
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2500);
+    } catch (err) {
+      console.error("Error guardando en Firestore:", err);
+      setSaveStatus("error");
+      setTimeout(() => setSaveStatus("idle"), 3000);
+    }
+  };
 
   const fetchUsdRate = async () => {
     setIsFetchingRate(true);
@@ -98,28 +127,70 @@ export default function IncomeDistributor() {
     setIsFetchingRate(false);
   };
 
+  // Carga inicial y sincronización segura con Firebase Firestore y fallback local
   useEffect(() => {
     setIsClient(true);
     fetchUsdRate();
     if (!user) return;
+
+    const storageKey = `boveda_income_${user.uid}`;
+    let localData: IncomeConfig | null = null;
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        localData = JSON.parse(stored);
+        if (localData) {
+          setConfig({
+            categories: localData.categories && localData.categories.length > 0 ? localData.categories : DEFAULT_CATEGORIES,
+            expenses: localData.expenses || [],
+            completedIds: localData.completedIds || [],
+            debts: localData.debts || []
+          });
+          if (localData.lastIncome !== undefined) setTotalIncome(localData.lastIncome);
+        }
+      }
+    } catch (e) {
+      console.warn("Error reading local cache for income:", e);
+    }
+
     const docRef = getDocRef();
     if (!docRef) return;
     
     getDoc(docRef).then(snap => {
       if (snap.exists()) {
         const data = snap.data() as IncomeConfig;
-        setConfig({
-          categories: data.categories || [],
-          expenses: data.expenses || [],
-          completedIds: data.completedIds || [],
-          debts: data.debts || []
-        });
-        if (data.lastIncome !== undefined) setTotalIncome(data.lastIncome);
+        const newCategories = (data.categories && data.categories.length > 0) 
+          ? data.categories 
+          : (localData?.categories && localData.categories.length > 0 ? localData.categories : DEFAULT_CATEGORIES);
+        const newExpenses = data.expenses !== undefined ? data.expenses : (localData?.expenses || []);
+        const newCompletedIds = data.completedIds !== undefined ? data.completedIds : (localData?.completedIds || []);
+        const newDebts = data.debts !== undefined ? data.debts : (localData?.debts || []);
+        const newLastIncome = data.lastIncome !== undefined ? data.lastIncome : (localData?.lastIncome || "");
+
+        const mergedConfig: IncomeConfig = {
+          categories: newCategories,
+          expenses: newExpenses,
+          completedIds: newCompletedIds,
+          debts: newDebts,
+          lastIncome: newLastIncome
+        };
+
+        setConfig(mergedConfig);
+        if (newLastIncome) setTotalIncome(newLastIncome);
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(mergedConfig));
+        } catch {}
+      } else if (localData) {
+        // Si el documento en Firestore no existía pero teníamos caché local, persistir lo local en Firestore
+        setDoc(docRef, { ...localData, lastIncome: localData.lastIncome || totalIncome }, { merge: true }).catch(console.error);
       }
       setIsDataLoaded(true);
     }).catch(err => {
-      console.error("Error loading config:", err);
-      setIsDataLoaded(true);
+      console.error("Error loading income config from Firestore:", err);
+      // Si falló la red, si teníamos datos locales los habilitamos para visualización
+      if (localData) {
+        setIsDataLoaded(true);
+      }
     });
   }, [user]); // eslint-disable-line
 
@@ -127,7 +198,21 @@ export default function IncomeDistributor() {
     if (!isClient || !user || !isDataLoaded) return;
     const docRef = getDocRef();
     if (!docRef) return;
-    const id = setTimeout(() => setDoc(docRef, { ...config, lastIncome: totalIncome }, { merge: true }), 800);
+
+    // Respaldo inmediato en localStorage
+    const storageKey = `boveda_income_${user.uid}`;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({ ...config, lastIncome: totalIncome }));
+    } catch (e) {
+      console.warn("Error saving local income cache:", e);
+    }
+
+    const id = setTimeout(() => {
+      setDoc(docRef, { ...config, lastIncome: totalIncome }, { merge: true }).catch(err => {
+        console.error("Error saving income config to Firestore:", err);
+      });
+    }, 800);
+
     return () => clearTimeout(id);
   }, [config, totalIncome, isClient, user, isDataLoaded]); // eslint-disable-line
 
@@ -335,20 +420,57 @@ export default function IncomeDistributor() {
             </h2>
             <p className="text-sm text-gray-400">¿Cuánta plata entró hoy a tu cuenta?</p>
           </div>
-          <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl px-3 py-2 h-fit">
-            <span className="text-xs text-gray-400 uppercase tracking-wide">Valor USD</span>
-            <div className="flex items-center gap-1">
-              <span className="text-gray-500 font-bold">$</span>
-              <input 
-                type="number" 
-                value={usdRate || ""} 
-                onChange={(e) => setUsdRate(Number(e.target.value))}
-                className="w-16 bg-transparent text-white font-bold focus:outline-none"
-              />
-            </div>
-            <button onClick={fetchUsdRate} className={`text-gray-500 hover:text-violet-400 transition-colors ml-1 ${isFetchingRate ? "animate-spin text-violet-400" : ""}`} title="Actualizar Ualá">
-              <RefreshCw className="w-3.5 h-3.5" />
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleManualSave}
+              disabled={saveStatus === "saving"}
+              className={clsx(
+                "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer h-fit",
+                saveStatus === "saved" 
+                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" 
+                  : saveStatus === "error"
+                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                  : "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white border border-violet-400/30"
+              )}
+            >
+              {saveStatus === "saving" ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Guardando...</span>
+                </>
+              ) : saveStatus === "saved" ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>¡Guardado en Firebase!</span>
+                </>
+              ) : saveStatus === "error" ? (
+                <>
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Guardado localmente</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Guardar Cambios</span>
+                </>
+              )}
             </button>
+
+            <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl px-3 py-2 h-fit">
+              <span className="text-xs text-gray-400 uppercase tracking-wide">Valor USD</span>
+              <div className="flex items-center gap-1">
+                <span className="text-gray-500 font-bold">$</span>
+                <input 
+                  type="number" 
+                  value={usdRate || ""} 
+                  onChange={(e) => setUsdRate(Number(e.target.value))}
+                  className="w-16 bg-transparent text-white font-bold focus:outline-none"
+                />
+              </div>
+              <button onClick={fetchUsdRate} className={`text-gray-500 hover:text-violet-400 transition-colors ml-1 ${isFetchingRate ? "animate-spin text-violet-400" : ""}`} title="Actualizar Ualá">
+                <RefreshCw className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -484,10 +606,46 @@ export default function IncomeDistributor() {
 
       {/* 3. GESTIÓN DE SALIDAS (SIEMPRE VISIBLE) */}
       <div className="pt-10 border-t border-white/10">
-        <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-          <Coins className="w-5 h-5 text-amber-400" />
-          Configurar Salidas
-        </h3>
+        <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
+          <h3 className="text-xl font-bold text-white flex items-center gap-2">
+            <Coins className="w-5 h-5 text-amber-400" />
+            Configurar Salidas
+          </h3>
+          <button
+            onClick={handleManualSave}
+            disabled={saveStatus === "saving"}
+            className={clsx(
+              "flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer",
+              saveStatus === "saved" 
+                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" 
+                : saveStatus === "error"
+                ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                : "bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10"
+            )}
+          >
+            {saveStatus === "saving" ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span>Guardando...</span>
+              </>
+            ) : saveStatus === "saved" ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span>¡Guardado!</span>
+              </>
+            ) : saveStatus === "error" ? (
+              <>
+                <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                <span>Guardado local</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-3.5 h-3.5 text-amber-400" />
+                <span>Guardar Salidas</span>
+              </>
+            )}
+          </button>
+        </div>
         
         <div className="glass-panel p-6 rounded-2xl border-white/5 w-full">
           <div className="space-y-3 mb-6">
@@ -503,7 +661,15 @@ export default function IncomeDistributor() {
                 <div
                   key={e.id}
                   draggable
-                  onDragStart={(ev) => { setDraggedExpenseIdx(idx); ev.dataTransfer.effectAllowed = "move"; }}
+                  onDragStart={(ev) => {
+                    const target = ev.target as HTMLElement;
+                    if (target.closest("input, select, button")) {
+                      ev.preventDefault();
+                      return;
+                    }
+                    setDraggedExpenseIdx(idx);
+                    ev.dataTransfer.effectAllowed = "move";
+                  }}
                   onDragOver={(ev) => { ev.preventDefault(); ev.dataTransfer.dropEffect = "move"; if (dragOverExpenseIdx !== idx) setDragOverExpenseIdx(idx); }}
                   onDragLeave={() => { if (dragOverExpenseIdx === idx) setDragOverExpenseIdx(null); }}
                   onDrop={(ev) => { ev.preventDefault(); if (draggedExpenseIdx !== null) reorderExpenses(draggedExpenseIdx, idx); setDraggedExpenseIdx(null); setDragOverExpenseIdx(null); }}
@@ -547,6 +713,9 @@ export default function IncomeDistributor() {
                       <input
                         type="text"
                         value={e.name}
+                        draggable={false}
+                        onMouseDown={ev => ev.stopPropagation()}
+                        onDragStart={ev => { ev.preventDefault(); ev.stopPropagation(); }}
                         onChange={ev => updateExpense(e.id, { name: ev.target.value })}
                         className="bg-transparent text-gray-200 font-bold focus:outline-none focus:border-b focus:border-red-500/50 w-full"
                       />
@@ -559,11 +728,16 @@ export default function IncomeDistributor() {
                       <input
                         type="number"
                         value={e.amount || ""}
+                        draggable={false}
+                        onMouseDown={ev => ev.stopPropagation()}
+                        onDragStart={ev => { ev.preventDefault(); ev.stopPropagation(); }}
                         onChange={ev => updateExpense(e.id, { amount: parseFloat(ev.target.value) || 0 })}
-                        className="w-full bg-transparent py-1.5 text-red-400 text-right font-mono font-bold text-xs focus:outline-none"
+                        className="w-full bg-transparent py-1.5 text-red-400 text-right font-mono font-bold text-xs focus:outline-none select-text cursor-text"
                       />
                       <select
                         value={e.currency}
+                        draggable={false}
+                        onMouseDown={ev => ev.stopPropagation()}
                         onChange={ev => updateExpense(e.id, { currency: ev.target.value as "ARS"|"USD" })}
                         className="ml-1 bg-transparent text-red-400 text-xs font-mono font-bold focus:outline-none cursor-pointer"
                       >
@@ -571,7 +745,13 @@ export default function IncomeDistributor() {
                         <option value="USD" className="bg-[#09090b]">USD</option>
                       </select>
                     </div>
-                    <button onClick={() => removeExpense(e.id)} className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded-lg bg-white/5 sm:bg-transparent sm:p-1 sm:opacity-0 group-hover:opacity-100 shrink-0" title="Eliminar gasto">
+                    <button 
+                      onClick={() => removeExpense(e.id)} 
+                      draggable={false}
+                      onMouseDown={ev => ev.stopPropagation()}
+                      className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded-lg bg-white/5 sm:bg-transparent sm:p-1 sm:opacity-0 group-hover:opacity-100 shrink-0" 
+                      title="Eliminar gasto"
+                    >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -587,7 +767,15 @@ export default function IncomeDistributor() {
                 <div
                   key={c.id}
                   draggable
-                  onDragStart={(ev) => { setDraggedCategoryIdx(idx); ev.dataTransfer.effectAllowed = "move"; }}
+                  onDragStart={(ev) => {
+                    const target = ev.target as HTMLElement;
+                    if (target.closest("input, select, button")) {
+                      ev.preventDefault();
+                      return;
+                    }
+                    setDraggedCategoryIdx(idx);
+                    ev.dataTransfer.effectAllowed = "move";
+                  }}
                   onDragOver={(ev) => { ev.preventDefault(); ev.dataTransfer.dropEffect = "move"; if (dragOverCategoryIdx !== idx) setDragOverCategoryIdx(idx); }}
                   onDragLeave={() => { if (dragOverCategoryIdx === idx) setDragOverCategoryIdx(null); }}
                   onDrop={(ev) => { ev.preventDefault(); if (draggedCategoryIdx !== null) reorderCategories(draggedCategoryIdx, idx); setDraggedCategoryIdx(null); setDragOverCategoryIdx(null); }}
@@ -631,11 +819,16 @@ export default function IncomeDistributor() {
                       <input
                         type="text"
                         value={c.name}
+                        draggable={false}
+                        onMouseDown={ev => ev.stopPropagation()}
+                        onDragStart={ev => { ev.preventDefault(); ev.stopPropagation(); }}
                         onChange={e => updateCategory(c.id, { name: e.target.value })}
                         className="bg-transparent text-gray-200 font-bold focus:outline-none focus:border-b focus:border-violet-500/50 w-full"
                       />
                       <select
                         value={c.type}
+                        draggable={false}
+                        onMouseDown={ev => ev.stopPropagation()}
                         onChange={e => updateCategory(c.id, { type: e.target.value as CategoryType })}
                         className="bg-transparent text-[10px] text-gray-500 uppercase focus:outline-none w-fit cursor-pointer"
                       >
@@ -650,14 +843,23 @@ export default function IncomeDistributor() {
                       <input
                         type="number"
                         value={c.value || ""}
+                        draggable={false}
+                        onMouseDown={ev => ev.stopPropagation()}
+                        onDragStart={ev => { ev.preventDefault(); ev.stopPropagation(); }}
                         onChange={e => updateCategory(c.id, { value: parseFloat(e.target.value) || 0 })}
-                        className="w-full bg-transparent text-white text-center font-bold text-xs focus:outline-none focus:border-violet-500"
+                        className="w-full bg-transparent text-white text-center font-bold text-xs focus:outline-none focus:border-violet-500 select-text cursor-text"
                       />
                       <span className="text-[10px] text-gray-500 font-bold ml-1 uppercase">
                         {c.type === "percentage" ? "%" : c.type === "fixed_usd" ? "USD" : "ARS"}
                       </span>
                     </div>
-                    <button onClick={() => removeCategory(c.id)} className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded-lg bg-white/5 sm:bg-transparent sm:p-1 sm:opacity-0 group-hover:opacity-100 shrink-0" title="Eliminar salida">
+                    <button 
+                      onClick={() => removeCategory(c.id)} 
+                      draggable={false}
+                      onMouseDown={ev => ev.stopPropagation()}
+                      className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded-lg bg-white/5 sm:bg-transparent sm:p-1 sm:opacity-0 group-hover:opacity-100 shrink-0" 
+                      title="Eliminar salida"
+                    >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>

@@ -1,15 +1,17 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { User, LogOut, ChevronDown, RefreshCw, ShieldCheck, Download, Upload } from "lucide-react";
+import { User, LogOut, ChevronDown, RefreshCw, ShieldCheck, Download, Upload, Lock } from "lucide-react";
 import Link from "next/link";
 import clsx from "clsx";
 import { useAuth } from "@/components/AuthProvider";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, doc, getDoc, setDoc, deleteDoc, addDoc } from "firebase/firestore";
+import PrivacySecurityModal from "@/components/PrivacySecurityModal";
 
 export default function ProfileButton() {
   const { user, signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [cedearsStats, setCedearsStats] = useState({ invested: 0, current: 0 });
@@ -198,8 +200,15 @@ export default function ProfileButton() {
       const vehiclesSnap = await getDocs(collection(db, "users", user.uid, "vehicles"));
       const vehicles = vehiclesSnap.docs.map(d => d.data());
 
+      // 8. Fetch Tutor Classes & Settings
+      const tutorClassesSnap = await getDocs(collection(db, "users", user.uid, "tutorClasses"));
+      const tutorClasses = tutorClassesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      const tutorSettingsSnap = await getDoc(doc(db, "users", user.uid, "settings", "tutor"));
+      const tutorSettings = tutorSettingsSnap.exists() ? tutorSettingsSnap.data() : null;
+
       const backupData = {
-        version: "2.0",
+        version: "3.0",
         exportedAt: new Date().toISOString(),
         userEmail: user.email,
         incomeConfig,
@@ -208,7 +217,9 @@ export default function ProfileButton() {
         criptoPortfolio,
         criptoStrategies,
         fuelRecords,
-        vehicles
+        vehicles,
+        tutorClasses,
+        tutorSettings
       };
 
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
@@ -230,7 +241,7 @@ export default function ProfileButton() {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    const confirmImport = confirm("¿Estás seguro de que deseas importar estos datos? Esto borrará tus datos actuales de CEDEARs y Cripto para evitar duplicaciones.");
+    const confirmImport = confirm("¿Estás seguro de que deseas importar estos datos? Esto actualizará tus registros con la información del backup.");
     if (!confirmImport) {
       e.target.value = "";
       return;
@@ -314,6 +325,21 @@ export default function ProfileButton() {
           }
         }
 
+        // 8. Overwrite Tutor Classes & Settings
+        if (backup.tutorClasses) {
+          const existingClasses = await getDocs(collection(db, "users", user.uid, "tutorClasses"));
+          for (const docObj of existingClasses.docs) {
+            await deleteDoc(doc(db, "users", user.uid, "tutorClasses", docObj.id));
+          }
+          for (const item of backup.tutorClasses) {
+            const { id: _id, ...cleanItem } = item;
+            await addDoc(collection(db, "users", user.uid, "tutorClasses"), cleanItem);
+          }
+        }
+        if (backup.tutorSettings) {
+          await setDoc(doc(db, "users", user.uid, "settings", "tutor"), backup.tutorSettings);
+        }
+
         alert("¡Datos importados con éxito! Recargando para aplicar los cambios.");
         window.location.reload();
       } catch (e) {
@@ -337,117 +363,144 @@ export default function ProfileButton() {
   const isAdmin = user.email === "vm.admin@laboveda.com";
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      <button onClick={toggleDropdown} className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl transition-all text-gray-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10">
-        <User className="w-5 h-5 sm:w-4 sm:h-4" />
-        <span className="hidden lg:inline font-mono text-xs">{user.email?.split('@')[0]}</span>
-        <ChevronDown className="w-4 h-4 hidden sm:block opacity-50" />
-      </button>
-
-      {isOpen && (
-        <div
-          data-profile-dropdown
-          className="absolute right-0 mt-2 w-80 rounded-2xl shadow-xl shadow-black/30 overflow-hidden z-50 text-left flex flex-col"
-          style={{ background: "var(--dropdown-bg)", border: "1px solid var(--dropdown-border)" }}
+    <>
+      <div className="relative" ref={dropdownRef}>
+        <button 
+          onClick={toggleDropdown} 
+          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 text-sm font-medium rounded-xl transition-all text-gray-300 hover:text-white hover:bg-white/5 border border-white/10 active:scale-95 cursor-pointer"
+          title={`Sesión iniciada como: ${user.email}`}
         >
-            <div className="p-4 border-b" style={{ borderColor: "var(--border)", background: "var(--glass-bg)" }}>
-            <p className="text-xs text-gray-500 font-medium tracking-wide uppercase">Bóveda Privada</p>
-            <p className="text-sm font-bold text-gray-200 truncate" title={user.email ?? ""}>{user.email}</p>
+          <div className="w-6 h-6 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 font-bold text-xs uppercase shrink-0">
+            {user.email ? user.email.charAt(0) : <User className="w-3.5 h-3.5" />}
           </div>
-          <div className="p-4 flex-1">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-gray-300">Rendimiento Global</h3>
-              <button onClick={fetchGlobalStats} disabled={isLoading} className="text-gray-500 hover:text-white transition-colors">
-                <RefreshCw className={clsx("w-4 h-4", isLoading && "animate-spin")} />
-              </button>
-            </div>
-            {isLoading && !hasLoaded ? (
-              <div className="py-8 flex justify-center"><RefreshCw className="w-6 h-6 text-orange-500 animate-spin" /></div>
-            ) : (
-              <div className="space-y-4">
-                <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
-                  <div className="text-xs text-blue-400 font-semibold mb-1">Portfolio CEDEARs (ARS)</div>
-                  <div className="flex justify-between items-end">
-                    <div className="text-lg font-bold text-gray-200">${cedearsStats.current.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</div>
-                    {cedearsStats.invested > 0 && (
-                      <div className={clsx("text-xs font-bold", cedearsStats.current >= cedearsStats.invested ? "text-emerald-400" : "text-red-400")}>
-                        {cedearsStats.current >= cedearsStats.invested ? "+" : ""}{(((cedearsStats.current - cedearsStats.invested) / cedearsStats.invested) * 100).toFixed(2)}%
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-[10px] text-gray-500 mt-1">Inv: ${cedearsStats.invested.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</div>
-                </div>
-                <div className="p-3 rounded-xl bg-teal-500/5 border border-teal-500/10">
-                  <div className="text-xs text-teal-400 font-semibold mb-1">Portfolio Cripto (USD)</div>
-                  <div className="flex justify-between items-end">
-                    <div className="text-lg font-bold text-gray-200">${criptoSpotStats.current.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                    {criptoSpotStats.invested > 0 && (
-                      <div className={clsx("text-xs font-bold", criptoSpotStats.current >= criptoSpotStats.invested ? "text-emerald-400" : "text-red-400")}>
-                        {criptoSpotStats.current >= criptoSpotStats.invested ? "+" : ""}{(((criptoSpotStats.current - criptoSpotStats.invested) / criptoSpotStats.invested) * 100).toFixed(2)}%
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-[10px] text-gray-500 mt-1">Inv: ${criptoSpotStats.invested.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                </div>
-                <div className="p-3 rounded-xl bg-orange-500/5 border border-orange-500/10">
-                  <div className="text-xs text-orange-400 font-semibold mb-1">Estrategias Cripto (USD)</div>
-                  <div className="flex justify-between items-end">
-                    <div className="text-lg font-bold text-gray-200">Ganancia Neta</div>
-                    <div className={clsx("text-sm font-bold", strategiesStats.profit >= 0 ? "text-emerald-400" : "text-red-400")}>
-                      {strategiesStats.profit >= 0 ? "+" : "-"}${Math.abs(strategiesStats.profit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                  </div>
-                  {strategiesStats.invested > 0 && (
-                    <div className="flex justify-between mt-1">
-                      <span className="text-[10px] text-gray-500">Histórico: ${strategiesStats.invested.toFixed(2)}</span>
-                      <span className={clsx("text-[10px] font-bold", strategiesStats.profit >= 0 ? "text-emerald-400" : "text-red-400")}>
-                        ROI: {strategiesStats.profit >= 0 ? "+" : ""}{((strategiesStats.profit / strategiesStats.invested) * 100).toFixed(1)}%
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <div className="p-4 border-t space-y-3" style={{ borderColor: "var(--border)", background: "var(--glass-bg)" }}>
-            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Migración de Datos</h4>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={handleExportData}
-                disabled={isLoading}
-                className="flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-bold rounded-xl text-teal-400 hover:text-teal-300 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/15 transition-all active:scale-95 disabled:opacity-50"
-              >
-                <Download className="w-3.5 h-3.5" /> Exportar JSON
-              </button>
-              <label
-                className={clsx(
-                  "flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-bold rounded-xl text-violet-400 hover:text-violet-300 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/15 transition-all active:scale-95 cursor-pointer text-center",
-                  isLoading && "pointer-events-none opacity-50"
-                )}
-              >
-                <Upload className="w-3.5 h-3.5" /> Importar JSON
-                <input
-                  type="file"
-                  onChange={handleImportData}
-                  className="hidden"
-                />
-              </label>
-            </div>
-          </div>
+          <span className="hidden md:inline font-mono text-xs max-w-[120px] truncate">{user.email?.split('@')[0]}</span>
+          <ChevronDown className={clsx("w-3.5 h-3.5 opacity-60 transition-transform duration-200", isOpen && "rotate-180")} />
+        </button>
 
-          <div className="p-2 border-t space-y-1" style={{ borderColor: "var(--border)", background: "rgba(0,0,0,0.06)" }}>
-            {isAdmin && (
-              <Link href="/admin" onClick={() => setIsOpen(false)} className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors">
-                <ShieldCheck className="w-4 h-4" /> Panel Admin
-              </Link>
-            )}
-            <button onClick={signOut} className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors">
-              <LogOut className="w-4 h-4" /> Cerrar Sesión
-            </button>
+        {isOpen && (
+          <div
+            data-profile-dropdown
+            className="absolute right-0 mt-2 w-[calc(100vw-24px)] max-w-[340px] sm:w-80 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden z-50 text-left flex flex-col max-h-[85vh] overflow-y-auto border"
+            style={{ 
+              background: "var(--dropdown-bg, #090a0f)", 
+              borderColor: "var(--dropdown-border, rgba(255,255,255,0.12))" 
+            }}
+          >
+            <div className="p-4 border-b" style={{ borderColor: "var(--border)", background: "var(--glass-bg)" }}>
+              <p className="text-[10px] text-gray-400 font-bold tracking-wider uppercase">Bóveda Privada</p>
+              <p className="text-sm font-bold text-gray-200 truncate mt-0.5" title={user.email ?? ""}>{user.email}</p>
+              <div className="flex items-center gap-1.5 mt-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span className="text-[11px] text-emerald-400 font-medium">Sincronizado con Firebase</span>
+              </div>
+            </div>
+            
+            <div className="p-4 flex-1">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Rendimiento Global</h3>
+                <button onClick={fetchGlobalStats} disabled={isLoading} className="text-gray-500 hover:text-white transition-colors cursor-pointer" title="Actualizar cotizaciones">
+                  <RefreshCw className={clsx("w-3.5 h-3.5", isLoading && "animate-spin")} />
+                </button>
+              </div>
+              {isLoading && !hasLoaded ? (
+                <div className="py-6 flex justify-center"><RefreshCw className="w-5 h-5 text-orange-500 animate-spin" /></div>
+              ) : (
+                <div className="space-y-2.5">
+                  <div className="p-2.5 rounded-xl bg-blue-500/5 border border-blue-500/10">
+                    <div className="text-[11px] text-blue-400 font-semibold mb-0.5">Portfolio CEDEARs (ARS)</div>
+                    <div className="flex justify-between items-end">
+                      <div className="text-base font-bold text-gray-200">${cedearsStats.current.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</div>
+                      {cedearsStats.invested > 0 && (
+                        <div className={clsx("text-[11px] font-bold", cedearsStats.current >= cedearsStats.invested ? "text-emerald-400" : "text-red-400")}>
+                          {cedearsStats.current >= cedearsStats.invested ? "+" : ""}{(((cedearsStats.current - cedearsStats.invested) / cedearsStats.invested) * 100).toFixed(2)}%
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-gray-500 mt-0.5">Inv: ${cedearsStats.invested.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</div>
+                  </div>
+                  
+                  <div className="p-2.5 rounded-xl bg-teal-500/5 border border-teal-500/10">
+                    <div className="text-[11px] text-teal-400 font-semibold mb-0.5">Portfolio Cripto (USD)</div>
+                    <div className="flex justify-between items-end">
+                      <div className="text-base font-bold text-gray-200">${criptoSpotStats.current.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                      {criptoSpotStats.invested > 0 && (
+                        <div className={clsx("text-[11px] font-bold", criptoSpotStats.current >= criptoSpotStats.invested ? "text-emerald-400" : "text-red-400")}>
+                          {criptoSpotStats.current >= criptoSpotStats.invested ? "+" : ""}{(((criptoSpotStats.current - criptoSpotStats.invested) / criptoSpotStats.invested) * 100).toFixed(2)}%
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-gray-500 mt-0.5">Inv: ${criptoSpotStats.invested.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                  </div>
+                  
+                  <div className="p-2.5 rounded-xl bg-orange-500/5 border border-orange-500/10">
+                    <div className="text-[11px] text-orange-400 font-semibold mb-0.5">Estrategias Cripto (USD)</div>
+                    <div className="flex justify-between items-end">
+                      <div className="text-sm font-bold text-gray-200">Ganancia Neta</div>
+                      <div className={clsx("text-sm font-bold", strategiesStats.profit >= 0 ? "text-emerald-400" : "text-red-400")}>
+                        {strategiesStats.profit >= 0 ? "+" : "-"}${Math.abs(strategiesStats.profit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                    {strategiesStats.invested > 0 && (
+                      <div className="flex justify-between mt-0.5">
+                        <span className="text-[10px] text-gray-500">Histórico: ${strategiesStats.invested.toFixed(2)}</span>
+                        <span className={clsx("text-[10px] font-bold", strategiesStats.profit >= 0 ? "text-emerald-400" : "text-red-400")}>
+                          ROI: {strategiesStats.profit >= 0 ? "+" : ""}{((strategiesStats.profit / strategiesStats.invested) * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-3.5 border-t space-y-2.5" style={{ borderColor: "var(--border)", background: "var(--glass-bg)" }}>
+              <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Copia de Seguridad y Migración</h4>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={handleExportData}
+                  disabled={isLoading}
+                  className="flex items-center justify-center gap-1.5 px-2.5 py-2 text-xs font-bold rounded-xl text-teal-400 hover:text-teal-300 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/15 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" /> Exportar JSON
+                </button>
+                <label
+                  className={clsx(
+                    "flex items-center justify-center gap-1.5 px-2.5 py-2 text-xs font-bold rounded-xl text-violet-400 hover:text-violet-300 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/15 transition-all active:scale-95 cursor-pointer text-center",
+                    isLoading && "pointer-events-none opacity-50"
+                  )}
+                >
+                  <Upload className="w-3.5 h-3.5" /> Importar JSON
+                  <input
+                    type="file"
+                    onChange={handleImportData}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="p-2 border-t space-y-1" style={{ borderColor: "var(--border)", background: "rgba(0,0,0,0.15)" }}>
+              <button 
+                onClick={() => { setIsOpen(false); setIsPrivacyOpen(true); }}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors cursor-pointer"
+              >
+                <Lock className="w-3.5 h-3.5" /> Seguridad y Privacidad
+              </button>
+              {isAdmin && (
+                <Link href="/admin" onClick={() => setIsOpen(false)} className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors">
+                  <ShieldCheck className="w-3.5 h-3.5" /> Panel Admin
+                </Link>
+              )}
+              <button onClick={signOut} className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors cursor-pointer">
+                <LogOut className="w-3.5 h-3.5" /> Cambiar Usuario / Cerrar Sesión
+              </button>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+
+      <PrivacySecurityModal isOpen={isPrivacyOpen} onClose={() => setIsPrivacyOpen(false)} />
+    </>
   );
 }
+
