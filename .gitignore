@@ -40,4 +40,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.vercel
+# agents & skills (handled globally in ~/.gemini/config/skills)
+.agents/
+.agent/
+_agents/
