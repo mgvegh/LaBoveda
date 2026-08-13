@@ -1,8 +1,8 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 import { MessageSquare, Heart, ShieldCheck, Lock } from "lucide-react";
 import ContactModal from "./ContactModal";
-import PrivacySecurityModal from "./PrivacySecurityModal";
 
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -13,7 +13,6 @@ const GithubIcon = ({ className }: { className?: string }) => (
 
 export default function Footer() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const currentYear = new Date().getFullYear();
 
   return (
@@ -53,8 +52,8 @@ export default function Footer() {
 
           {/* Actions */}
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <button
-              onClick={() => setIsPrivacyOpen(true)}
+            <Link
+              href="/privacidad"
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer"
               style={{
                 background: "var(--glass-bg)",
@@ -62,17 +61,17 @@ export default function Footer() {
                 color: "var(--fg-muted)",
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.color = "#10b981";
-                (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(16,185,129,0.3)";
+                (e.currentTarget as HTMLElement).style.color = "#10b981";
+                (e.currentTarget as HTMLElement).style.borderColor = "rgba(16,185,129,0.3)";
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.color = "var(--fg-muted)";
-                (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)";
+                (e.currentTarget as HTMLElement).style.color = "var(--fg-muted)";
+                (e.currentTarget as HTMLElement).style.borderColor = "var(--border)";
               }}
             >
               <Lock className="w-4 h-4 text-emerald-400" />
               Seguridad y Privacidad
-            </button>
+            </Link>
             <button
               onClick={() => setIsModalOpen(true)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer"
@@ -125,7 +124,6 @@ export default function Footer() {
       </div>
 
       <ContactModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-      <PrivacySecurityModal isOpen={isPrivacyOpen} onClose={() => setIsPrivacyOpen(false)} />
     </footer>
   );
 }

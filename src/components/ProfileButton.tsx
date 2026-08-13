@@ -6,12 +6,10 @@ import clsx from "clsx";
 import { useAuth } from "@/components/AuthProvider";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, doc, getDoc, setDoc, deleteDoc, addDoc } from "firebase/firestore";
-import PrivacySecurityModal from "@/components/PrivacySecurityModal";
 
 export default function ProfileButton() {
   const { user, signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [cedearsStats, setCedearsStats] = useState({ invested: 0, current: 0 });
@@ -480,12 +478,13 @@ export default function ProfileButton() {
             </div>
 
             <div className="p-2 border-t space-y-1" style={{ borderColor: "var(--border)", background: "rgba(0,0,0,0.15)" }}>
-              <button 
-                onClick={() => { setIsOpen(false); setIsPrivacyOpen(true); }}
+              <Link 
+                href="/privacidad"
+                onClick={() => setIsOpen(false)}
                 className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors cursor-pointer"
               >
                 <Lock className="w-3.5 h-3.5" /> Seguridad y Privacidad
-              </button>
+              </Link>
               {isAdmin && (
                 <Link href="/admin" onClick={() => setIsOpen(false)} className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors">
                   <ShieldCheck className="w-3.5 h-3.5" /> Panel Admin
@@ -498,8 +497,6 @@ export default function ProfileButton() {
           </div>
         )}
       </div>
-
-      <PrivacySecurityModal isOpen={isPrivacyOpen} onClose={() => setIsPrivacyOpen(false)} />
     </>
   );
 }
