@@ -118,18 +118,18 @@ function ensurePrintStyles() {
   const style = document.createElement("style");
   style.id = PRINT_STYLE_ID;
   style.textContent = `
-    .tutor-report-content { background: white; padding: 15px 25px; font-family: Arial, sans-serif; color: #111; }
+    .tutor-report-content { background: white; padding: 25px 30px; font-family: Arial, sans-serif; color: #111; box-sizing: border-box; width: 100%; }
     .tutor-report-content table.data-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
-    .tutor-report-content table.data-table th { background: #1e293b; color: white; padding: 10px; text-align: center; line-height: 1.2; }
-    .tutor-report-content table.data-table td { padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; line-height: 1.2; }
+    .tutor-report-content table.data-table th { background: #1e293b; color: white; padding: 10px 8px; text-align: center; vertical-align: middle; line-height: 1.3; font-weight: bold; }
+    .tutor-report-content table.data-table td { padding: 10px 8px; border-bottom: 1px solid #e2e8f0; text-align: center; vertical-align: middle; line-height: 1.3; }
     .tutor-report-content table.data-table tr:nth-child(even) td { background: #f8fafc; }
-    .tutor-report-content table.data-table .subtotal-row td { font-weight: bold; background: #eff6ff; }
+    .tutor-report-content table.data-table .subtotal-row td { font-weight: bold; background: #eff6ff; vertical-align: middle; padding: 10px 12px; }
     .tutor-report-content .header-bar { margin-bottom: 20px; border-bottom: 2px solid #1e3a5f; padding-bottom: 12px; }
     .tutor-report-content .logo-title { font-size: 24px; font-weight: bold; color: #1e3a5f; }
     .tutor-report-content .student-section { margin-top: 16px; }
     .tutor-report-content .student-title-table { width: 100%; margin-bottom: 8px; border-collapse: collapse; }
     .tutor-report-content .student-title-table td.blue-bar { width: 4px; background-color: #3b82f6; padding: 0; }
-    .tutor-report-content .student-title-table td.student-name { padding: 4px 0 4px 8px; font-size: 16px; font-weight: bold; color: #1e3a5f; line-height: 1.2; }
+    .tutor-report-content .student-title-table td.student-name { padding: 4px 0 4px 8px; font-size: 16px; font-weight: bold; color: #1e3a5f; line-height: 1.2; vertical-align: middle; }
     .tutor-report-content .grand-total { margin-top: 24px; padding: 12px 16px; background: #1e3a5f; color: white; text-align: right; font-size: 16px; font-weight: bold; border-radius: 4px; }
     .tutor-report-content .footer { margin-top: 24px; font-size: 11px; color: #999; text-align: center; }
   `;
@@ -530,26 +530,34 @@ export default function TutorTracker() {
           .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
           .map(c => `
             <tr>
-              <td>${formatDateDisplay(c.dateTime)} ${formatTimeDisplay(c.dateTime)}</td>
-              <td>${c.subject}</td>
-              <td>${c.modality === "presencial" ? "Presencial" : "Virtual"}</td>
-              <td>${formatDuration(c.duration ?? 60)}</td>
-              <td>${formatARS(c.amount)}</td>
+              <td style="text-align: center; vertical-align: middle; padding: 10px 8px; line-height: 1.3;">${formatDateDisplay(c.dateTime)} ${formatTimeDisplay(c.dateTime)}</td>
+              <td style="text-align: center; vertical-align: middle; padding: 10px 8px; line-height: 1.3;">${c.subject}</td>
+              <td style="text-align: center; vertical-align: middle; padding: 10px 8px; line-height: 1.3;">${c.modality === "presencial" ? "Presencial" : "Virtual"}</td>
+              <td style="text-align: center; vertical-align: middle; padding: 10px 8px; line-height: 1.3;">${formatDuration(c.duration ?? 60)}</td>
+              <td style="text-align: center; vertical-align: middle; padding: 10px 8px; line-height: 1.3; font-weight: 600;">${formatARS(c.amount)}</td>
             </tr>`).join("");
         return `
           <div class="student-section">
             <table class="student-title-table">
               <tr>
                 <td class="blue-bar"></td>
-                <td class="student-name">${studentName}</td>
+                <td class="student-name" style="vertical-align: middle;">${studentName}</td>
               </tr>
             </table>
             <table class="data-table">
-              <thead><tr><th>Fecha y Hora</th><th>Materia</th><th>Modalidad</th><th>Duración</th><th>Valor</th></tr></thead>
+              <thead>
+                <tr>
+                  <th style="text-align: center; vertical-align: middle; padding: 10px 8px; line-height: 1.3;">Fecha y Hora</th>
+                  <th style="text-align: center; vertical-align: middle; padding: 10px 8px; line-height: 1.3;">Materia</th>
+                  <th style="text-align: center; vertical-align: middle; padding: 10px 8px; line-height: 1.3;">Modalidad</th>
+                  <th style="text-align: center; vertical-align: middle; padding: 10px 8px; line-height: 1.3;">Duración</th>
+                  <th style="text-align: center; vertical-align: middle; padding: 10px 8px; line-height: 1.3;">Valor</th>
+                </tr>
+              </thead>
               <tbody>${rows}
                 <tr class="subtotal-row">
-                  <td colspan="4" style="text-align:right; padding-right: 16px;">Subtotal (${clsList.length} clase${clsList.length !== 1 ? "s" : ""})</td>
-                  <td style="text-align:center;">${formatARS(studentTotal)}</td>
+                  <td colspan="4" style="text-align: right; vertical-align: middle; padding: 10px 16px;">Subtotal (${clsList.length} clase${clsList.length !== 1 ? "s" : ""})</td>
+                  <td style="text-align: center; vertical-align: middle; font-weight: bold; padding: 10px 8px;">${formatARS(studentTotal)}</td>
                 </tr>
               </tbody>
             </table>
@@ -594,16 +602,50 @@ export default function TutorTracker() {
   }
 
   async function handleDownloadOrShareImage(action: "download" | "share") {
-    const node = document.getElementById("report-capture-area");
-    if (!node) return;
+    const originalNode = document.getElementById("report-capture-area");
+    if (!originalNode) return;
     const { monthLabelCap } = handlePrint() || { monthLabelCap: "" };
     
     setIsSharing(true);
+
+    // Contenedor temporal aislado fuera de pantalla para captura completa sin cortes ni distorsiones
+    const cloneWrapper = document.createElement("div");
+    cloneWrapper.style.position = "fixed";
+    cloneWrapper.style.left = "-9999px";
+    cloneWrapper.style.top = "0";
+    cloneWrapper.style.width = "850px";
+    cloneWrapper.style.background = "#ffffff";
+    cloneWrapper.style.zIndex = "-1000";
+    cloneWrapper.style.overflow = "visible";
+
+    const cloneNode = originalNode.cloneNode(true) as HTMLElement;
+    cloneNode.style.width = "850px";
+    cloneNode.style.minHeight = "auto";
+    cloneNode.style.height = "auto";
+    cloneNode.style.overflow = "visible";
+    cloneNode.style.boxSizing = "border-box";
+    cloneNode.style.padding = "25px 30px";
+    cloneNode.style.background = "#ffffff";
+
+    cloneWrapper.appendChild(cloneNode);
+    document.body.appendChild(cloneWrapper);
+
     try {
+      // Esperar a que el navegador procese el renderizado del clon
+      await new Promise(r => setTimeout(r, 120));
+
+      const width = 850;
+      const height = cloneNode.scrollHeight || cloneNode.offsetHeight || 1200;
       const filename = `Informe_CET_${monthLabelCap.replace(/ /g, "_")}.png`;
-      const options = { quality: 1, backgroundColor: '#ffffff', pixelRatio: 2 };
+      const options = { 
+        quality: 1, 
+        backgroundColor: '#ffffff', 
+        pixelRatio: 2,
+        width: width,
+        height: height
+      };
       
-      const dataUrl = await htmlToImage.toPng(node, options);
+      const dataUrl = await htmlToImage.toPng(cloneNode, options);
       
       if (action === "download") {
         const link = document.createElement("a");
@@ -611,7 +653,7 @@ export default function TutorTracker() {
         link.href = dataUrl;
         link.click();
       } else {
-        const blob = await htmlToImage.toBlob(node, options);
+        const blob = await htmlToImage.toBlob(cloneNode, options);
         if (!blob) throw new Error("No se pudo generar el blob de la imagen.");
         
         const file = new File([blob], filename, { type: "image/png" });
@@ -644,6 +686,9 @@ export default function TutorTracker() {
       let errMsg = e?.message || e?.toString() || "Error desconocido";
       alert("Hubo un error al generar la imagen. Detalles: " + errMsg);
     } finally {
+      if (document.body.contains(cloneWrapper)) {
+        document.body.removeChild(cloneWrapper);
+      }
       setIsSharing(false);
     }
   }
