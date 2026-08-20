@@ -357,16 +357,21 @@ export default function TutorTracker() {
         const snap = await getDocs(q);
         let loadedClasses = snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<TutorClass, "id">) }));
 
-        // Check if there are any classes created via MCP in default_user and sync them
+        // Check if there are any classes created via MCP in default_user and sync them with deduplication
         try {
           const defaultSnap = await getDocs(collection(db, "users", "default_user", "tutorClasses"));
           if (!defaultSnap.empty) {
             for (const docObj of defaultSnap.docs) {
               const data = docObj.data() as any;
-              // Add to current user
-              const newDoc = await addDoc(col, data);
-              loadedClasses.unshift({ id: newDoc.id, ...data });
-              // Delete from default_user
+              const exists = loadedClasses.some(c => 
+                (c as any).calendarEventId === data.calendarEventId ||
+                (c.dateTime === data.dateTime && c.studentName?.toLowerCase() === data.studentName?.toLowerCase())
+              );
+              if (!exists) {
+                const newDoc = await addDoc(col, data);
+                loadedClasses.unshift({ id: newDoc.id, ...data });
+              }
+              // Clean up from default_user
               await deleteDoc(doc(db, "users", "default_user", "tutorClasses", docObj.id));
             }
           }

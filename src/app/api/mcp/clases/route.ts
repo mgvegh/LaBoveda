@@ -129,14 +129,29 @@ export async function POST(request: Request) {
       );
     }
 
-    // Dynamic Rate Calculation from User Settings
+    // Dynamic Rate Calculation from User Settings or Existing History
     let rate = Number(body.tarifa_ars || body.rate || 0);
     if (!rate) {
       const userSettings = await restGetTutorSettings(userId);
       if (modality === "presencial") {
-        rate = userSettings.cetRatePresencial || 12000;
+        rate = userSettings.cetRatePresencial || 0;
       } else {
-        rate = userSettings.cetRateVirtual || 10000;
+        rate = userSettings.cetRateVirtual || 0;
+      }
+
+      // If rate not found in settings, learn from user's previous CET classes
+      if (!rate) {
+        const existing = await restGetClasses(userId);
+        const prevCls = existing.find(
+          (c: any) => c.type === "CET" && c.modality === modality && c.amount > 0 && c.duration > 0
+        );
+        if (prevCls) {
+          rate = Math.round((prevCls.amount * 60) / prevCls.duration);
+        }
+      }
+
+      if (!rate) {
+        rate = modality === "presencial" ? 12000 : 10000;
       }
     }
 
