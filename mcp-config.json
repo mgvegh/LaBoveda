@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "la-boveda": {
+      "command": "npx",
+      "args": ["-y", "tsx", "src/mcp/server.ts"],
+      "env": {
+        "NODE_ENV": "development"
+      }
+    }
+  }
+}
