@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   restGetClasses,
+  restGetTutorSettings,
   restAddClass,
   restUpdateClass,
   restDeleteClass,
@@ -10,7 +11,7 @@ import {
  * REST API Endpoint for Gemini Spark / Google Apps Script / External Automations
  * /api/mcp/clases
  * 
- * Ultra-fast REST implementation with intelligent fuzzy deduplication
+ * Ultra-fast REST implementation with dynamic CET rates and intelligent deduplication
  */
 
 export const dynamic = "force-dynamic";
@@ -85,7 +86,7 @@ export async function GET(request: Request) {
   }
 }
 
-// POST: Crear clase (con deduplicación inteligente)
+// POST: Crear clase (con deduplicación inteligente y tarifas oficiales)
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -97,7 +98,13 @@ export async function POST(request: Request) {
     const type = body.tipo || body.type || "CET";
     const duration = Number(body.duracion_minutos || body.duration || 60);
     const calendarEventId = body.calendarEventId || body.eventId || "";
-    const notes = body.notes || body.notas || "";
+    const rawNotes = (body.notes || body.notas || "").trim();
+
+    // Clean notes: do not store redundant "Sincronizado desde..." or "Clase de..."
+    let notes = "";
+    if (rawNotes && !rawNotes.startsWith("Sincronizado desde") && !rawNotes.startsWith("Clase de")) {
+      notes = rawNotes;
+    }
 
     let dateTime = body.dateTime;
     if (!dateTime && body.fecha && body.hora_inicio) {
@@ -111,14 +118,20 @@ export async function POST(request: Request) {
       );
     }
 
+    // Dynamic Rate Calculation from User Settings
     let rate = Number(body.tarifa_ars || body.rate || 0);
     if (!rate) {
-      rate = modality === "presencial" ? 12000 : 10000;
+      const userSettings = await restGetTutorSettings(userId);
+      if (modality === "presencial") {
+        rate = userSettings.cetRatePresencial || 12000;
+      } else {
+        rate = userSettings.cetRateVirtual || 10000;
+      }
     }
 
     const amount = Math.round((rate * duration) / 60);
 
-    const payload = {
+    const payload: Record<string, any> = {
       studentName,
       subject,
       modality,
@@ -127,7 +140,7 @@ export async function POST(request: Request) {
       duration,
       amount,
       calendarEventId,
-      notes: notes || `Clase de ${subject} (${modality})`,
+      notes,
       updatedAt: new Date().toISOString(),
     };
 
@@ -164,16 +177,19 @@ export async function POST(request: Request) {
     });
 
     if (match) {
-      // Keep existing studentName formatting if already set cleanly, otherwise update
-      if (match.studentName && match.studentName.length > 0 && match.studentName !== match.studentName.toUpperCase()) {
+      // Keep existing clean studentName and notes if already populated
+      if (match.studentName && match.studentName !== match.studentName.toUpperCase()) {
         payload.studentName = match.studentName;
+      }
+      if (!notes && match.notes) {
+        payload.notes = match.notes;
       }
       await restUpdateClass(userId, match.id, payload);
       return NextResponse.json({
         success: true,
         isUpdate: true,
         classId: match.id,
-        message: `Clase existente detectada y actualizada para ${payload.studentName}`,
+        message: `Clase existente detectada y actualizada con tarifa oficial para ${payload.studentName}`,
         class: { id: match.id, ...payload },
       });
     }
@@ -187,7 +203,7 @@ export async function POST(request: Request) {
       success: true,
       isUpdate: false,
       classId: newId,
-      message: `Clase creada con éxito para ${studentName}`,
+      message: `Clase creada con éxito para ${studentName} con tarifa oficial`,
       class: { id: newId, ...payload },
     });
   } catch (error: any) {
@@ -213,7 +229,7 @@ export async function PUT(request: Request) {
     if (body.alumno || body.studentName) updates.studentName = body.alumno || body.studentName;
     if (body.materia || body.subject) updates.subject = body.materia || body.subject;
     if (body.modalidad || body.modality) updates.modality = body.modalidad || body.modality;
-    if (body.notas || body.notes) updates.notes = body.notas || body.notes;
+    if (body.notas !== undefined || body.notes !== undefined) updates.notes = body.notas ?? body.notes;
     if (body.duracion_minutos || body.duration) updates.duration = Number(body.duracion_minutos || body.duration);
 
     if (body.dateTime) {

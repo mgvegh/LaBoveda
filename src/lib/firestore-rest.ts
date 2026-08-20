@@ -77,6 +77,26 @@ export async function restGetClasses(userId: string) {
   });
 }
 
+export async function restGetTutorSettings(userId: string) {
+  const url = `${BASE_URL}/users/${encodeURIComponent(userId)}/settings/tutor`;
+  const res = await fetch(url, {
+    headers: { Accept: "application/json" },
+    cache: "no-store",
+  });
+
+  if (!res.ok) return { cetRatePresencial: 0, cetRateVirtual: 0 };
+
+  const d = (await res.json()) as any;
+  const fields: Record<string, any> = {};
+  for (const [k, v] of Object.entries(d.fields || {})) {
+    fields[k] = decodeValue(v);
+  }
+  return {
+    cetRatePresencial: Number(fields.cetRatePresencial) || 0,
+    cetRateVirtual: Number(fields.cetRateVirtual) || 0,
+  };
+}
+
 export async function restAddClass(userId: string, payload: Record<string, any>) {
   const url = `${BASE_URL}/users/${encodeURIComponent(userId)}/tutorClasses`;
   const fields: Record<string, any> = {};
