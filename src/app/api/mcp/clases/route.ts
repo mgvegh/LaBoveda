@@ -26,6 +26,16 @@ function getUserId(request: Request, body?: any): string {
   return userId;
 }
 
+function formatStudentName(name: string): string {
+  if (!name) return "";
+  return name
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
 function normalizeStr(str: string): string {
   return (str || "")
     .toLowerCase()
@@ -92,7 +102,8 @@ export async function POST(request: Request) {
     const body = await request.json();
     const userId = getUserId(request, body);
 
-    const studentName = body.alumno || body.studentName;
+    const rawStudent = body.alumno || body.studentName;
+    const studentName = formatStudentName(rawStudent);
     const subject = body.materia || body.subject;
     const modality = body.modalidad || body.modality || "virtual";
     const type = body.tipo || body.type || "CET";

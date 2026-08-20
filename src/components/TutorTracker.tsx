@@ -79,6 +79,16 @@ function addMinutesToTime(time: string, minutes: number): string {
   return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
 }
 
+export function formatStudentName(name: string): string {
+  if (!name) return "";
+  return name
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
 function formatDuration(minutes: number) {
   const opt = DURATION_OPTIONS.find(o => o.value === minutes);
   if (opt) return opt.label;
@@ -300,8 +310,9 @@ export default function TutorTracker() {
 
   // ─── Derived: unique sorted students & subjects ─────────────────────────
 
-  const uniqueStudents = Array.from(new Set(classes.map(c => c.studentName)))
-    .sort((a, b) => a.localeCompare(b, "es"));
+  const uniqueStudents = Array.from(
+    new Set(classes.map(c => formatStudentName(c.studentName)).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b, "es"));
 
   const uniqueSubjects = Array.from(new Set(classes.map(c => c.subject)))
     .sort((a, b) => a.localeCompare(b, "es"));
@@ -534,8 +545,9 @@ export default function TutorTracker() {
     if (typeof window === "undefined") return;
     const byStudent: Record<string, TutorClass[]> = {};
     cetMonthClasses.forEach(c => {
-      if (!byStudent[c.studentName]) byStudent[c.studentName] = [];
-      byStudent[c.studentName].push(c);
+      const canonicalName = formatStudentName(c.studentName);
+      if (!byStudent[canonicalName]) byStudent[canonicalName] = [];
+      byStudent[canonicalName].push(c);
     });
     const grandTotal = cetMonthClasses.reduce((s, c) => s + c.amount, 0);
     const monthLabel = getMonthName(selectedMonth.month, selectedMonth.year);
