@@ -8,18 +8,24 @@ import {
   doc,
   updateDoc,
   getDoc,
+  query,
+  where,
 } from "firebase/firestore";
 
 /**
- * REST API Endpoint for Gemini Spark / External Automations
+ * REST API Endpoint for Gemini Spark / Google Apps Script / External Automations
  * /api/mcp/clases
  * 
- * Supports GET (consultar), POST (crear), PUT (actualizar), DELETE (cancelar)
+ * Supports GET (consultar), POST (crear con deduplicación), PUT (actualizar), DELETE (cancelar)
  */
 
-function getUserId(request: Request): string {
+function getUserId(request: Request, body?: any): string {
   const { searchParams } = new URL(request.url);
-  const userId = searchParams.get("userId") || process.env.DEFAULT_USER_UID || "default_user";
+  const userId =
+    body?.userId ||
+    searchParams.get("userId") ||
+    process.env.DEFAULT_USER_UID ||
+    "default_user";
   return userId;
 }
 
@@ -62,52 +68,97 @@ export async function GET(request: Request) {
   }
 }
 
-// POST: Crear clase
+// POST: Crear clase (con deduplicación por calendarEventId o fecha+alumno)
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const userId = body.userId || getUserId(request);
-    const {
-      alumno,
-      materia,
-      fecha,
-      hora_inicio,
-      duracion_minutos = 60,
-      modalidad = "virtual",
-      tipo = "CET",
-      tarifa_ars = 10000,
-      notas = "",
-    } = body;
+    const userId = getUserId(request, body);
 
-    if (!alumno || !materia || !fecha || !hora_inicio) {
+    const studentName = body.alumno || body.studentName;
+    const subject = body.materia || body.subject;
+    const modality = body.modalidad || body.modality || "virtual";
+    const type = body.tipo || body.type || "CET";
+    const duration = Number(body.duracion_minutos || body.duration || 60);
+    const calendarEventId = body.calendarEventId || body.eventId || "";
+    const notes = body.notes || body.notas || "";
+
+    let dateTime = body.dateTime;
+    if (!dateTime && body.fecha && body.hora_inicio) {
+      dateTime = `${body.fecha}T${body.hora_inicio}`;
+    }
+
+    if (!studentName || !subject || !dateTime) {
       return NextResponse.json(
-        { error: "Faltan campos obligatorios: alumno, materia, fecha, hora_inicio" },
+        { error: "Faltan campos obligatorios: alumno/studentName, materia/subject, fecha/dateTime" },
         { status: 400 }
       );
     }
 
-    const amount = Math.round((tarifa_ars * duracion_minutos) / 60);
-    const dateTime = `${fecha}T${hora_inicio}`;
+    // Rate calculation
+    let rate = Number(body.tarifa_ars || body.rate || 0);
+    if (!rate) {
+      try {
+        const settingsSnap = await getDoc(doc(db, "users", userId, "settings", "tutor"));
+        if (settingsSnap.exists()) {
+          const s = settingsSnap.data() as any;
+          rate = modality === "presencial" ? s.cetRatePresencial : s.cetRateVirtual;
+        }
+      } catch {
+        // fallback
+      }
+      if (!rate) {
+        rate = modality === "presencial" ? 12000 : 10000;
+      }
+    }
+
+    const amount = Math.round((rate * duration) / 60);
 
     const payload = {
-      studentName: alumno,
-      subject: materia,
-      modality: modalidad,
-      type: tipo,
+      studentName,
+      subject,
+      modality,
+      type,
       dateTime,
-      duration: duracion_minutos,
+      duration,
       amount,
-      notes: notas || `Clase de ${materia} (${modalidad})`,
-      createdAt: new Date().toISOString(),
+      calendarEventId,
+      notes: notes || `Clase de ${subject} (${modality})`,
+      updatedAt: new Date().toISOString(),
     };
 
-    const docRef = await addDoc(collection(db, "users", userId, "tutorClasses"), payload);
+    // Deduplication check: check if already exists
+    const existingSnap = await getDocs(collection(db, "users", userId, "tutorClasses"));
+    const match = existingSnap.docs.find((d) => {
+      const data = d.data();
+      if (calendarEventId && data.calendarEventId === calendarEventId) return true;
+      if (data.dateTime === dateTime && data.studentName?.toLowerCase() === studentName.toLowerCase()) return true;
+      return false;
+    });
+
+    if (match) {
+      // Update existing class instead of duplicate
+      await updateDoc(doc(db, "users", userId, "tutorClasses", match.id), payload);
+      return NextResponse.json({
+        success: true,
+        isUpdate: true,
+        classId: match.id,
+        message: `Clase actualizada correctamente para ${studentName}`,
+        class: { id: match.id, ...payload },
+      });
+    }
+
+    // Add new
+    const newDoc = await addDoc(collection(db, "users", userId, "tutorClasses"), {
+      ...payload,
+      createdAt: new Date().toISOString(),
+    });
 
     return NextResponse.json({
       success: true,
-      classId: docRef.id,
-      message: `Clase creada con éxito para ${alumno}`,
-      class: { id: docRef.id, ...payload },
+      isUpdate: false,
+      classId: newDoc.id,
+      message: `Clase creada con éxito para ${studentName}`,
+      class: { id: newDoc.id, ...payload },
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -118,14 +169,15 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const userId = body.userId || getUserId(request);
-    const { id_clase, nueva_fecha, nuevo_horario, duracion_minutos, alumno, materia, modalidad, notas } = body;
+    const userId = getUserId(request, body);
+    const { id_clase, id } = body;
+    const targetId = id_clase || id;
 
-    if (!id_clase) {
-      return NextResponse.json({ error: "Se requiere id_clase" }, { status: 400 });
+    if (!targetId) {
+      return NextResponse.json({ error: "Se requiere id_clase o id" }, { status: 400 });
     }
 
-    const classRef = doc(db, "users", userId, "tutorClasses", id_clase);
+    const classRef = doc(db, "users", userId, "tutorClasses", targetId);
     const classSnap = await getDoc(classRef);
     if (!classSnap.exists()) {
       return NextResponse.json({ error: "Clase no encontrada" }, { status: 404 });
@@ -134,23 +186,23 @@ export async function PUT(request: Request) {
     const existing = classSnap.data() as any;
     const updates: any = { updatedAt: new Date().toISOString() };
 
-    if (alumno) updates.studentName = alumno;
-    if (materia) updates.subject = materia;
-    if (modalidad) updates.modality = modalidad;
-    if (notas) updates.notes = notas;
-    if (duracion_minutos) updates.duration = duracion_minutos;
+    if (body.alumno || body.studentName) updates.studentName = body.alumno || body.studentName;
+    if (body.materia || body.subject) updates.subject = body.materia || body.subject;
+    if (body.modalidad || body.modality) updates.modality = body.modalidad || body.modality;
+    if (body.notas || body.notes) updates.notes = body.notas || body.notes;
+    if (body.duracion_minutos || body.duration) updates.duration = Number(body.duracion_minutos || body.duration);
 
     let datePart = existing.dateTime?.slice(0, 10) || "";
     let timePart = existing.dateTime?.slice(11, 16) || "";
-    if (nueva_fecha) datePart = nueva_fecha;
-    if (nuevo_horario) timePart = nuevo_horario;
+    if (body.nueva_fecha || body.fecha) datePart = body.nueva_fecha || body.fecha;
+    if (body.nuevo_horario || body.hora_inicio) timePart = body.nuevo_horario || body.hora_inicio;
     updates.dateTime = `${datePart}T${timePart}`;
 
     await updateDoc(classRef, updates);
 
     return NextResponse.json({
       success: true,
-      message: `Clase ${id_clase} actualizada correctamente`,
+      message: `Clase ${targetId} actualizada correctamente`,
       updatedFields: updates,
     });
   } catch (error: any) {
@@ -163,10 +215,10 @@ export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = getUserId(request);
-    const id_clase = searchParams.get("id_clase");
+    const id_clase = searchParams.get("id_clase") || searchParams.get("id");
 
     if (!id_clase) {
-      return NextResponse.json({ error: "Se requiere id_clase" }, { status: 400 });
+      return NextResponse.json({ error: "Se requiere id_clase o id" }, { status: 400 });
     }
 
     await deleteDoc(doc(db, "users", userId, "tutorClasses", id_clase));
