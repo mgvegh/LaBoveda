@@ -1,23 +1,19 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
 import {
-  collection,
-  addDoc,
-  getDocs,
-  deleteDoc,
-  doc,
-  updateDoc,
-  getDoc,
-  query,
-  where,
-} from "firebase/firestore";
+  restGetClasses,
+  restAddClass,
+  restUpdateClass,
+  restDeleteClass,
+} from "@/lib/firestore-rest";
 
 /**
  * REST API Endpoint for Gemini Spark / Google Apps Script / External Automations
  * /api/mcp/clases
  * 
- * Supports GET (consultar), POST (crear con deduplicación), PUT (actualizar), DELETE (cancelar)
+ * Ultra-fast REST implementation for Vercel Serverless
  */
+
+export const dynamic = "force-dynamic";
 
 function getUserId(request: Request, body?: any): string {
   const { searchParams } = new URL(request.url);
@@ -38,23 +34,22 @@ export async function GET(request: Request) {
     const fechaInicio = searchParams.get("fecha_inicio");
     const fechaFin = searchParams.get("fecha_fin");
 
-    const snap = await getDocs(collection(db, "users", userId, "tutorClasses"));
-    let classes = snap.docs.map((d) => ({ id: d.id, ...d.data() } as any));
+    let classes = await restGetClasses(userId);
 
     if (alumno) {
-      classes = classes.filter((c) => c.studentName?.toLowerCase().includes(alumno));
+      classes = classes.filter((c: any) => c.studentName?.toLowerCase().includes(alumno));
     }
     if (fechaInicio) {
-      classes = classes.filter((c) => c.dateTime?.slice(0, 10) >= fechaInicio);
+      classes = classes.filter((c: any) => c.dateTime?.slice(0, 10) >= fechaInicio);
     }
     if (fechaFin) {
-      classes = classes.filter((c) => c.dateTime?.slice(0, 10) <= fechaFin);
+      classes = classes.filter((c: any) => c.dateTime?.slice(0, 10) <= fechaFin);
     }
 
-    classes.sort((a, b) => (a.dateTime || "").localeCompare(b.dateTime || ""));
+    classes.sort((a: any, b: any) => (a.dateTime || "").localeCompare(b.dateTime || ""));
 
-    const totalHours = classes.reduce((acc, c) => acc + (c.duration || 60), 0) / 60;
-    const totalAmount = classes.reduce((acc, c) => acc + (c.amount || 0), 0);
+    const totalHours = classes.reduce((acc: number, c: any) => acc + (c.duration || 60), 0) / 60;
+    const totalAmount = classes.reduce((acc: number, c: any) => acc + (c.amount || 0), 0);
 
     return NextResponse.json({
       success: true,
@@ -94,21 +89,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Rate calculation
     let rate = Number(body.tarifa_ars || body.rate || 0);
     if (!rate) {
-      try {
-        const settingsSnap = await getDoc(doc(db, "users", userId, "settings", "tutor"));
-        if (settingsSnap.exists()) {
-          const s = settingsSnap.data() as any;
-          rate = modality === "presencial" ? s.cetRatePresencial : s.cetRateVirtual;
-        }
-      } catch {
-        // fallback
-      }
-      if (!rate) {
-        rate = modality === "presencial" ? 12000 : 10000;
-      }
+      rate = modality === "presencial" ? 12000 : 10000;
     }
 
     const amount = Math.round((rate * duration) / 60);
@@ -126,18 +109,16 @@ export async function POST(request: Request) {
       updatedAt: new Date().toISOString(),
     };
 
-    // Deduplication check: check if already exists
-    const existingSnap = await getDocs(collection(db, "users", userId, "tutorClasses"));
-    const match = existingSnap.docs.find((d) => {
-      const data = d.data();
-      if (calendarEventId && data.calendarEventId === calendarEventId) return true;
-      if (data.dateTime === dateTime && data.studentName?.toLowerCase() === studentName.toLowerCase()) return true;
+    // Deduplication check
+    const existingClasses = await restGetClasses(userId);
+    const match = existingClasses.find((c: any) => {
+      if (calendarEventId && c.calendarEventId === calendarEventId) return true;
+      if (c.dateTime === dateTime && c.studentName?.toLowerCase() === studentName.toLowerCase()) return true;
       return false;
     });
 
     if (match) {
-      // Update existing class instead of duplicate
-      await updateDoc(doc(db, "users", userId, "tutorClasses", match.id), payload);
+      await restUpdateClass(userId, match.id, payload);
       return NextResponse.json({
         success: true,
         isUpdate: true,
@@ -147,8 +128,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // Add new
-    const newDoc = await addDoc(collection(db, "users", userId, "tutorClasses"), {
+    const newId = await restAddClass(userId, {
       ...payload,
       createdAt: new Date().toISOString(),
     });
@@ -156,11 +136,12 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       isUpdate: false,
-      classId: newDoc.id,
+      classId: newId,
       message: `Clase creada con éxito para ${studentName}`,
-      class: { id: newDoc.id, ...payload },
+      class: { id: newId, ...payload },
     });
   } catch (error: any) {
+    console.error("POST /api/mcp/clases error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -177,13 +158,6 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Se requiere id_clase o id" }, { status: 400 });
     }
 
-    const classRef = doc(db, "users", userId, "tutorClasses", targetId);
-    const classSnap = await getDoc(classRef);
-    if (!classSnap.exists()) {
-      return NextResponse.json({ error: "Clase no encontrada" }, { status: 404 });
-    }
-
-    const existing = classSnap.data() as any;
     const updates: any = { updatedAt: new Date().toISOString() };
 
     if (body.alumno || body.studentName) updates.studentName = body.alumno || body.studentName;
@@ -192,13 +166,13 @@ export async function PUT(request: Request) {
     if (body.notas || body.notes) updates.notes = body.notas || body.notes;
     if (body.duracion_minutos || body.duration) updates.duration = Number(body.duracion_minutos || body.duration);
 
-    let datePart = existing.dateTime?.slice(0, 10) || "";
-    let timePart = existing.dateTime?.slice(11, 16) || "";
-    if (body.nueva_fecha || body.fecha) datePart = body.nueva_fecha || body.fecha;
-    if (body.nuevo_horario || body.hora_inicio) timePart = body.nuevo_horario || body.hora_inicio;
-    updates.dateTime = `${datePart}T${timePart}`;
+    if (body.dateTime) {
+      updates.dateTime = body.dateTime;
+    } else if (body.fecha && body.hora_inicio) {
+      updates.dateTime = `${body.fecha}T${body.hora_inicio}`;
+    }
 
-    await updateDoc(classRef, updates);
+    await restUpdateClass(userId, targetId, updates);
 
     return NextResponse.json({
       success: true,
@@ -221,7 +195,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Se requiere id_clase o id" }, { status: 400 });
     }
 
-    await deleteDoc(doc(db, "users", userId, "tutorClasses", id_clase));
+    await restDeleteClass(userId, id_clase);
 
     return NextResponse.json({
       success: true,
