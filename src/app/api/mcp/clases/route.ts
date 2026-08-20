@@ -10,7 +10,7 @@ import {
  * REST API Endpoint for Gemini Spark / Google Apps Script / External Automations
  * /api/mcp/clases
  * 
- * Ultra-fast REST implementation for Vercel Serverless
+ * Ultra-fast REST implementation with intelligent fuzzy deduplication
  */
 
 export const dynamic = "force-dynamic";
@@ -23,6 +23,28 @@ function getUserId(request: Request, body?: any): string {
     process.env.DEFAULT_USER_UID ||
     "default_user";
   return userId;
+}
+
+function normalizeStr(str: string): string {
+  return (str || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "")
+    .trim();
+}
+
+function isSimilarStudent(a: string, b: string): boolean {
+  const s1 = normalizeStr(a);
+  const s2 = normalizeStr(b);
+  if (!s1 || !s2) return false;
+  if (s1 === s2) return true;
+  // Prefix / nickname matches (e.g. "manu" vs "manuel", "gala" vs "gala", "fran" vs "francisco")
+  if (s1.length >= 3 && s2.length >= 3) {
+    if (s1.startsWith(s2) || s2.startsWith(s1)) return true;
+    if (s1.includes(s2) || s2.includes(s1)) return true;
+  }
+  return false;
 }
 
 // GET: Consultar clases
@@ -63,7 +85,7 @@ export async function GET(request: Request) {
   }
 }
 
-// POST: Crear clase (con deduplicación por calendarEventId o fecha+alumno)
+// POST: Crear clase (con deduplicación inteligente)
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -109,21 +131,49 @@ export async function POST(request: Request) {
       updatedAt: new Date().toISOString(),
     };
 
-    // Deduplication check
+    // Smart deduplication check
     const existingClasses = await restGetClasses(userId);
+    const targetDate = dateTime.slice(0, 10);
+    const targetTime = dateTime.slice(11, 16);
+
     const match = existingClasses.find((c: any) => {
       if (calendarEventId && c.calendarEventId === calendarEventId) return true;
-      if (c.dateTime === dateTime && c.studentName?.toLowerCase() === studentName.toLowerCase()) return true;
+      
+      const existingDate = (c.dateTime || "").slice(0, 10);
+      const existingTime = (c.dateTime || "").slice(11, 16);
+
+      // Same date check
+      if (existingDate === targetDate) {
+        // 1. Same or similar student name
+        if (isSimilarStudent(c.studentName, studentName)) {
+          // If exact time matches or within 45 mins, it's the exact same class
+          if (existingTime === targetTime) return true;
+          const [eh, em] = existingTime.split(":").map(Number);
+          const [th, tm] = targetTime.split(":").map(Number);
+          if (!isNaN(eh) && !isNaN(th)) {
+            const diffMins = Math.abs((eh * 60 + em) - (th * 60 + tm));
+            if (diffMins <= 45) return true;
+          }
+          // If no time is specified or either is 00:00, match by date and student
+          if (!existingTime || !targetTime || existingTime === "00:00" || targetTime === "00:00") {
+            return true;
+          }
+        }
+      }
       return false;
     });
 
     if (match) {
+      // Keep existing studentName formatting if already set cleanly, otherwise update
+      if (match.studentName && match.studentName.length > 0 && match.studentName !== match.studentName.toUpperCase()) {
+        payload.studentName = match.studentName;
+      }
       await restUpdateClass(userId, match.id, payload);
       return NextResponse.json({
         success: true,
         isUpdate: true,
         classId: match.id,
-        message: `Clase actualizada correctamente para ${studentName}`,
+        message: `Clase existente detectada y actualizada para ${payload.studentName}`,
         class: { id: match.id, ...payload },
       });
     }

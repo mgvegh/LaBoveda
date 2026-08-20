@@ -1175,42 +1175,118 @@ export default function TutorTracker() {
           5. CALENDAR / LIST VIEW
       ═══════════════════════════════════════════════════════ */}
       {activeView === "calendar" && (
-        <div className="glass-panel rounded-2xl p-4 md:p-6">
-          <div className="grid grid-cols-7 mb-2">
-            {["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].map(d => (
-              <div key={d} className="text-center text-xs text-gray-500 font-semibold py-2 uppercase tracking-wide">{d}</div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-1">
-            {Array.from({ length: startOffset }).map((_, i) => <div key={`e${i}`} className="min-h-[60px] md:min-h-[80px]" />)}
-            {Array.from({ length: daysInMonth }).map((_, i) => {
-              const day = i + 1;
-              const dayClasses = classesByDay[day] ?? [];
-              const isToday = new Date().getDate() === day && new Date().getMonth() === selectedMonth.month && new Date().getFullYear() === selectedMonth.year;
-              return (
-                <div key={day} className={`rounded-xl p-1.5 md:p-2 min-h-[60px] md:min-h-[80px] border transition-colors ${isToday ? "border-emerald-500/40 bg-emerald-500/5" : dayClasses.length > 0 ? "border-white/10 bg-white/3" : "border-transparent"}`}>
-                  <div className={`text-xs font-semibold mb-1 w-6 h-6 flex items-center justify-center rounded-full ${isToday ? "bg-emerald-500 text-white" : "text-gray-400"}`}>{day}</div>
-                  <div className="space-y-1">
-                    {dayClasses.slice(0, 3).map(cls => (
-                      <div key={cls.id} onClick={() => openEditForm(cls)}
-                        title={`${cls.studentName} — ${cls.subject} (${formatDuration(cls.duration ?? 60)})`}
-                        className={`text-[12px] md:text-xs text-center md:text-left leading-tight px-1.5 py-1 rounded-md cursor-pointer line-clamp-2 font-medium transition-opacity hover:opacity-80 ${cls.type === "CET" ? "bg-emerald-500/20 text-emerald-300" : "bg-amber-500/20 text-amber-300"}`}>
-                        <span className="md:hidden font-bold">{cls.studentName.charAt(0).toUpperCase()}</span>
-                        <span className="hidden md:inline">{cls.studentName}</span>
-                      </div>
-                    ))}
-                    {dayClasses.length > 3 && <div className="text-[10px] md:text-xs text-gray-500 px-1 font-medium">+{dayClasses.length - 3} más</div>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          {monthClasses.length === 0 && (
-            <div className="text-center py-10 text-gray-500">
-              <GraduationCap className="w-10 h-10 mx-auto mb-3 opacity-30" />
-              <p>No hay clases en este mes.</p>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Main Calendar View */}
+          <div className="lg:col-span-7 xl:col-span-8 glass-panel rounded-2xl p-4 md:p-6">
+            <div className="grid grid-cols-7 mb-2">
+              {["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].map(d => (
+                <div key={d} className="text-center text-xs text-gray-500 font-semibold py-2 uppercase tracking-wide">{d}</div>
+              ))}
             </div>
-          )}
+            <div className="grid grid-cols-7 gap-1">
+              {Array.from({ length: startOffset }).map((_, i) => <div key={`e${i}`} className="min-h-[60px] md:min-h-[80px]" />)}
+              {Array.from({ length: daysInMonth }).map((_, i) => {
+                const day = i + 1;
+                const dayClasses = classesByDay[day] ?? [];
+                const isToday = new Date().getDate() === day && new Date().getMonth() === selectedMonth.month && new Date().getFullYear() === selectedMonth.year;
+                return (
+                  <div key={day} className={`rounded-xl p-1.5 md:p-2 min-h-[60px] md:min-h-[80px] border transition-colors ${isToday ? "border-emerald-500/40 bg-emerald-500/5" : dayClasses.length > 0 ? "border-white/10 bg-white/3" : "border-transparent"}`}>
+                    <div className={`text-xs font-semibold mb-1 w-6 h-6 flex items-center justify-center rounded-full ${isToday ? "bg-emerald-500 text-white" : "text-gray-400"}`}>{day}</div>
+                    <div className="space-y-1">
+                      {dayClasses.slice(0, 3).map(cls => (
+                        <div key={cls.id} onClick={() => openEditForm(cls)}
+                          title={`${cls.studentName} — ${cls.subject} (${formatDuration(cls.duration ?? 60)})`}
+                          className={`text-[12px] md:text-xs text-center md:text-left leading-tight px-1.5 py-1 rounded-md cursor-pointer line-clamp-2 font-medium transition-opacity hover:opacity-80 ${cls.type === "CET" ? "bg-emerald-500/20 text-emerald-300" : "bg-amber-500/20 text-amber-300"}`}>
+                          <span className="md:hidden font-bold">{cls.studentName.charAt(0).toUpperCase()}</span>
+                          <span className="hidden md:inline">{cls.studentName}</span>
+                        </div>
+                      ))}
+                      {dayClasses.length > 3 && <div className="text-[10px] md:text-xs text-gray-500 px-1 font-medium">+{dayClasses.length - 3} más</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {monthClasses.length === 0 && (
+              <div className="text-center py-10 text-gray-500">
+                <GraduationCap className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                <p>No hay clases en este mes.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Side List Panel alongside Calendar */}
+          <div className="lg:col-span-5 xl:col-span-4 glass-panel rounded-2xl p-4 md:p-5 flex flex-col h-full max-h-[680px]">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <GraduationCap className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wide">
+                  Clases del Mes ({monthClasses.length})
+                </h3>
+              </div>
+              <span className="text-xs font-semibold text-emerald-400">
+                {formatARS(totalMonth)}
+              </span>
+            </div>
+
+            {monthClasses.length === 0 ? (
+              <div className="text-center py-16 text-gray-500 my-auto">
+                <GraduationCap className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                <p className="text-xs">No hay clases en este mes.</p>
+              </div>
+            ) : (
+              <div className="space-y-2 overflow-y-auto pr-1 flex-1">
+                {monthClasses
+                  .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
+                  .map(cls => (
+                    <div
+                      key={cls.id}
+                      className="p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/5 hover:border-white/10 transition-all flex items-center justify-between gap-2.5 group"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cls.type === "CET" ? "bg-emerald-400" : "bg-amber-400"}`} />
+                          <span className="text-xs font-bold text-gray-100 truncate">{cls.studentName}</span>
+                          <span className={`text-[9px] font-bold px-1 py-0.5 rounded uppercase ${cls.modality === "presencial" ? "bg-blue-500/15 text-blue-400" : "bg-purple-500/15 text-purple-400"}`}>
+                            {cls.modality === "presencial" ? "Pres." : "Virt."}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-gray-400 mt-0.5 truncate">{cls.subject}</p>
+                        <div className="flex items-center gap-1.5 text-[10px] text-gray-500 mt-1">
+                          <span className="text-gray-400 font-medium">{formatDateDisplay(cls.dateTime)}</span>
+                          <span>•</span>
+                          <span>{formatTimeDisplay(cls.dateTime)} ({formatDuration(cls.duration ?? 60)})</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <span className="text-xs font-bold text-gray-200">{formatARS(cls.amount)}</span>
+                        <button
+                          type="button"
+                          onClick={() => openEditForm(cls)}
+                          className="p-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
+                          title="Editar clase"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm(`¿Eliminar la clase de ${cls.studentName} (${formatDateDisplay(cls.dateTime)})?`)) {
+                              handleDelete(cls.id);
+                            }
+                          }}
+                          className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+                          title="Eliminar clase"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1251,12 +1327,22 @@ export default function TutorTracker() {
                       {cls.notes && <p className="text-xs text-gray-500 mt-2 italic bg-white/5 p-2 rounded-lg border border-white/5">{cls.notes}</p>}
                     </div>
                   </div>
-                  <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4 pt-3 sm:pt-0 border-t border-white/5 sm:border-t-0 mt-2 sm:mt-0">
+                  <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 pt-3 sm:pt-0 border-t border-white/5 sm:border-t-0 mt-2 sm:mt-0">
                     <span className="text-gray-100 font-bold text-lg bg-white/5 px-3 py-1.5 rounded-xl border border-white/10">{formatARS(cls.amount)}</span>
-                    <button onClick={() => openEditForm(cls)}
-                      className="p-2.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 border border-blue-500/20 hover:border-blue-500/40 transition-all flex items-center gap-2" title="Editar clase">
-                      <Pencil className="w-4 h-4" /> <span className="text-sm font-medium sm:hidden">Editar</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => openEditForm(cls)}
+                        className="p-2.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 border border-blue-500/20 hover:border-blue-500/40 transition-all flex items-center gap-2 cursor-pointer" title="Editar clase">
+                        <Pencil className="w-4 h-4" /> <span className="text-sm font-medium sm:hidden">Editar</span>
+                      </button>
+                      <button onClick={() => {
+                        if (window.confirm(`¿Eliminar la clase de ${cls.studentName} (${formatDateDisplay(cls.dateTime)})?`)) {
+                          handleDelete(cls.id);
+                        }
+                      }}
+                        className="p-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 hover:border-red-500/40 transition-all flex items-center gap-2 cursor-pointer" title="Eliminar clase">
+                        <Trash2 className="w-4 h-4" /> <span className="text-sm font-medium sm:hidden">Eliminar</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
