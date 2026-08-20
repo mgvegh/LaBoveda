@@ -466,11 +466,22 @@ export default function TutorTracker() {
 
     try {
       if (editingId) {
-        // Edit: always single entry
+        // Edit current class
         const payload = { ...basePayload, dateTime: `${formDate}T${formStartTime}` };
         await updateDoc(doc(db, "users", user.uid, "tutorClasses", editingId), payload);
+
+        let newRepeats: TutorClass[] = [];
+        if (formRepeat > 1) {
+          for (let i = 1; i < formRepeat; i++) {
+            const entryDate = addDaysToDate(formDate, daysPerRepeat * i);
+            const nextPayload = { ...basePayload, dateTime: `${entryDate}T${formStartTime}` };
+            const ref = await addDoc(col, nextPayload);
+            newRepeats.push({ ...nextPayload, id: ref.id });
+          }
+        }
+
         setClasses(prev =>
-          prev.map(c => c.id === editingId ? { ...payload, id: editingId } : c)
+          [...newRepeats, ...prev.map(c => c.id === editingId ? { ...payload, id: editingId } : c)]
             .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime())
         );
       } else {
@@ -930,17 +941,16 @@ export default function TutorTracker() {
           <div className="md:col-span-2 xl:col-span-3 flex flex-wrap items-end justify-between gap-4">
 
             {/* Repeat selector */}
-            <div className={editingId ? "opacity-40 pointer-events-none" : ""}>
+            <div>
               <label className="block text-xs text-gray-400 mb-1.5 uppercase tracking-wide flex items-center gap-1.5">
                 <Repeat2 className="w-3.5 h-3.5" /> Repetir
-                {editingId && <span className="normal-case text-[10px] text-gray-600">— no disponible al editar</span>}
+                {editingId && <span className="normal-case text-[10px] text-emerald-400/80">— genera repeticiones futuras</span>}
               </label>
               <div className="flex flex-wrap items-center gap-3">
                 <select
                   id="form-repeat"
                   value={formRepeat}
                   onChange={e => setFormRepeat(Number(e.target.value))}
-                  disabled={!!editingId}
                   className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-gray-100 text-sm focus:outline-none focus:border-emerald-500/50 transition-all [color-scheme:dark]"
                 >
                   <option value={1}>1 vez (sin repetir)</option>
@@ -949,7 +959,7 @@ export default function TutorTracker() {
                   ))}
                 </select>
 
-                {formRepeat > 1 && !editingId && (
+                {formRepeat > 1 && (
                   <>
                     <span className="text-gray-500 text-sm">con frecuencia</span>
                     <select
