@@ -344,7 +344,26 @@ export default function TutorTracker() {
         }
         const q = query(col, orderBy("dateTime", "desc"));
         const snap = await getDocs(q);
-        setClasses(snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<TutorClass, "id">) })));
+        let loadedClasses = snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<TutorClass, "id">) }));
+
+        // Check if there are any classes created via MCP in default_user and sync them
+        try {
+          const defaultSnap = await getDocs(collection(db, "users", "default_user", "tutorClasses"));
+          if (!defaultSnap.empty) {
+            for (const docObj of defaultSnap.docs) {
+              const data = docObj.data() as any;
+              // Add to current user
+              const newDoc = await addDoc(col, data);
+              loadedClasses.unshift({ id: newDoc.id, ...data });
+              // Delete from default_user
+              await deleteDoc(doc(db, "users", "default_user", "tutorClasses", docObj.id));
+            }
+          }
+        } catch (mcpSyncErr) {
+          // skip if permissions don't allow default_user
+        }
+
+        setClasses(loadedClasses);
       } catch (e) { console.error("TutorTracker load error:", e); }
       finally { setLoading(false); }
     };

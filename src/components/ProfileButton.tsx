@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { User, LogOut, ChevronDown, RefreshCw, ShieldCheck, Download, Upload, Lock } from "lucide-react";
+import { User, LogOut, ChevronDown, RefreshCw, ShieldCheck, Download, Upload, Lock, Copy, Check } from "lucide-react";
 import Link from "next/link";
 import clsx from "clsx";
 import { useAuth } from "@/components/AuthProvider";
@@ -12,6 +12,7 @@ export default function ProfileButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [copiedUid, setCopiedUid] = useState(false);
   const [cedearsStats, setCedearsStats] = useState({ invested: 0, current: 0 });
   const [criptoSpotStats, setCriptoSpotStats] = useState({ invested: 0, current: 0 });
   const [strategiesStats, setStrategiesStats] = useState({ invested: 0, profit: 0 });
@@ -387,9 +388,25 @@ export default function ProfileButton() {
             <div className="p-4 border-b" style={{ borderColor: "var(--border)", background: "var(--glass-bg)" }}>
               <p className="text-[10px] text-gray-400 font-bold tracking-wider uppercase">Bóveda Privada</p>
               <p className="text-sm font-bold text-gray-200 truncate mt-0.5" title={user.email ?? ""}>{user.email}</p>
-              <div className="flex items-center gap-1.5 mt-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span className="text-[11px] text-emerald-400 font-medium">Sincronizado con Firebase</span>
+              <div className="flex items-center justify-between mt-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span className="text-[11px] text-emerald-400 font-medium">Sincronizado con Firebase</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(user.uid);
+                    setCopiedUid(true);
+                    setTimeout(() => setCopiedUid(false), 2000);
+                  }}
+                  className="text-[10px] text-gray-400 hover:text-white flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+                  title="Copiar UID para Gemini Spark / MCP"
+                >
+                  {copiedUid ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                  <span>{copiedUid ? "Copiado!" : "Copiar UID"}</span>
+                </button>
               </div>
             </div>
             
