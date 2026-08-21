@@ -257,6 +257,7 @@ export async function PUT(request: Request) {
     if (body.modalidad || body.modality) updates.modality = body.modalidad || body.modality;
     if (body.notas !== undefined || body.notes !== undefined) updates.notes = body.notas ?? body.notes;
     if (body.duracion_minutos || body.duration) updates.duration = Number(body.duracion_minutos || body.duration);
+    if (body.calendarEventId) updates.calendarEventId = body.calendarEventId;
 
     if (body.dateTime) {
       updates.dateTime = body.dateTime;
