@@ -343,19 +343,39 @@ export default function TutorTracker() {
     const load = async () => {
       setLoading(true);
       try {
+        let currentSettings = DEFAULT_SETTINGS;
         const settingsRef = settingsDocPath();
         if (settingsRef) {
           const snap = await getDoc(settingsRef);
           if (snap.exists()) {
-            const data = snap.data() as TutorSettings;
-            setSettings(data);
-            setSettingsPresencial(String(data.cetRatePresencial));
-            setSettingsVirtual(String(data.cetRateVirtual));
+            currentSettings = snap.data() as TutorSettings;
+            setSettings(currentSettings);
+            setSettingsPresencial(String(currentSettings.cetRatePresencial));
+            setSettingsVirtual(String(currentSettings.cetRateVirtual));
           }
         }
         const q = query(col, orderBy("dateTime", "desc"));
         const snap = await getDocs(q);
         let loadedClasses = snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<TutorClass, "id">) }));
+
+        // Auto-recalculate any CET classes whose amount doesn't match configured rates
+        if (currentSettings.cetRateVirtual > 0 || currentSettings.cetRatePresencial > 0) {
+          loadedClasses = loadedClasses.map(c => {
+            if (c.type === "CET") {
+              const rate = c.modality === "presencial" ? currentSettings.cetRatePresencial : currentSettings.cetRateVirtual;
+              if (rate > 0) {
+                const expectedAmount = Math.round((rate * (c.duration || 60)) / 60);
+                if (c.amount !== expectedAmount) {
+                  try {
+                    updateDoc(doc(db, "users", user.uid, "tutorClasses", c.id), { amount: expectedAmount });
+                  } catch {}
+                  return { ...c, amount: expectedAmount };
+                }
+              }
+            }
+            return c;
+          });
+        }
 
         // Check if there are any classes created via MCP in default_user and sync them with deduplication
         try {
@@ -390,7 +410,7 @@ export default function TutorTracker() {
 
   const handleSaveSettings = async () => {
     const ref = settingsDocPath();
-    if (!ref) return;
+    if (!ref || !user) return;
     setSavingSettings(true);
     try {
       const newSettings: TutorSettings = {
@@ -399,6 +419,25 @@ export default function TutorTracker() {
       };
       await setDoc(ref, newSettings);
       setSettings(newSettings);
+
+      // Recalculate all existing CET classes with the new rates immediately
+      const updatedClasses = await Promise.all(classes.map(async (c) => {
+        if (c.type === "CET") {
+          const rate = c.modality === "presencial" ? newSettings.cetRatePresencial : newSettings.cetRateVirtual;
+          if (rate > 0) {
+            const amount = Math.round((rate * (c.duration || 60)) / 60);
+            if (c.amount !== amount) {
+              try {
+                await updateDoc(doc(db, "users", user.uid, "tutorClasses", c.id), { amount });
+              } catch {}
+              return { ...c, amount };
+            }
+          }
+        }
+        return c;
+      }));
+
+      setClasses(updatedClasses);
       setShowSettings(false);
     } catch (e) { console.error("Settings save error:", e); }
     finally { setSavingSettings(false); }
