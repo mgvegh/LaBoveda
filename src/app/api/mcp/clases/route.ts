@@ -254,7 +254,7 @@ export async function PUT(request: Request) {
   try {
     const body = await request.json();
     const userId = getUserId(request, body);
-    let targetId = id_clase || id;
+    let targetId = body.id_clase || body.id;
 
     if (!targetId && body.calendarEventId) {
       const existingClasses = await restGetClasses(userId);
@@ -272,7 +272,17 @@ export async function PUT(request: Request) {
     if (body.materia || body.subject) updates.subject = body.materia || body.subject;
     if (body.modalidad || body.modality) updates.modality = body.modalidad || body.modality;
     if (body.notas !== undefined || body.notes !== undefined) updates.notes = body.notas ?? body.notes;
-    if (body.duracion_minutos || body.duration) updates.duration = Number(body.duracion_minutos || body.duration);
+    if (body.duracion_minutos || body.duration) {
+      updates.duration = Number(body.duracion_minutos || body.duration);
+      if (!body.amount && !body.tarifa_ars) {
+        const existingClasses = await restGetClasses(userId);
+        const existing = existingClasses.find((c: any) => c.id === targetId);
+        if (existing && existing.amount && existing.duration) {
+          const rate = (existing.amount * 60) / existing.duration;
+          updates.amount = Math.round((rate * updates.duration) / 60);
+        }
+      }
+    }
     if (body.calendarEventId) updates.calendarEventId = body.calendarEventId;
 
     if (body.dateTime) {
