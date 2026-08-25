@@ -176,10 +176,21 @@ export async function POST(request: Request) {
     const targetTime = dateTime.slice(11, 16);
 
     const match = existingClasses.find((c: any) => {
-      if (calendarEventId && c.calendarEventId === calendarEventId) return true;
-      
       const existingDate = (c.dateTime || "").slice(0, 10);
       const existingTime = (c.dateTime || "").slice(11, 16);
+
+      if (calendarEventId && c.calendarEventId === calendarEventId) {
+        // If exact same date, it's the exact same class instance
+        if (existingDate === targetDate) return true;
+        // If within 4 days (e.g. rescheduled from Friday to Saturday) and same student, it's the same class moved
+        if (isSimilarStudent(c.studentName, studentName)) {
+          const d1 = new Date(existingDate).getTime();
+          const d2 = new Date(targetDate).getTime();
+          const diffDays = Math.abs(d1 - d2) / (1000 * 60 * 60 * 24);
+          if (!isNaN(diffDays) && diffDays <= 4) return true;
+        }
+        return false;
+      }
 
       // Same date check
       if (existingDate === targetDate) {
@@ -243,11 +254,16 @@ export async function PUT(request: Request) {
   try {
     const body = await request.json();
     const userId = getUserId(request, body);
-    const { id_clase, id } = body;
-    const targetId = id_clase || id;
+    let targetId = id_clase || id;
+
+    if (!targetId && body.calendarEventId) {
+      const existingClasses = await restGetClasses(userId);
+      const match = existingClasses.find((c: any) => c.calendarEventId === body.calendarEventId);
+      if (match) targetId = match.id;
+    }
 
     if (!targetId) {
-      return NextResponse.json({ error: "Se requiere id_clase o id" }, { status: 400 });
+      return NextResponse.json({ error: "Se requiere id_clase, id o calendarEventId existente" }, { status: 400 });
     }
 
     const updates: any = { updatedAt: new Date().toISOString() };
