@@ -318,8 +318,6 @@ export default function IncomeDistributor() {
 
       return {
         ...prev,
-        ...(updates.expenses !== undefined ? { expenses: updates.expenses } : {}),
-        ...(updates.categories !== undefined ? { categories: updates.categories } : {}),
         monthlyRecords: {
           ...(prev.monthlyRecords || {}),
           [selectedMonthKey]: updatedMonth,
