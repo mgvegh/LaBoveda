@@ -944,7 +944,7 @@ export default function IncomeDistributor() {
               </div>
             </div>
 
-            {/* Sobras / Unallocated */}
+            {/* Sobras / Déficit / Distribuido */}
             {!result.isNeededMode && result.unallocated > 100 ? (
               <div className="glass-panel p-6 rounded-2xl border-amber-500/20 bg-amber-500/5 animate-pulse">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -960,24 +960,49 @@ export default function IncomeDistributor() {
                       </p>
                       
                       <div className="mt-4 flex flex-wrap items-center gap-2">
-                        <select value={absorbCategory} onChange={e => setAbsorbCategory(e.target.value)} className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-2 py-1 text-amber-400 text-xs focus:outline-none max-w-full">
+                        <select value={absorbCategory} onChange={e => setAbsorbCategory(e.target.value)} className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-2 py-1 text-amber-400 text-xs focus:outline-none max-w-full cursor-pointer">
                           <option value="">Sumar a una salida...</option>
                           {activeCategories.filter(c => c.type !== "percentage").map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
-                        <button onClick={handleAbsorbRemainder} disabled={!absorbCategory} className="bg-amber-500 disabled:opacity-50 hover:bg-amber-400 text-black px-3 py-1 rounded-lg text-xs font-bold transition-colors">
+                        <button onClick={handleAbsorbRemainder} disabled={!absorbCategory} className="bg-amber-500 disabled:opacity-50 hover:bg-amber-400 text-black px-3 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer">
                           Asignar Resto
                         </button>
                       </div>
                     </div>
                   </div>
-                  <div className="text-2xl font-black text-amber-400 self-end sm:self-center shrink-0">
+                  <div className="text-2xl font-black text-amber-400 self-end sm:self-center shrink-0 font-mono">
                     +${result.unallocated.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </div>
               </div>
+            ) : !result.isNeededMode && result.unallocated < -100 ? (
+              <div className="glass-panel p-6 rounded-2xl border-red-500/30 bg-red-500/10 animate-pulse">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+                    <div className="p-3 bg-red-500/20 rounded-xl text-red-400 shrink-0">
+                      <AlertCircle className="w-6 h-6" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-red-400 text-base">¡Te falta plata!</h4>
+                      <p className="text-xs text-red-300/90 mt-0.5">
+                        Te faltan <strong>${Math.abs(result.unallocated).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> para cubrir las salidas de este mes
+                        {usdRate > 0 && (
+                          <> (equivale a <strong>USD {(Math.abs(result.unallocated) / usdRate).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}</strong>)</>
+                        )}.
+                      </p>
+                      <p className="text-[11px] text-red-400/70 mt-1">
+                        Tu ingreso es de <strong>${income.toLocaleString('es-AR')}</strong> pero el total de salidas necesarias suma <strong>${(income + Math.abs(result.unallocated)).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-2xl font-black text-red-400 self-end sm:self-center shrink-0 font-mono">
+                    -${Math.abs(result.unallocated).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </div>
+              </div>
             ) : !result.isNeededMode && (
-              <div className="glass-panel p-4 rounded-xl border-white/5 text-center text-xs text-gray-500">
-                Ingreso 100% distribuido. ¡Buen trabajo!
+              <div className="glass-panel p-4 rounded-xl border-white/5 text-center text-xs text-emerald-400/80 bg-emerald-500/5">
+                ✓ Ingreso 100% distribuido de forma exacta. ¡Buen trabajo!
               </div>
             )}
         </div>
