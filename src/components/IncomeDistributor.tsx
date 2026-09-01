@@ -529,7 +529,7 @@ export default function IncomeDistributor() {
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-xl border border-white/5">
+          <div className="flex items-center gap-2 px-1">
             <Calendar className="w-4 h-4 text-violet-400" />
             <span className="text-sm font-bold text-white capitalize min-w-[130px] text-center">
               {getMonthName(selectedMonth.month, selectedMonth.year)}
@@ -559,7 +559,7 @@ export default function IncomeDistributor() {
             const totalSalidas = config.expenses.length + (result?.allocations ? result.allocations.length : config.categories.length);
             const pendingSalidas = Math.max(0, totalSalidas - activeCompletedIds.length);
             return (
-              <span className="text-xs text-gray-400 bg-white/5 px-2.5 py-1 rounded-lg border border-white/5">
+              <span className="text-xs text-gray-400">
                 {pendingSalidas === 0 && totalSalidas > 0 ? (
                   <span className="text-emerald-400 font-medium">✓ Salidas al día</span>
                 ) : (
@@ -660,7 +660,7 @@ export default function IncomeDistributor() {
             title="Calcular ingreso sumando Clases y Sueldo"
           >
             <Sparkles className="w-4 h-4 text-emerald-400" />
-            <span>Autocompletar (Clases + Sueldo)</span>
+            <span>Autocompletar</span>
           </button>
         </div>
 
