@@ -6,7 +6,6 @@ import { useAuth } from "@/components/AuthProvider";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc, collection, getDocs } from "firebase/firestore";
 import FloatingCalculator from "@/components/FloatingCalculator";
-import FloatingNotes from "@/components/FloatingNotes";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 type CategoryType = "fixed_usd" | "fixed_ars" | "percentage";
@@ -109,7 +108,6 @@ export default function IncomeDistributor() {
   const [canDragCategoryIdx, setCanDragCategoryIdx] = useState<number | null>(null);
 
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
-  const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   const { user } = useAuth();
@@ -1408,11 +1406,7 @@ export default function IncomeDistributor() {
         </div>
       </div>
 
-      {/* Floating Tools Dock */}
-      <FloatingNotes
-        isOpen={isNotesOpen}
-        onToggle={setIsNotesOpen}
-      />
+      {/* Floating Calculator */}
       <FloatingCalculator
         isOpen={isCalculatorOpen}
         onToggle={setIsCalculatorOpen}
