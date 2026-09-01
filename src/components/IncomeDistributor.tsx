@@ -38,6 +38,8 @@ type Debt = {
 type MonthlyRecord = {
   income?: string;
   completedIds?: string[];
+  expenses?: Expense[];
+  categories?: Category[];
 };
 
 type IncomeConfig = {
@@ -268,6 +270,64 @@ export default function IncomeDistributor() {
     return () => clearTimeout(id);
   }, [config, totalIncome, isClient, user, isDataLoaded]); // eslint-disable-line
 
+  const activeExpenses = useMemo(() => {
+    const mRec = config.monthlyRecords?.[selectedMonthKey];
+    if (mRec?.expenses !== undefined) return mRec.expenses;
+    return config.expenses || [];
+  }, [config.monthlyRecords, config.expenses, selectedMonthKey]);
+
+  const activeCategories = useMemo(() => {
+    const mRec = config.monthlyRecords?.[selectedMonthKey];
+    if (mRec?.categories !== undefined && mRec.categories.length > 0) return mRec.categories;
+    return config.categories && config.categories.length > 0 ? config.categories : DEFAULT_CATEGORIES;
+  }, [config.monthlyRecords, config.categories, selectedMonthKey]);
+
+  const activeCompletedIds = useMemo(() => {
+    const mRec = config.monthlyRecords?.[selectedMonthKey];
+    if (mRec?.completedIds !== undefined) return mRec.completedIds;
+    return [];
+  }, [config.monthlyRecords, selectedMonthKey]);
+
+  const otherConfiguredMonths = useMemo(() => {
+    const keys = Object.keys(config.monthlyRecords || {}).filter(k => k !== selectedMonthKey);
+    return keys.sort().reverse();
+  }, [config.monthlyRecords, selectedMonthKey]);
+
+  const updateCurrentMonthRecord = (
+    updater: (current: {
+      income: string;
+      expenses: Expense[];
+      categories: Category[];
+      completedIds: string[];
+    }) => Partial<MonthlyRecord>
+  ) => {
+    setConfig(prev => {
+      const currentRec = prev.monthlyRecords?.[selectedMonthKey] || {};
+      const current = {
+        income: currentRec.income !== undefined ? currentRec.income : (prev.lastIncome ?? totalIncome ?? ""),
+        expenses: currentRec.expenses !== undefined ? currentRec.expenses : (prev.expenses || []),
+        categories: (currentRec.categories && currentRec.categories.length > 0) ? currentRec.categories : (prev.categories && prev.categories.length > 0 ? prev.categories : DEFAULT_CATEGORIES),
+        completedIds: currentRec.completedIds !== undefined ? currentRec.completedIds : [],
+      };
+
+      const updates = updater(current);
+      const updatedMonth: MonthlyRecord = {
+        ...current,
+        ...updates,
+      };
+
+      return {
+        ...prev,
+        ...(updates.expenses !== undefined ? { expenses: updates.expenses } : {}),
+        ...(updates.categories !== undefined ? { categories: updates.categories } : {}),
+        monthlyRecords: {
+          ...(prev.monthlyRecords || {}),
+          [selectedMonthKey]: updatedMonth,
+        }
+      };
+    });
+  };
+
   const handleSelectMonth = (newMonth: { year: number; month: number }) => {
     setSelectedMonth(newMonth);
     const mKey = `${newMonth.year}-${String(newMonth.month + 1).padStart(2, "0")}`;
@@ -281,17 +341,7 @@ export default function IncomeDistributor() {
 
   const handleIncomeChange = (val: string) => {
     setTotalIncome(val);
-    setConfig(prev => ({
-      ...prev,
-      lastIncome: val,
-      monthlyRecords: {
-        ...(prev.monthlyRecords || {}),
-        [selectedMonthKey]: {
-          income: val,
-          completedIds: prev.monthlyRecords?.[selectedMonthKey]?.completedIds ?? (prev.completedIds || [])
-        }
-      }
-    }));
+    updateCurrentMonthRecord(() => ({ income: val }));
   };
 
   const income = parseFloat(totalIncome) || 0;
@@ -299,11 +349,11 @@ export default function IncomeDistributor() {
   const result = useMemo(() => {
     if (usdRate <= 0) return null;
 
-    const totalExpensesARS = config.expenses.reduce((acc, e) => {
+    const totalExpensesARS = activeExpenses.reduce((acc, e) => {
       return acc + (e.currency === "USD" ? e.amount * usdRate : e.amount);
     }, 0);
 
-    const fixedAllocations = config.categories
+    const fixedAllocations = activeCategories
       .filter(c => c.type !== "percentage")
       .map(c => ({
         ...c,
@@ -328,10 +378,10 @@ export default function IncomeDistributor() {
     const afterExpenses = Math.max(0, income - totalExpensesARS);
     const afterFixed = Math.max(0, afterExpenses - totalFixedAllocations);
 
-    const percentageCategories = config.categories.filter(c => c.type === "percentage");
+    const percentageCategories = activeCategories.filter(c => c.type === "percentage");
     const totalPercentDefined = percentageCategories.reduce((acc, c) => acc + c.value, 0);
 
-    const allocations = config.categories.map(cat => {
+    const allocations = activeCategories.map(cat => {
       if (cat.type === "percentage") {
         const weight = totalPercentDefined > 0 ? (cat.value / totalPercentDefined) : 0;
         const amount = weight * afterFixed;
@@ -347,7 +397,7 @@ export default function IncomeDistributor() {
     const unallocated = income - totalExpensesARS - totalAllocated;
 
     return { isNeededMode, totalNeededARS: 0, allocations, totalExpensesARS, unallocated, afterExpenses };
-  }, [income, config, usdRate]);
+  }, [income, activeExpenses, activeCategories, usdRate]);
 
   const debtTotals = useMemo(() => {
     let totalARS = 0;
@@ -392,19 +442,17 @@ export default function IncomeDistributor() {
     return { totalARS, totalUSD };
   }, [filteredDebts, usdRate]);
 
-  const removeCategory = (id: string) => setConfig(prev => ({ ...prev, categories: prev.categories.filter(c => c.id !== id) }));
-  const updateCategory = (id: string, updates: Partial<Category>) => setConfig(prev => ({ ...prev, categories: prev.categories.map(c => c.id === id ? { ...c, ...updates } : c) }));
-  const removeExpense = (id: string) => setConfig(prev => ({ ...prev, expenses: prev.expenses.filter(e => e.id !== id) }));
-  const updateExpense = (id: string, updates: Partial<Expense>) => setConfig(prev => ({ ...prev, expenses: prev.expenses.map(e => e.id === id ? { ...e, ...updates } : e) }));
+  const removeCategory = (id: string) => updateCurrentMonthRecord(curr => ({ categories: curr.categories.filter(c => c.id !== id) }));
+  const updateCategory = (id: string, updates: Partial<Category>) => updateCurrentMonthRecord(curr => ({ categories: curr.categories.map(c => c.id === id ? { ...c, ...updates } : c) }));
+  const removeExpense = (id: string) => updateCurrentMonthRecord(curr => ({ expenses: curr.expenses.filter(e => e.id !== id) }));
+  const updateExpense = (id: string, updates: Partial<Expense>) => updateCurrentMonthRecord(curr => ({ expenses: curr.expenses.map(e => e.id === id ? { ...e, ...updates } : e) }));
 
   const reorderCategories = (fromIndex: number, toIndex: number) => {
-    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= config.categories.length || toIndex >= config.categories.length) return;
-    setConfig(prev => {
-      const updated = [...prev.categories];
-      const [moved] = updated.splice(fromIndex, 1);
-      updated.splice(toIndex, 0, moved);
-      return { ...prev, categories: updated };
-    });
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= activeCategories.length || toIndex >= activeCategories.length) return;
+    const updated = [...activeCategories];
+    const [moved] = updated.splice(fromIndex, 1);
+    updated.splice(toIndex, 0, moved);
+    updateCurrentMonthRecord(() => ({ categories: updated }));
   };
 
   const moveCategory = (index: number, direction: "up" | "down") => {
@@ -413,13 +461,11 @@ export default function IncomeDistributor() {
   };
 
   const reorderExpenses = (fromIndex: number, toIndex: number) => {
-    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= config.expenses.length || toIndex >= config.expenses.length) return;
-    setConfig(prev => {
-      const updated = [...prev.expenses];
-      const [moved] = updated.splice(fromIndex, 1);
-      updated.splice(toIndex, 0, moved);
-      return { ...prev, expenses: updated };
-    });
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= activeExpenses.length || toIndex >= activeExpenses.length) return;
+    const updated = [...activeExpenses];
+    const [moved] = updated.splice(fromIndex, 1);
+    updated.splice(toIndex, 0, moved);
+    updateCurrentMonthRecord(() => ({ expenses: updated }));
   };
 
   const moveExpense = (index: number, direction: "up" | "down") => {
@@ -427,29 +473,10 @@ export default function IncomeDistributor() {
     reorderExpenses(index, targetIndex);
   };
 
-  const activeCompletedIds = config.monthlyRecords?.[selectedMonthKey]?.completedIds !== undefined
-    ? config.monthlyRecords[selectedMonthKey].completedIds || []
-    : (config.completedIds || []);
-
   const toggleCompleted = (id: string) => {
-    setConfig(prev => {
-      const currentList = prev.monthlyRecords?.[selectedMonthKey]?.completedIds !== undefined
-        ? prev.monthlyRecords[selectedMonthKey].completedIds || []
-        : (prev.completedIds || []);
-      const isCompleted = currentList.includes(id);
-      const updatedList = isCompleted ? currentList.filter(i => i !== id) : [...currentList, id];
-      return {
-        ...prev,
-        completedIds: updatedList,
-        monthlyRecords: {
-          ...(prev.monthlyRecords || {}),
-          [selectedMonthKey]: {
-            income: prev.monthlyRecords?.[selectedMonthKey]?.income ?? totalIncome ?? "",
-            completedIds: updatedList
-          }
-        }
-      };
-    });
+    const isCompleted = activeCompletedIds.includes(id);
+    const updatedList = isCompleted ? activeCompletedIds.filter(i => i !== id) : [...activeCompletedIds, id];
+    updateCurrentMonthRecord(() => ({ completedIds: updatedList }));
   };
 
   const addDebt = (debtorName: string, description: string, amount: number, currency: "ARS" | "USD") => {
@@ -482,19 +509,29 @@ export default function IncomeDistributor() {
 
   const handleAbsorbRemainder = () => {
     if (!absorbCategory || !result || result.unallocated <= 0) return;
-    const cat = config.categories.find(c => c.id === absorbCategory);
+    const cat = activeCategories.find(c => c.id === absorbCategory);
     if (!cat) return;
     
     let amountToAdd = result.unallocated;
-    if (cat.type === "fixed_usd") amountToAdd = amountToAdd / usdRate;
+    if (cat.type === "fixed_usd") amountToAdd = amountToAdd / (usdRate || 1);
     
-    setConfig(prev => ({
-      ...prev,
-      categories: prev.categories.map(c => 
+    updateCurrentMonthRecord(curr => ({
+      categories: curr.categories.map(c => 
         c.id === absorbCategory ? { ...c, value: Math.round((c.value + amountToAdd) * 100) / 100 } : c
       )
     }));
     setAbsorbCategory("");
+  };
+
+  const copySalidasFromMonth = (sourceMonthKey: string) => {
+    const sourceRec = config.monthlyRecords?.[sourceMonthKey];
+    const sourceExpenses = sourceRec?.expenses !== undefined ? sourceRec.expenses : (config.expenses || []);
+    const sourceCategories = sourceRec?.categories !== undefined ? sourceRec.categories : (config.categories || DEFAULT_CATEGORIES);
+    
+    updateCurrentMonthRecord(() => ({
+      expenses: JSON.parse(JSON.stringify(sourceExpenses)),
+      categories: JSON.parse(JSON.stringify(sourceCategories)),
+    }));
   };
 
   const calcMonthKey = `${calcMonth.year}-${String(calcMonth.month + 1).padStart(2, "0")}`;
@@ -556,11 +593,20 @@ export default function IncomeDistributor() {
             </button>
           )}
           {(() => {
-            const totalSalidas = config.expenses.length + (result?.allocations ? result.allocations.length : config.categories.length);
-            const pendingSalidas = Math.max(0, totalSalidas - activeCompletedIds.length);
+            const activeSalidas = [
+              ...activeExpenses.map(e => ({ id: e.id, name: e.name })),
+              ...(result?.allocations 
+                ? result.allocations.map(a => ({ id: a.id, name: a.name })) 
+                : activeCategories.map(c => ({ id: c.id, name: c.name })))
+            ];
+            const totalSalidas = activeSalidas.length;
+            const completedCount = activeSalidas.filter(s => activeCompletedIds.includes(s.id)).length;
+            const pendingSalidas = Math.max(0, totalSalidas - completedCount);
             return (
               <span className="text-xs text-gray-400">
-                {pendingSalidas === 0 && totalSalidas > 0 ? (
+                {totalSalidas === 0 ? (
+                  <span className="text-gray-500">Sin salidas</span>
+                ) : pendingSalidas === 0 ? (
                   <span className="text-emerald-400 font-medium">✓ Salidas al día</span>
                 ) : (
                   <span>
@@ -816,7 +862,7 @@ export default function IncomeDistributor() {
               
               <div className="divide-y divide-white/5">
                 {/* Gastos Fijos (Como parte de las Salidas) */}
-                {config.expenses.map(e => {
+                {activeExpenses.map(e => {
                   const amount = e.currency === "USD" ? e.amount * usdRate : e.amount;
                   const isCompleted = activeCompletedIds.includes(e.id);
                   return (
@@ -894,7 +940,7 @@ export default function IncomeDistributor() {
                       <div className="mt-4 flex flex-wrap items-center gap-2">
                         <select value={absorbCategory} onChange={e => setAbsorbCategory(e.target.value)} className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-2 py-1 text-amber-400 text-xs focus:outline-none max-w-full">
                           <option value="">Sumar a una salida...</option>
-                          {config.categories.filter(c => c.type !== "percentage").map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                          {activeCategories.filter(c => c.type !== "percentage").map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                         <button onClick={handleAbsorbRemainder} disabled={!absorbCategory} className="bg-amber-500 disabled:opacity-50 hover:bg-amber-400 text-black px-3 py-1 rounded-lg text-xs font-bold transition-colors">
                           Asignar Resto
@@ -918,54 +964,90 @@ export default function IncomeDistributor() {
       {/* 3. GESTIÓN DE SALIDAS (SIEMPRE VISIBLE) */}
       <div className="pt-10 border-t border-white/10">
         <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
-          <h3 className="text-xl font-bold text-white flex items-center gap-2">
-            <Coins className="w-5 h-5 text-amber-400" />
-            Configurar Salidas
-          </h3>
-          <button
-            onClick={handleManualSave}
-            disabled={saveStatus === "saving"}
-            className={clsx(
-              "flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer",
-              saveStatus === "saved" 
-                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" 
-                : saveStatus === "error"
-                ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                : "bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10"
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+              <Coins className="w-5 h-5 text-amber-400" />
+              Configurar Salidas
+            </h3>
+            <span className="text-xs bg-amber-500/10 text-amber-300 border border-amber-500/20 px-2.5 py-0.5 rounded-full font-medium capitalize">
+              {getMonthName(selectedMonth.month, selectedMonth.year)}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {otherConfiguredMonths.length > 0 && (
+              <div className="flex items-center gap-1.5 bg-black/40 border border-white/10 px-2.5 py-1.5 rounded-xl text-xs">
+                <span className="text-gray-400">Copiar de:</span>
+                <select
+                  onChange={e => {
+                    if (e.target.value) {
+                      const optText = e.target.options[e.target.selectedIndex].text;
+                      if (confirm(`¿Copiar las salidas de ${optText} a ${getMonthName(selectedMonth.month, selectedMonth.year)}?`)) {
+                        copySalidasFromMonth(e.target.value);
+                      }
+                      e.target.value = "";
+                    }
+                  }}
+                  defaultValue=""
+                  className="bg-transparent text-violet-300 font-semibold focus:outline-none cursor-pointer"
+                >
+                  <option value="" disabled className="bg-[#09090b]">Seleccionar mes...</option>
+                  {otherConfiguredMonths.map(k => {
+                    const [y, m] = k.split("-");
+                    return (
+                      <option key={k} value={k} className="bg-[#09090b] capitalize">
+                        {getMonthName(parseInt(m) - 1, parseInt(y))}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
             )}
-          >
-            {saveStatus === "saving" ? (
-              <>
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>Guardando...</span>
-              </>
-            ) : saveStatus === "saved" ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-emerald-400" />
-                <span>¡Guardado!</span>
-              </>
-            ) : saveStatus === "error" ? (
-              <>
-                <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
-                <span>Guardado local</span>
-              </>
-            ) : (
-              <>
-                <Save className="w-3.5 h-3.5 text-amber-400" />
-                <span>Guardar Salidas</span>
-              </>
-            )}
-          </button>
+            <button
+              onClick={handleManualSave}
+              disabled={saveStatus === "saving"}
+              className={clsx(
+                "flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer",
+                saveStatus === "saved" 
+                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" 
+                  : saveStatus === "error"
+                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                  : "bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10"
+              )}
+            >
+              {saveStatus === "saving" ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Guardando...</span>
+                </>
+              ) : saveStatus === "saved" ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>¡Guardado!</span>
+                </>
+              ) : saveStatus === "error" ? (
+                <>
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Guardado local</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Guardar Salidas</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
         
         <div className="glass-panel p-6 rounded-2xl border-white/5 w-full">
           <div className="space-y-3 mb-6">
-            {config.expenses.length === 0 && config.categories.length === 0 && (
-              <p className="text-gray-500 text-xs py-4 text-center">No hay salidas configuradas.</p>
+            {activeExpenses.length === 0 && activeCategories.length === 0 && (
+              <p className="text-gray-500 text-xs py-4 text-center">No hay salidas configuradas para este mes.</p>
             )}
             
             {/* Gastos Fijos */}
-            {config.expenses.map((e, idx) => {
+            {activeExpenses.map((e, idx) => {
               const isDragging = draggedExpenseIdx === idx;
               const isOver = dragOverExpenseIdx === idx && draggedExpenseIdx !== idx;
               return (
@@ -1020,7 +1102,7 @@ export default function IncomeDistributor() {
                         </button>
                         <button
                           type="button"
-                          disabled={idx === config.expenses.length - 1}
+                          disabled={idx === activeExpenses.length - 1}
                           onClick={() => moveExpense(idx, "down")}
                           className="text-gray-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed p-0.5"
                           title="Mover abajo"
@@ -1062,7 +1144,7 @@ export default function IncomeDistributor() {
                     </div>
                     <button 
                       onClick={() => removeExpense(e.id)} 
-                      className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded-lg bg-white/5 sm:bg-transparent sm:p-1 sm:opacity-0 group-hover:opacity-100 shrink-0" 
+                      className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded-lg bg-white/5 sm:bg-transparent sm:p-1 sm:opacity-0 group-hover:opacity-100 shrink-0 cursor-pointer" 
                       title="Eliminar gasto"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -1073,7 +1155,7 @@ export default function IncomeDistributor() {
             })}
 
             {/* Categorías */}
-            {config.categories.map((c, idx) => {
+            {activeCategories.map((c, idx) => {
               const isDragging = draggedCategoryIdx === idx;
               const isOver = dragOverCategoryIdx === idx && draggedCategoryIdx !== idx;
               return (
@@ -1128,7 +1210,7 @@ export default function IncomeDistributor() {
                         </button>
                         <button
                           type="button"
-                          disabled={idx === config.categories.length - 1}
+                          disabled={idx === activeCategories.length - 1}
                           onClick={() => moveCategory(idx, "down")}
                           className="text-gray-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed p-0.5"
                           title="Mover abajo"
@@ -1172,7 +1254,7 @@ export default function IncomeDistributor() {
                     </div>
                     <button 
                       onClick={() => removeCategory(c.id)} 
-                      className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded-lg bg-white/5 sm:bg-transparent sm:p-1 sm:opacity-0 group-hover:opacity-100 shrink-0" 
+                      className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded-lg bg-white/5 sm:bg-transparent sm:p-1 sm:opacity-0 group-hover:opacity-100 shrink-0 cursor-pointer" 
                       title="Eliminar salida"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -1211,17 +1293,22 @@ export default function IncomeDistributor() {
               <button 
                 onClick={() => {
                   if (!newCatName || !newCatValue) return;
-                  const idx = config.categories.length;
-                  setConfig(prev => ({
-                    ...prev,
-                    categories: [...prev.categories, {
-                      id: uid(), name: newCatName, type: newCatType as CategoryType,
-                      value: parseFloat(newCatValue), color: DEFAULT_COLORS[idx % DEFAULT_COLORS.length], icon: "💰"
-                    }]
+                  const idx = activeCategories.length;
+                  const newCat: Category = {
+                    id: uid(),
+                    name: newCatName,
+                    type: newCatType as CategoryType,
+                    value: parseFloat(newCatValue) || 0,
+                    color: DEFAULT_COLORS[idx % DEFAULT_COLORS.length],
+                    icon: "💰"
+                  };
+                  updateCurrentMonthRecord(curr => ({
+                    categories: [...curr.categories, newCat]
                   }));
-                  setNewCatName(""); setNewCatValue("");
+                  setNewCatName("");
+                  setNewCatValue("");
                 }} 
-                className="bg-violet-600/20 hover:bg-violet-600 text-violet-400 hover:text-white rounded-lg flex items-center justify-center transition-all p-2 w-8 h-8 shrink-0"
+                className="bg-violet-600/20 hover:bg-violet-600 text-violet-400 hover:text-white rounded-lg flex items-center justify-center transition-all p-2 w-8 h-8 shrink-0 cursor-pointer"
                 title="Añadir salida"
               >
                 <Plus className="w-5 h-5" />
