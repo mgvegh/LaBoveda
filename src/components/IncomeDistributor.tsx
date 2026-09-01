@@ -1,11 +1,12 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Trash2, RefreshCw, DollarSign, TrendingUp, Landmark, ArrowRightLeft, ListChecks, Coins, Users, GripVertical, ChevronUp, ChevronDown, Save, Check, AlertCircle, Calculator } from "lucide-react";
+import { Plus, Trash2, RefreshCw, DollarSign, TrendingUp, Landmark, ArrowRightLeft, ListChecks, Coins, Users, GripVertical, ChevronUp, ChevronDown, Save, Check, AlertCircle, Calculator, Calendar, Sparkles, ChevronLeft, ChevronRight, GraduationCap, Briefcase, X } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/components/AuthProvider";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, getDocs } from "firebase/firestore";
 import FloatingCalculator from "@/components/FloatingCalculator";
+import FloatingNotes from "@/components/FloatingNotes";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 type CategoryType = "fixed_usd" | "fixed_ars" | "percentage";
@@ -35,13 +36,24 @@ type Debt = {
   isPaid: boolean;
 };
 
+type MonthlyRecord = {
+  income?: string;
+  completedIds?: string[];
+};
+
 type IncomeConfig = {
   categories: Category[];
   expenses: Expense[];
   lastIncome?: string;
   completedIds?: string[];
   debts?: Debt[];
+  baseSalary?: string;
+  monthlyRecords?: Record<string, MonthlyRecord>;
 };
+
+function getMonthName(month: number, year: number) {
+  return new Date(year, month, 1).toLocaleString("es-AR", { month: "long", year: "numeric" });
+}
 
 // ─── Defaults ───────────────────────────────────────────────────────────────
 const DEFAULT_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16"];
@@ -57,11 +69,27 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 export default function IncomeDistributor() {
   const [isClient, setIsClient] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
-  const [config, setConfig] = useState<IncomeConfig>({ categories: DEFAULT_CATEGORIES, expenses: [], completedIds: [], debts: [] });
+  const [config, setConfig] = useState<IncomeConfig>({ categories: DEFAULT_CATEGORIES, expenses: [], completedIds: [], debts: [], monthlyRecords: {} });
   const [totalIncome, setTotalIncome] = useState<string>("");
   const [usdRate, setUsdRate] = useState<number>(0);
   const [isFetchingRate, setIsFetchingRate] = useState(false);
   
+  // Month selector
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const d = new Date();
+    return { year: d.getFullYear(), month: d.getMonth() };
+  });
+
+  // Modal for salary + classes calculation
+  const [isSalaryClassesModalOpen, setIsSalaryClassesModalOpen] = useState(false);
+  const [calcMonth, setCalcMonth] = useState(() => {
+    const d = new Date();
+    return { year: d.getFullYear(), month: d.getMonth() };
+  });
+  const [salaryAmount, setSalaryAmount] = useState("");
+  const [extraAmount, setExtraAmount] = useState("");
+  const [tutorClasses, setTutorClasses] = useState<any[]>([]);
+
   const [newCatName, setNewCatName] = useState("");
   const [newCatType, setNewCatType] = useState<string>("fixed_ars");
   const [newCatValue, setNewCatValue] = useState("");
@@ -79,11 +107,24 @@ export default function IncomeDistributor() {
   const [draggedCategoryIdx, setDraggedCategoryIdx] = useState<number | null>(null);
   const [dragOverCategoryIdx, setDragOverCategoryIdx] = useState<number | null>(null);
   const [canDragCategoryIdx, setCanDragCategoryIdx] = useState<number | null>(null);
+
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   const { user } = useAuth();
   const getDocRef = () => user ? doc(db, "users", user.uid, "income_config", "data") : null;
+
+  const selectedMonthKey = `${selectedMonth.year}-${String(selectedMonth.month + 1).padStart(2, "0")}`;
+
+  // Load tutor classes for income calculator
+  useEffect(() => {
+    if (!user) return;
+    const col = collection(db, "users", user.uid, "tutorClasses");
+    getDocs(col).then(snap => {
+      setTutorClasses(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }).catch(e => console.error("Error loading tutor classes for income:", e));
+  }, [user]);
 
   const handleManualSave = async () => {
     if (!user) return;
@@ -148,9 +189,14 @@ export default function IncomeDistributor() {
             categories: localData.categories && localData.categories.length > 0 ? localData.categories : DEFAULT_CATEGORIES,
             expenses: localData.expenses || [],
             completedIds: localData.completedIds || [],
-            debts: localData.debts || []
+            debts: localData.debts || [],
+            baseSalary: localData.baseSalary || "",
+            monthlyRecords: localData.monthlyRecords || {},
           });
-          if (localData.lastIncome !== undefined) setTotalIncome(localData.lastIncome);
+          const mRec = localData.monthlyRecords?.[selectedMonthKey];
+          if (mRec?.income !== undefined) setTotalIncome(mRec.income);
+          else if (localData.lastIncome !== undefined) setTotalIncome(localData.lastIncome);
+          if (localData.baseSalary) setSalaryAmount(localData.baseSalary);
         }
       }
     } catch (e) {
@@ -170,31 +216,35 @@ export default function IncomeDistributor() {
         const newCompletedIds = data.completedIds !== undefined ? data.completedIds : (localData?.completedIds || []);
         const newDebts = data.debts !== undefined ? data.debts : (localData?.debts || []);
         const newLastIncome = data.lastIncome !== undefined ? data.lastIncome : (localData?.lastIncome || "");
+        const newBaseSalary = data.baseSalary || localData?.baseSalary || "";
+        const newMonthlyRecords = data.monthlyRecords || localData?.monthlyRecords || {};
 
         const mergedConfig: IncomeConfig = {
           categories: newCategories,
           expenses: newExpenses,
           completedIds: newCompletedIds,
           debts: newDebts,
-          lastIncome: newLastIncome
+          lastIncome: newLastIncome,
+          baseSalary: newBaseSalary,
+          monthlyRecords: newMonthlyRecords,
         };
 
         setConfig(mergedConfig);
-        if (newLastIncome) setTotalIncome(newLastIncome);
+        const activeMonthRec = newMonthlyRecords[selectedMonthKey];
+        if (activeMonthRec?.income !== undefined) setTotalIncome(activeMonthRec.income);
+        else if (newLastIncome) setTotalIncome(newLastIncome);
+        if (newBaseSalary) setSalaryAmount(newBaseSalary);
+
         try {
           localStorage.setItem(storageKey, JSON.stringify(mergedConfig));
         } catch {}
       } else if (localData) {
-        // Si el documento en Firestore no existía pero teníamos caché local, persistir lo local en Firestore
         setDoc(docRef, { ...localData, lastIncome: localData.lastIncome || totalIncome }, { merge: true }).catch(console.error);
       }
       setIsDataLoaded(true);
     }).catch(err => {
       console.error("Error loading income config from Firestore:", err);
-      // Si falló la red, si teníamos datos locales los habilitamos para visualización
-      if (localData) {
-        setIsDataLoaded(true);
-      }
+      if (localData) setIsDataLoaded(true);
     });
   }, [user]); // eslint-disable-line
 
@@ -219,6 +269,32 @@ export default function IncomeDistributor() {
 
     return () => clearTimeout(id);
   }, [config, totalIncome, isClient, user, isDataLoaded]); // eslint-disable-line
+
+  const handleSelectMonth = (newMonth: { year: number; month: number }) => {
+    setSelectedMonth(newMonth);
+    const mKey = `${newMonth.year}-${String(newMonth.month + 1).padStart(2, "0")}`;
+    const rec = config.monthlyRecords?.[mKey];
+    if (rec?.income !== undefined) {
+      setTotalIncome(rec.income);
+    } else {
+      setTotalIncome("");
+    }
+  };
+
+  const handleIncomeChange = (val: string) => {
+    setTotalIncome(val);
+    setConfig(prev => ({
+      ...prev,
+      lastIncome: val,
+      monthlyRecords: {
+        ...(prev.monthlyRecords || {}),
+        [selectedMonthKey]: {
+          income: val,
+          completedIds: prev.monthlyRecords?.[selectedMonthKey]?.completedIds ?? (prev.completedIds || [])
+        }
+      }
+    }));
+  };
 
   const income = parseFloat(totalIncome) || 0;
 
@@ -353,14 +429,27 @@ export default function IncomeDistributor() {
     reorderExpenses(index, targetIndex);
   };
 
+  const activeCompletedIds = config.monthlyRecords?.[selectedMonthKey]?.completedIds !== undefined
+    ? config.monthlyRecords[selectedMonthKey].completedIds || []
+    : (config.completedIds || []);
+
   const toggleCompleted = (id: string) => {
     setConfig(prev => {
-      const isCompleted = prev.completedIds?.includes(id);
+      const currentList = prev.monthlyRecords?.[selectedMonthKey]?.completedIds !== undefined
+        ? prev.monthlyRecords[selectedMonthKey].completedIds || []
+        : (prev.completedIds || []);
+      const isCompleted = currentList.includes(id);
+      const updatedList = isCompleted ? currentList.filter(i => i !== id) : [...currentList, id];
       return {
         ...prev,
-        completedIds: isCompleted 
-          ? (prev.completedIds || []).filter(i => i !== id)
-          : [...(prev.completedIds || []), id]
+        completedIds: updatedList,
+        monthlyRecords: {
+          ...(prev.monthlyRecords || {}),
+          [selectedMonthKey]: {
+            income: prev.monthlyRecords?.[selectedMonthKey]?.income ?? totalIncome ?? "",
+            completedIds: updatedList
+          }
+        }
       };
     });
   };
@@ -410,19 +499,79 @@ export default function IncomeDistributor() {
     setAbsorbCategory("");
   };
 
+  const calcMonthKey = `${calcMonth.year}-${String(calcMonth.month + 1).padStart(2, "0")}`;
+  const calcMonthClasses = tutorClasses.filter(c => c.dateTime?.startsWith(calcMonthKey));
+  const calcClassesTotalARS = calcMonthClasses.reduce((acc, c) => acc + (Number(c.amount) || 0), 0);
+  const calcClassesHours = calcMonthClasses.reduce((acc, c) => acc + (Number(c.duration) || 60), 0) / 60;
+  const calcSalaryNum = parseFloat(salaryAmount) || 0;
+  const calcExtraNum = parseFloat(extraAmount) || 0;
+  const computedCombinedIncome = calcSalaryNum + calcClassesTotalARS + calcExtraNum;
+
+  const handleApplySalaryClasses = () => {
+    handleIncomeChange(String(Math.round(computedCombinedIncome)));
+    setConfig(prev => ({
+      ...prev,
+      baseSalary: salaryAmount,
+    }));
+    setIsSalaryClassesModalOpen(false);
+  };
+
   if (!isClient) return null;
 
   return (
     <div className="space-y-6">
+      {/* 0. NAVEGADOR DE MES */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-black/40 border border-white/10 p-3 sm:px-4 rounded-2xl">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => handleSelectMonth(selectedMonth.month === 0 ? { year: selectedMonth.year - 1, month: 11 } : { year: selectedMonth.year, month: selectedMonth.month - 1 })}
+            className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition-colors cursor-pointer"
+            title="Mes anterior"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-xl border border-white/5">
+            <Calendar className="w-4 h-4 text-violet-400" />
+            <span className="text-sm font-bold text-white capitalize min-w-[130px] text-center">
+              {getMonthName(selectedMonth.month, selectedMonth.year)}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleSelectMonth(selectedMonth.month === 11 ? { year: selectedMonth.year + 1, month: 0 } : { year: selectedMonth.year, month: selectedMonth.month + 1 })}
+            className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition-colors cursor-pointer"
+            title="Mes siguiente"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {(selectedMonth.year !== new Date().getFullYear() || selectedMonth.month !== new Date().getMonth()) && (
+            <button
+              type="button"
+              onClick={() => handleSelectMonth({ year: new Date().getFullYear(), month: new Date().getMonth() })}
+              className="text-xs text-violet-400 hover:text-violet-300 bg-violet-500/10 px-3 py-1.5 rounded-xl border border-violet-500/20 font-bold transition-all cursor-pointer"
+            >
+              Ir a Mes Actual
+            </button>
+          )}
+          <span className="text-xs text-gray-400">
+            {activeCompletedIds.length} salidas pagadas este mes
+          </span>
+        </div>
+      </div>
+
       {/* 1. INPUT DE INGRESO */}
       <div className="glass-panel p-6 rounded-2xl border-violet-500/20 shadow-lg shadow-violet-500/5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
             <h2 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
               <Landmark className="w-5 h-5 text-violet-400" />
-              Ingreso del Mes
+              Ingreso de {getMonthName(selectedMonth.month, selectedMonth.year)}
             </h2>
-            <p className="text-sm text-gray-400">¿Cuánta plata entró hoy a tu cuenta?</p>
+            <p className="text-sm text-gray-400">¿Cuánta plata entra para este mes?</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -460,16 +609,6 @@ export default function IncomeDistributor() {
               )}
             </button>
 
-            <button
-              type="button"
-              onClick={() => setIsCalculatorOpen((prev) => !prev)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 text-violet-300 border border-white/10 hover:border-violet-500/30 transition-all shadow-md active:scale-95 cursor-pointer h-fit"
-              title="Abrir Calculadora"
-            >
-              <Calculator className="w-3.5 h-3.5 text-violet-400" />
-              <span>Calculadora</span>
-            </button>
-
             <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl px-3 py-2 h-fit">
               <span className="text-xs text-gray-400 uppercase tracking-wide">Valor USD</span>
               <div className="flex items-center gap-1">
@@ -488,16 +627,33 @@ export default function IncomeDistributor() {
           </div>
         </div>
 
-        <div className="relative max-w-md">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-gray-500">$</span>
-          <input
-            type="number"
-            placeholder="Ej: 2.500.000"
-            value={totalIncome}
-            onChange={e => setTotalIncome(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-2xl pl-10 pr-4 py-4 text-3xl font-bold text-white focus:outline-none focus:border-violet-500 transition-colors shadow-inner"
-          />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="relative max-w-md flex-1">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-gray-500">$</span>
+            <input
+              type="number"
+              placeholder="Ej: 2.500.000"
+              value={totalIncome}
+              onChange={e => handleIncomeChange(e.target.value)}
+              className="w-full bg-black/40 border border-white/10 rounded-2xl pl-10 pr-4 py-4 text-3xl font-bold text-white focus:outline-none focus:border-violet-500 transition-colors shadow-inner"
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSalaryAmount(config.baseSalary || "");
+              setCalcMonth(selectedMonth);
+              setIsSalaryClassesModalOpen(true);
+            }}
+            className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600/20 to-teal-600/20 hover:from-emerald-600/30 hover:to-teal-600/30 text-emerald-300 border border-emerald-500/30 font-bold text-xs shadow-lg shadow-emerald-500/5 active:scale-95 transition-all cursor-pointer shrink-0"
+            title="Calcular ingreso sumando Clases y Sueldo"
+          >
+            <Sparkles className="w-4 h-4 text-emerald-400" />
+            <span>Autocompletar (Clases + Sueldo)</span>
+          </button>
         </div>
+
         {usdRate > 0 && income > 0 && (
           <p className="text-sm text-gray-500 mt-3 flex items-center gap-2">
             <ArrowRightLeft className="w-4 h-4" />
@@ -505,6 +661,137 @@ export default function IncomeDistributor() {
           </p>
         )}
       </div>
+
+      {/* Modal Autocompletar Sueldo + Clases */}
+      {isSalaryClassesModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div
+            className="bg-zinc-950 border border-emerald-500/30 rounded-3xl p-6 max-w-md w-full shadow-2xl shadow-black space-y-5"
+            style={{ boxShadow: "0 25px 60px rgba(0,0,0,0.8), 0 0 35px rgba(16, 185, 129, 0.15)" }}
+          >
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2 text-emerald-400">
+                <Sparkles className="w-5 h-5" />
+                <h3 className="text-base font-bold text-white">Calcular Ingreso (Clases + Sueldo)</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSalaryClassesModalOpen(false)}
+                className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Selector de Mes de Clases */}
+            <div>
+              <label className="block text-xs text-gray-400 mb-1.5 uppercase font-medium">Mes de Clases a Sumar</label>
+              <div className="flex items-center justify-between bg-black/40 border border-white/10 p-2 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setCalcMonth(m => m.month === 0 ? { year: m.year - 1, month: 11 } : { year: m.year, month: m.month - 1 })}
+                  className="p-1 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="text-sm font-bold text-emerald-300 capitalize">
+                  {getMonthName(calcMonth.month, calcMonth.year)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCalcMonth(m => m.month === 11 ? { year: m.year + 1, month: 0 } : { year: m.year, month: m.month + 1 })}
+                  className="p-1 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="mt-2 flex items-center justify-between text-xs px-1 text-gray-400">
+                <span className="flex items-center gap-1">
+                  <GraduationCap className="w-3.5 h-3.5 text-emerald-400" />
+                  {calcMonthClasses.length} clases ({calcClassesHours.toFixed(1)} hs)
+                </span>
+                <span className="font-mono font-bold text-emerald-400 text-sm">
+                  ${calcClassesTotalARS.toLocaleString("es-AR")}
+                </span>
+              </div>
+            </div>
+
+            {/* Sueldo Base */}
+            <div>
+              <label className="block text-xs text-gray-400 mb-1.5 uppercase font-medium flex items-center gap-1.5">
+                <Briefcase className="w-3.5 h-3.5 text-violet-400" />
+                Sueldo Fijo / Salario (ARS)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold">$</span>
+                <input
+                  type="number"
+                  value={salaryAmount}
+                  onChange={(e) => setSalaryAmount(e.target.value)}
+                  placeholder="Ej: 1800000"
+                  className="w-full bg-black/40 border border-white/10 rounded-xl pl-8 pr-3 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-emerald-500/50"
+                />
+              </div>
+            </div>
+
+            {/* Extras */}
+            <div>
+              <label className="block text-xs text-gray-400 mb-1.5 uppercase font-medium">Otros ingresos / Extras (Opcional)</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold">$</span>
+                <input
+                  type="number"
+                  value={extraAmount}
+                  onChange={(e) => setExtraAmount(e.target.value)}
+                  placeholder="Ej: 50000"
+                  className="w-full bg-black/40 border border-white/10 rounded-xl pl-8 pr-3 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-emerald-500/50"
+                />
+              </div>
+            </div>
+
+            {/* Total Preview */}
+            <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-1.5">
+              <div className="flex justify-between text-xs text-gray-400">
+                <span>Sueldo Base:</span>
+                <span className="font-mono text-white">${calcSalaryNum.toLocaleString("es-AR")}</span>
+              </div>
+              <div className="flex justify-between text-xs text-gray-400">
+                <span>Clases ({getMonthName(calcMonth.month, calcMonth.year)}):</span>
+                <span className="font-mono text-emerald-300">+${calcClassesTotalARS.toLocaleString("es-AR")}</span>
+              </div>
+              {calcExtraNum > 0 && (
+                <div className="flex justify-between text-xs text-gray-400">
+                  <span>Extras:</span>
+                  <span className="font-mono text-white">+${calcExtraNum.toLocaleString("es-AR")}</span>
+                </div>
+              )}
+              <div className="pt-2 border-t border-white/10 flex justify-between items-center text-sm font-bold">
+                <span className="text-white">Total a Aplicar:</span>
+                <span className="text-lg font-mono text-emerald-400">
+                  ${Math.round(computedCombinedIncome).toLocaleString("es-AR")}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setIsSalaryClassesModalOpen(false)}
+                className="flex-1 py-2.5 rounded-xl border border-white/10 text-gray-300 hover:text-white text-xs font-bold transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleApplySalaryClasses}
+                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 transition-all active:scale-95 cursor-pointer"
+              >
+                Aplicar como Ingreso
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 2. HOJA DE RUTA (SALIDAS) */}
       {result && (income > 0 || result.isNeededMode) && (
@@ -521,7 +808,7 @@ export default function IncomeDistributor() {
                 {/* Gastos Fijos (Como parte de las Salidas) */}
                 {config.expenses.map(e => {
                   const amount = e.currency === "USD" ? e.amount * usdRate : e.amount;
-                  const isCompleted = config.completedIds?.includes(e.id);
+                  const isCompleted = activeCompletedIds.includes(e.id);
                   return (
                     <div key={e.id} className={`p-4 flex justify-between items-center hover:bg-white/5 transition-colors ${isCompleted ? 'opacity-40 grayscale' : ''}`}>
                       <div className="flex items-center gap-3">
@@ -540,7 +827,7 @@ export default function IncomeDistributor() {
 
                 {/* Distribución (Como parte de las Salidas) */}
                 {result.allocations.map(a => {
-                  const isCompleted = config.completedIds?.includes(a.id);
+                  const isCompleted = activeCompletedIds.includes(a.id);
                   return (
                     <div key={a.id} className={`p-4 flex justify-between items-center hover:bg-white/5 transition-colors ${isCompleted ? 'opacity-40 grayscale' : ''}`}>
                       <div className="flex items-center gap-3">
@@ -1121,11 +1408,15 @@ export default function IncomeDistributor() {
         </div>
       </div>
 
-      {/* Floating Calculator */}
+      {/* Floating Tools Dock */}
+      <FloatingNotes
+        isOpen={isNotesOpen}
+        onToggle={setIsNotesOpen}
+      />
       <FloatingCalculator
         isOpen={isCalculatorOpen}
         onToggle={setIsCalculatorOpen}
-        onApplyValue={(val) => setTotalIncome(String(val))}
+        onApplyValue={(val) => handleIncomeChange(String(val))}
       />
     </div>
   );
