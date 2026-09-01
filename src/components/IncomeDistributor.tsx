@@ -131,10 +131,29 @@ export default function IncomeDistributor() {
     setSaveStatus("saving");
     const docRef = getDocRef();
 
+    // Explicitly freeze current month's record with its own isolated copy of expenses, categories and income
+    const currentMonthRecord: MonthlyRecord = {
+      income: totalIncome,
+      expenses: activeExpenses,
+      categories: activeCategories,
+      completedIds: activeCompletedIds,
+    };
+
+    const updatedConfig: IncomeConfig = {
+      ...config,
+      lastIncome: totalIncome,
+      monthlyRecords: {
+        ...(config.monthlyRecords || {}),
+        [selectedMonthKey]: currentMonthRecord,
+      }
+    };
+
+    setConfig(updatedConfig);
+
     // 1. Guardar copia local inmediata
     const storageKey = `boveda_income_${user.uid}`;
     try {
-      localStorage.setItem(storageKey, JSON.stringify({ ...config, lastIncome: totalIncome }));
+      localStorage.setItem(storageKey, JSON.stringify(updatedConfig));
     } catch (e) {
       console.warn("Error guardando copia local:", e);
     }
@@ -142,7 +161,7 @@ export default function IncomeDistributor() {
     // 2. Guardar en Firebase Firestore
     try {
       if (docRef) {
-        await setDoc(docRef, { ...config, lastIncome: totalIncome }, { merge: true });
+        await setDoc(docRef, updatedConfig, { merge: true });
       }
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 2500);
@@ -851,10 +870,15 @@ export default function IncomeDistributor() {
       {result && (income > 0 || result.isNeededMode) && (
         <div className="space-y-6 w-full">
           <div className="glass-panel overflow-hidden rounded-2xl border-emerald-500/20">
-              <div className="bg-emerald-500/10 px-6 py-4 border-b border-emerald-500/10 flex justify-between items-center">
-                <h3 className="font-bold text-emerald-400 flex items-center gap-2">
-                  <ListChecks className="w-5 h-5" /> {result.isNeededMode ? "Salidas Fijas (Ingreso Necesario)" : "Salidas Programadas"}
-                </h3>
+              <div className="bg-emerald-500/10 px-6 py-4 border-b border-emerald-500/10 flex justify-between items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-bold text-emerald-400 flex items-center gap-2">
+                    <ListChecks className="w-5 h-5" /> {result.isNeededMode ? "Salidas Fijas (Ingreso Necesario)" : "Salidas Programadas"}
+                  </h3>
+                  <span className="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-medium capitalize">
+                    {getMonthName(selectedMonth.month, selectedMonth.year)}
+                  </span>
+                </div>
                 <span className="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded-full font-mono uppercase">Resumen en Pesos</span>
               </div>
               
