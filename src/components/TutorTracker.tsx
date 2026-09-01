@@ -88,9 +88,22 @@ function addMinutesToTime(time: string, minutes: number): string {
 
 export function formatStudentName(name: string): string {
   if (!name) return "";
-  const clean = name
-    .trim()
-    .replace(/\s+(presencial|virtual|cet|particular|zoom|meet)$/i, "");
+  let clean = name.trim();
+
+  // 1. Remove parenthesized or bracketed modality tags: (Presencial), (Virtual), (pres), (virt), [Presencial], etc.
+  clean = clean.replace(/[\(\[\{]\s*(presencial|virtual|pres|virt|cet|particular|zoom|meet|online)\s*[\)\]\}]/gi, "");
+
+  // 2. Remove trailing separators with modality: - Presencial, / Virtual, | Presencial
+  clean = clean.replace(/[-–—/|]\s*(presencial|virtual|pres|virt|cet|particular|zoom|meet|online)\s*$/gi, "");
+
+  // 3. Remove standalone trailing words: " presencial", " virtual", " cet"
+  clean = clean.replace(/\s+(presencial|virtual|pres|virt|cet|particular|zoom|meet|online)$/gi, "");
+
+  // 4. Remove leading/trailing non-alphanumeric junk or multiple spaces
+  clean = clean.replace(/^[\s\-–—/|]+|[\s\-–—/|]+$/g, "").replace(/\s{2,}/g, " ").trim();
+
+  if (!clean) return "";
+
   return clean
     .toLowerCase()
     .split(/\s+/)
@@ -445,7 +458,14 @@ export default function TutorTracker() {
         }
         const q = query(col, orderBy("dateTime", "desc"));
         const snap = await getDocs(q);
-        let loadedClasses = snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<TutorClass, "id">) }));
+        let loadedClasses = snap.docs.map(d => {
+          const data = d.data() as Omit<TutorClass, "id">;
+          return {
+            id: d.id,
+            ...data,
+            studentName: formatStudentName(data.studentName || ""),
+          };
+        });
 
         // Auto-recalculate any CET classes whose amount doesn't match configured rates
         if (currentSettings.cetRateVirtual > 0 || currentSettings.cetRatePresencial > 0) {

@@ -32,6 +32,52 @@ export interface ParsedClassEmailResult {
   rawSummary: string;
 }
 
+export function formatStudentName(name: string): string {
+  if (!name) return "";
+  let clean = name.trim();
+
+  // 1. Remove parenthesized or bracketed modality tags: (Presencial), (Virtual), (pres), (virt), [Presencial], etc.
+  clean = clean.replace(/[\(\[\{]\s*(presencial|virtual|pres|virt|cet|particular|zoom|meet|online)\s*[\)\]\}]/gi, "");
+
+  // 2. Remove trailing separators with modality: - Presencial, / Virtual, | Presencial
+  clean = clean.replace(/[-–—/|]\s*(presencial|virtual|pres|virt|cet|particular|zoom|meet|online)\s*$/gi, "");
+
+  // 3. Remove standalone trailing words: " presencial", " virtual", " cet"
+  clean = clean.replace(/\s+(presencial|virtual|pres|virt|cet|particular|zoom|meet|online)$/gi, "");
+
+  // 4. Remove leading/trailing non-alphanumeric junk or multiple spaces
+  clean = clean.replace(/^[\s\-–—/|]+|[\s\-–—/|]+$/g, "").replace(/\s{2,}/g, " ").trim();
+
+  if (!clean) return "";
+
+  return clean
+    .toLowerCase()
+    .split(/\s+/)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+function normalizeStr(str: string): string {
+  return (str || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "")
+    .trim();
+}
+
+function isSimilarStudent(a: string, b: string): boolean {
+  const s1 = normalizeStr(a);
+  const s2 = normalizeStr(b);
+  if (!s1 || !s2) return false;
+  if (s1 === s2) return true;
+  if (s1.length >= 3 && s2.length >= 3) {
+    if (s1.startsWith(s2) || s2.startsWith(s1)) return true;
+    if (s1.includes(s2) || s2.includes(s1)) return true;
+  }
+  return false;
+}
+
 /**
  * Intelligent parser for Institute (Centro de Estudios Turing / CET) and private tutor notification emails
  */
@@ -81,13 +127,10 @@ export function parseClassEmail(emailContent: {
     fullText.match(/\b(?:con|para)\s+(?:el\s+alumno|la\s+alumna)?\s*([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)?)/i);
 
   if (studentMatch && studentMatch[1]) {
-    let candidate = studentMatch[1]
-      .trim()
-      .replace(/\s+(presencial|virtual|cet|particular|zoom|meet)$/i, "")
-      .trim();
+    let candidate = formatStudentName(studentMatch[1]);
     if (
       candidate &&
-      !["Nueva", "Clase", "CET", "Instituto", "Turing", "Estimado", "Profesor", "Presencial", "Virtual"].includes(
+      !["Nueva", "Clase", "Cet", "Instituto", "Turing", "Estimado", "Profesor", "Presencial", "Virtual"].includes(
         candidate
       )
     ) {
@@ -281,7 +324,11 @@ export async function dbCreateClass(params: {
   userId?: string;
 }) {
   const userId = getTargetUserId(params.userId);
-  const modality = params.modalidad || "virtual";
+  const studentName = formatStudentName(params.alumno);
+  let modality = params.modalidad;
+  if (!modality) {
+    modality = /presencial|pres/i.test(params.alumno) ? "presencial" : "virtual";
+  }
   const type = params.tipo || "CET";
 
   let duration = params.duracion_minutos || 60;
@@ -313,7 +360,7 @@ export async function dbCreateClass(params: {
   const dateTime = `${params.fecha}T${params.hora_inicio}`;
 
   const payload = {
-    studentName: params.alumno,
+    studentName,
     subject: params.materia,
     modality,
     type,
@@ -321,15 +368,62 @@ export async function dbCreateClass(params: {
     duration,
     amount,
     notes: params.notas || `Clase de ${params.materia} (${modality})`,
-    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 
-  const docRef = await addDoc(collection(db, "users", userId, "tutorClasses"), payload);
+  // Smart deduplication check against existing classes
+  try {
+    const snap = await getDocs(collection(db, "users", userId, "tutorClasses"));
+    const existingClasses = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+    
+    const match = existingClasses.find((c: any) => {
+      const existingDate = (c.dateTime || "").slice(0, 10);
+      const existingTime = (c.dateTime || "").slice(11, 16);
+
+      if (existingDate === params.fecha) {
+        if (isSimilarStudent(c.studentName, studentName)) {
+          if (existingTime === params.hora_inicio) return true;
+          const [eh, em] = existingTime.split(":").map(Number);
+          const [th, tm] = params.hora_inicio.split(":").map(Number);
+          if (!isNaN(eh) && !isNaN(th) && Math.abs((eh * 60 + em) - (th * 60 + tm)) <= 45) {
+            return true;
+          }
+          if (!existingTime || !params.hora_inicio || existingTime === "00:00" || params.hora_inicio === "00:00") {
+            return true;
+          }
+        }
+      }
+      return false;
+    });
+
+    if (match) {
+      payload.studentName = formatStudentName(match.studentName || studentName);
+      if (!params.notas && match.notes) {
+        payload.notes = match.notes;
+      }
+      await updateDoc(doc(db, "users", userId, "tutorClasses", match.id), payload);
+      return {
+        success: true,
+        isUpdate: true,
+        classId: match.id,
+        message: `Clase existente detectada y actualizada para ${payload.studentName} el ${params.fecha} a las ${params.hora_inicio}hs ($${amount} ARS).`,
+        class: { id: match.id, ...payload },
+      };
+    }
+  } catch (dedupErr) {
+    console.error("Error checking deduplication in dbCreateClass:", dedupErr);
+  }
+
+  const docRef = await addDoc(collection(db, "users", userId, "tutorClasses"), {
+    ...payload,
+    createdAt: new Date().toISOString(),
+  });
 
   return {
     success: true,
+    isUpdate: false,
     classId: docRef.id,
-    message: `Clase creada con éxito para ${params.alumno} el ${params.fecha} a las ${params.hora_inicio}hs ($${amount} ARS).`,
+    message: `Clase creada con éxito para ${studentName} el ${params.fecha} a las ${params.hora_inicio}hs ($${amount} ARS).`,
     class: { id: docRef.id, ...payload },
   };
 }
@@ -400,7 +494,7 @@ export async function dbUpdateClass(params: {
   const existing = classSnap.data() as any;
   const updates: any = { updatedAt: new Date().toISOString() };
 
-  if (params.alumno) updates.studentName = params.alumno;
+  if (params.alumno) updates.studentName = formatStudentName(params.alumno);
   if (params.materia) updates.subject = params.materia;
   if (params.modalidad) updates.modality = params.modalidad;
   if (params.notas) updates.notes = params.notas;

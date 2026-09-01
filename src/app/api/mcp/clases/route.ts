@@ -28,9 +28,22 @@ function getUserId(request: Request, body?: any): string {
 
 function formatStudentName(name: string): string {
   if (!name) return "";
-  const clean = name
-    .trim()
-    .replace(/\s+(presencial|virtual|cet|particular|zoom|meet)$/i, "");
+  let clean = name.trim();
+
+  // 1. Remove parenthesized or bracketed modality tags: (Presencial), (Virtual), (pres), (virt), [Presencial], etc.
+  clean = clean.replace(/[\(\[\{]\s*(presencial|virtual|pres|virt|cet|particular|zoom|meet|online)\s*[\)\]\}]/gi, "");
+
+  // 2. Remove trailing separators with modality: - Presencial, / Virtual, | Presencial
+  clean = clean.replace(/[-–—/|]\s*(presencial|virtual|pres|virt|cet|particular|zoom|meet|online)\s*$/gi, "");
+
+  // 3. Remove standalone trailing words: " presencial", " virtual", " cet"
+  clean = clean.replace(/\s+(presencial|virtual|pres|virt|cet|particular|zoom|meet|online)$/gi, "");
+
+  // 4. Remove leading/trailing non-alphanumeric junk or multiple spaces
+  clean = clean.replace(/^[\s\-–—/|]+|[\s\-–—/|]+$/g, "").replace(/\s{2,}/g, " ").trim();
+
+  if (!clean) return "";
+
   return clean
     .toLowerCase()
     .split(/\s+/)
@@ -107,7 +120,10 @@ export async function POST(request: Request) {
     const rawStudent = body.alumno || body.studentName;
     const studentName = formatStudentName(rawStudent);
     const subject = body.materia || body.subject;
-    const modality = body.modalidad || body.modality || "virtual";
+    let modality = body.modalidad || body.modality;
+    if (!modality) {
+      modality = /presencial|pres/i.test(rawStudent || "") ? "presencial" : "virtual";
+    }
     const type = body.tipo || body.type || "CET";
     const duration = Number(body.duracion_minutos || body.duration || 60);
     const calendarEventId = body.calendarEventId || body.eventId || "";
@@ -216,10 +232,8 @@ export async function POST(request: Request) {
     });
 
     if (match) {
-      // Keep existing clean studentName and notes if already populated
-      if (match.studentName && match.studentName !== match.studentName.toUpperCase()) {
-        payload.studentName = match.studentName;
-      }
+      // Keep existing notes if already populated, and ensure studentName is clean
+      payload.studentName = formatStudentName(match.studentName || studentName);
       if (!notes && match.notes) {
         payload.notes = match.notes;
       }

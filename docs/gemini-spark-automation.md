@@ -38,25 +38,29 @@ Si Gemini Spark llama a tu web por HTTP, el endpoint está listo en:
 
 ---
 
-## 2. Mensaje de Respuesta para Gemini Spark
+## 2. Mensaje de Respuesta / Instrucciones para Gemini Spark
 
-Podés copiar y pegar este texto directamente a Gemini Spark:
+Podés copiar y pegar este texto directamente a Gemini Spark (o pegarlo en el prompt de la tarea programada):
 
 > *"Ya tengo implementado y configurado el servidor MCP de mi aplicación (La Bóveda). Cuenta con las herramientas `crear_clase`, `actualizar_clase`, `cancelar_clase`, `consultar_clases`, `parse_class_email` y `generate_calendar_event` conectadas a la base de datos de clases.*
 >
-> *Por favor, actualiza la instrucción de la tarea programada diaria de las 23:00 ART (Actualizar clases de Turing) con las siguientes directivas:*
+> *Por favor, actualiza la instrucción de la tarea programada diaria con las siguientes directivas estrictas:*
 >
-> 1. **Lectura de correos**: Revisa los correos recibidos en las últimas 24 horas del remitente del *Centro de Estudios Turing* (CET) o correos con asuntos relacionados a asignación, reprogramación o cancelación de clases.
-> 2. **Procesamiento**: Usa la herramienta `parse_class_email` para extraer alumno, materia, fecha, horario, duración y modalidad.
-> 3. **Google Calendar**:
->    - Si es **nueva clase**: Crea el evento en Google Calendar.
->    - Si es **reprogramación**: Actualiza fecha/hora del evento existente.
->    - Si es **cancelación**: Elimina el evento del calendario.
-> 4. **La Bóveda (Tracker de Clases)**:
->    - Si es **nueva clase**: Ejecuta `crear_clase(alumno, materia, fecha, hora_inicio, duracion_minutos, modalidad, tipo="CET")`.
+> 1. **Lectura de correos**: Revisa los correos recibidos del remitente del *Centro de Estudios Turing* (CET) o relacionados a asignación, reprogramación o cancelación de clases.
+> 2. **Procesamiento**: Usa la herramienta `parse_class_email` o analiza el correo para extraer alumno, materia, fecha, horario, duración y modalidad.
+> 3. **Formato del Nombre del Alumno (MUY IMPORTANTE)**:
+>    - El parámetro `alumno` debe ser **ÚNICAMENTE** el nombre y apellido del alumno (ej: `"Manuel"`, `"Thiago"`, `"Lucas Gómez"`).
+>    - **NUNCA** incluyas `(Presencial)`, `(Virtual)`, `(Pres)` o modalidades dentro del nombre del alumno. La modalidad va en el parámetro dedicado `modalidad: "presencial"` o `modalidad: "virtual"`.
+> 4. **La Bóveda (Base de Datos)**:
+>    - Si es **nueva clase**: Ejecuta `crear_clase(alumno, materia, fecha, hora_inicio, duracion_minutos, modalidad, tipo="CET")` y guarda el `classId` devuelto.
 >    - Si es **reprogramación**: Ejecuta `actualizar_clase(id_clase, nueva_fecha, nuevo_horario, duracion_minutos)`.
 >    - Si es **cancelación**: Ejecuta `cancelar_clase(id_clase)`.
-> 5. **Reporte Unificado**: Genera el resumen diario indicando las clases agendadas/modificadas en Google Calendar y en La Bóveda, horas totales proyectadas y honorarios estimados."*
+> 5. **Google Calendar (Sincronización de ID)**:
+>    - Crea o actualiza el evento en Google Calendar.
+>    - En la descripción del evento de Google Calendar, incluye al final una **ÚNICA** línea con el ID de La Bóveda:
+>      `ID_BOVEDA: <classId>`
+>    - Si el evento ya tiene una línea `ID_BOVEDA: ...`, **reemplázala**, nunca agregues una segunda línea con otro ID.
+> 6. **Reporte Unificado**: Genera el resumen diario indicando las clases agendadas/modificadas en Google Calendar y en La Bóveda, horas totales y honorarios estimados."*
 
 ---
 
