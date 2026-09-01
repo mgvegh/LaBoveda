@@ -42,45 +42,39 @@ Si Gemini Spark llama a tu web por HTTP, el endpoint está listo en:
 
 Podés copiar y pegar este texto directamente a Gemini Spark (o pegarlo en el prompt de la tarea programada):
 
-> *"Ya tengo implementado y configurado el servidor MCP de mi aplicación (La Bóveda). Cuenta con las herramientas `crear_clase`, `actualizar_clase`, `cancelar_clase`, `consultar_clases`, `parse_class_email` y `generate_calendar_event` conectadas a la base de datos de clases.*
->
-> *Por favor, actualiza la instrucción de la tarea programada diaria con las siguientes directivas estrictas:*
+> *"Actualizá las directivas de la tarea programada de agendamiento de clases con las siguientes reglas estrictas:*
 >
 > 1. **Lectura de correos**: Revisa los correos recibidos del remitente del *Centro de Estudios Turing* (CET) o relacionados a asignación, reprogramación o cancelación de clases.
-> 2. **Procesamiento**: Usa la herramienta `parse_class_email` o analiza el correo para extraer alumno, materia, fecha, horario, duración y modalidad.
-> 3. **Formato del Nombre del Alumno (MUY IMPORTANTE)**:
->    - El parámetro `alumno` debe ser **ÚNICAMENTE** el nombre y apellido del alumno (ej: `"Manuel"`, `"Thiago"`, `"Lucas Gómez"`).
->    - **NUNCA** incluyas `(Presencial)`, `(Virtual)`, `(Pres)` o modalidades dentro del nombre del alumno. La modalidad va en el parámetro dedicado `modalidad: "presencial"` o `modalidad: "virtual"`.
-> 4. **La Bóveda (Base de Datos)**:
->    - Si es **nueva clase**: Ejecuta `crear_clase(alumno, materia, fecha, hora_inicio, duracion_minutos, modalidad, tipo="CET")` y guarda el `classId` devuelto.
->    - Si es **reprogramación**: Ejecuta `actualizar_clase(id_clase, nueva_fecha, nuevo_horario, duracion_minutos)`.
->    - Si es **cancelación**: Ejecuta `cancelar_clase(id_clase)`.
-> 5. **Google Calendar (Sincronización de ID)**:
->    - Crea o actualiza el evento en Google Calendar.
->    - En la descripción del evento de Google Calendar, incluye al final una **ÚNICA** línea con el ID de La Bóveda:
->      `ID_BOVEDA: <classId>`
->    - Si el evento ya tiene una línea `ID_BOVEDA: ...`, **reemplázala**, nunca agregues una segunda línea con otro ID.
-> 6. **Reporte Unificado**: Genera el resumen diario indicando las clases agendadas/modificadas en Google Calendar y en La Bóveda, horas totales y honorarios estimados."*
+> 2. **Extracción de Datos**: Extraé alumno, materia, fecha, horario, duración y modalidad.
+> 3. **Formato del Evento en Google Calendar (MUY IMPORTANTE)**:
+>    - **Título del Evento**: Debe ser **estrictamente** `[CET] {Materia} - {Nombre Alumno}` (por ejemplo: `[CET] Matemática - Manuel`, `[CET] Análisis Matemático - Lucas Gómez`).
+>    - **PROHIBIDO** poner `(Presencial)`, `(Virtual)`, `(Pres)` ni modalidades en el título del evento o al lado del nombre del alumno. El título debe quedar 100% limpio.
+>    - **Detalles / Descripción**: La modalidad se indica **exclusivamente** en el cuerpo/descripción del evento:
+>      ```text
+>      Clase de {Materia} con el alumno/a {Nombre Alumno}.
+>      Modalidad: {Presencial/Virtual}
+>      Tipo: CET
+>      Duración: {minutos} minutos
+>      ```
+>    - **Ubicación**: Poné `Centro de Estudios Turing (CET)` si es presencial, o `Google Meet / Virtual` si es virtual.
+> 4. **Reprogramación y Cancelación**:
+>    - Si es **reprogramación**: Modifica la fecha/hora del evento existente manteniendo el mismo título limpio.
+>    - Si es **cancelación**: Elimina el evento del calendario."*
 
 ---
 
-## 3. Ejemplo de Ejecución Unificada de la Tarea
+## 3. Ejemplo de Ejecución de la Tarea
 
-Cuando Gemini Spark se ejecute a las 23:00 hs:
+Cuando Gemini Spark se ejecute:
 1. Detecta el correo: *"Se asigna clase de Análisis Matemático para el alumno Lucas Gómez el 25/08 a las 18:00hs (2 horas) presencial"*.
-2. Ejecuta `parse_class_email`:
-   ```json
-   {
-     "action": "new",
-     "studentName": "Lucas Gómez",
-     "subject": "Análisis Matemático",
-     "date": "2026-08-25",
-     "startTime": "18:00",
-     "durationMinutes": 120,
-     "modality": "presencial",
-     "type": "CET"
-   }
-   ```
-3. Crea el evento en Google Calendar: `[CET] Análisis Matemático - Lucas Gómez (Presencial)`.
-4. Ejecuta `crear_clase(...)` en La Bóveda, guardando la clase y calculando automáticamente la tarifa presencial.
-5. Te envía el reporte nocturno consolidado.
+2. Crea el evento en Google Calendar:
+   - **Título**: `[CET] Análisis Matemático - Lucas Gómez` *(¡limpio, sin sufijos!)*
+   - **Descripción**: 
+     ```text
+     Clase de Análisis Matemático con el alumno/a Lucas Gómez.
+     Modalidad: Presencial
+     Tipo: CET
+     Duración: 120 minutos
+     ```
+   - **Ubicación**: `Centro de Estudios Turing (CET)`
+3. Luego, tu Google Apps Script lee el evento con el nombre limpio `Lucas Gómez` y lo guarda en La Bóveda sin ensuciar la base de datos.
