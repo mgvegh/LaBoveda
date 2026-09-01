@@ -1,17 +1,15 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Calculator, X, Delete, Copy, Check, ArrowDownToLine } from "lucide-react";
+import { Calculator, X, Delete, Copy, Check } from "lucide-react";
 import clsx from "clsx";
 
 interface FloatingCalculatorProps {
-  onApplyValue?: (value: number) => void;
   isOpen?: boolean;
   onToggle?: (open: boolean) => void;
 }
 
 export default function FloatingCalculator({
-  onApplyValue,
   isOpen: controlledOpen,
   onToggle: controlledToggle,
 }: FloatingCalculatorProps) {
@@ -176,14 +174,6 @@ export default function FloatingCalculator({
     }
   };
 
-  const handleApplyToIncome = () => {
-    const num = parseFloat(display);
-    if (!isNaN(num) && onApplyValue) {
-      onApplyValue(Math.max(0, Math.round(num)));
-      setOpen(false);
-    }
-  };
-
   // Keyboard shortcut support
   useEffect(() => {
     if (!isOpen) return;
@@ -278,11 +268,11 @@ export default function FloatingCalculator({
           </div>
 
           {/* Screen / Display */}
-          <div className="p-4 bg-black/40 border-b border-white/5 flex flex-col justify-end min-h-[90px]">
+          <div className="p-4 bg-black/40 border-b border-white/5 flex flex-col justify-end min-h-[90px] select-none">
             <div className="text-xs text-gray-400 font-mono text-right min-h-[16px] overflow-hidden truncate">
               {equation || "\u00A0"}
             </div>
-            <div className="text-3xl font-mono font-extrabold text-white text-right tracking-tight overflow-x-auto whitespace-nowrap scrollbar-none mt-1">
+            <div className="text-3xl font-mono font-extrabold text-white text-right tracking-tight overflow-hidden whitespace-nowrap mt-1">
               {formatDisplay(display)}
             </div>
           </div>
@@ -452,20 +442,6 @@ export default function FloatingCalculator({
               =
             </button>
           </div>
-
-          {/* Quick Action: Apply to Income */}
-          {onApplyValue && (
-            <div className="p-3 pt-0 bg-black/20 border-t border-white/5">
-              <button
-                type="button"
-                onClick={handleApplyToIncome}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-bold active:scale-95 transition-all cursor-pointer"
-              >
-                <ArrowDownToLine className="w-3.5 h-3.5" />
-                <span>Aplicar a &ldquo;Ingreso del Mes&rdquo;</span>
-              </button>
-            </div>
-          )}
         </div>
       )}
     </>

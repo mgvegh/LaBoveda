@@ -555,9 +555,21 @@ export default function IncomeDistributor() {
               Ir a Mes Actual
             </button>
           )}
-          <span className="text-xs text-gray-400">
-            {activeCompletedIds.length} salidas pagadas este mes
-          </span>
+          {(() => {
+            const totalSalidas = config.expenses.length + (result?.allocations ? result.allocations.length : config.categories.length);
+            const pendingSalidas = Math.max(0, totalSalidas - activeCompletedIds.length);
+            return (
+              <span className="text-xs text-gray-400 bg-white/5 px-2.5 py-1 rounded-lg border border-white/5">
+                {pendingSalidas === 0 && totalSalidas > 0 ? (
+                  <span className="text-emerald-400 font-medium">✓ Salidas al día</span>
+                ) : (
+                  <span>
+                    <strong className="text-amber-400 font-bold">{pendingSalidas}</strong> {pendingSalidas === 1 ? "salida pendiente" : "salidas pendientes"}
+                  </span>
+                )}
+              </span>
+            );
+          })()}
         </div>
       </div>
 
@@ -1410,7 +1422,6 @@ export default function IncomeDistributor() {
       <FloatingCalculator
         isOpen={isCalculatorOpen}
         onToggle={setIsCalculatorOpen}
-        onApplyValue={(val) => handleIncomeChange(String(val))}
       />
     </div>
   );
