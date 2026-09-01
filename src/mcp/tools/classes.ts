@@ -81,8 +81,16 @@ export function parseClassEmail(emailContent: {
     fullText.match(/\b(?:con|para)\s+(?:el\s+alumno|la\s+alumna)?\s*([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)?)/i);
 
   if (studentMatch && studentMatch[1]) {
-    const candidate = studentMatch[1].trim();
-    if (!["Nueva", "Clase", "CET", "Instituto", "Turing", "Estimado", "Profesor"].includes(candidate)) {
+    let candidate = studentMatch[1]
+      .trim()
+      .replace(/\s+(presencial|virtual|cet|particular|zoom|meet)$/i, "")
+      .trim();
+    if (
+      candidate &&
+      !["Nueva", "Clase", "CET", "Instituto", "Turing", "Estimado", "Profesor", "Presencial", "Virtual"].includes(
+        candidate
+      )
+    ) {
       studentName = candidate;
     }
   }

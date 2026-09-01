@@ -28,8 +28,10 @@ function getUserId(request: Request, body?: any): string {
 
 function formatStudentName(name: string): string {
   if (!name) return "";
-  return name
+  const clean = name
     .trim()
+    .replace(/\s+(presencial|virtual|cet|particular|zoom|meet)$/i, "");
+  return clean
     .toLowerCase()
     .split(/\s+/)
     .map(w => w.charAt(0).toUpperCase() + w.slice(1))

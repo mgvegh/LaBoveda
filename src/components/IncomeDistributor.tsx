@@ -1,10 +1,11 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Trash2, RefreshCw, DollarSign, TrendingUp, Landmark, ArrowRightLeft, ListChecks, Coins, Users, GripVertical, ChevronUp, ChevronDown, Save, Check, AlertCircle } from "lucide-react";
+import { Plus, Trash2, RefreshCw, DollarSign, TrendingUp, Landmark, ArrowRightLeft, ListChecks, Coins, Users, GripVertical, ChevronUp, ChevronDown, Save, Check, AlertCircle, Calculator } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/components/AuthProvider";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import FloatingCalculator from "@/components/FloatingCalculator";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 type CategoryType = "fixed_usd" | "fixed_ars" | "percentage";
@@ -74,8 +75,11 @@ export default function IncomeDistributor() {
 
   const [draggedExpenseIdx, setDraggedExpenseIdx] = useState<number | null>(null);
   const [dragOverExpenseIdx, setDragOverExpenseIdx] = useState<number | null>(null);
+  const [canDragExpenseIdx, setCanDragExpenseIdx] = useState<number | null>(null);
   const [draggedCategoryIdx, setDraggedCategoryIdx] = useState<number | null>(null);
   const [dragOverCategoryIdx, setDragOverCategoryIdx] = useState<number | null>(null);
+  const [canDragCategoryIdx, setCanDragCategoryIdx] = useState<number | null>(null);
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   const { user } = useAuth();
@@ -456,6 +460,16 @@ export default function IncomeDistributor() {
               )}
             </button>
 
+            <button
+              type="button"
+              onClick={() => setIsCalculatorOpen((prev) => !prev)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 text-violet-300 border border-white/10 hover:border-violet-500/30 transition-all shadow-md active:scale-95 cursor-pointer h-fit"
+              title="Abrir Calculadora"
+            >
+              <Calculator className="w-3.5 h-3.5 text-violet-400" />
+              <span>Calculadora</span>
+            </button>
+
             <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl px-3 py-2 h-fit">
               <span className="text-xs text-gray-400 uppercase tracking-wide">Valor USD</span>
               <div className="flex items-center gap-1">
@@ -660,20 +674,25 @@ export default function IncomeDistributor() {
               return (
                 <div
                   key={e.id}
-                  draggable
+                  draggable={canDragExpenseIdx === idx}
                   onDragStart={(ev) => {
-                    const target = ev.target as HTMLElement;
-                    if (target.closest("input, select, button")) {
-                      ev.preventDefault();
-                      return;
-                    }
                     setDraggedExpenseIdx(idx);
                     ev.dataTransfer.effectAllowed = "move";
                   }}
                   onDragOver={(ev) => { ev.preventDefault(); ev.dataTransfer.dropEffect = "move"; if (dragOverExpenseIdx !== idx) setDragOverExpenseIdx(idx); }}
                   onDragLeave={() => { if (dragOverExpenseIdx === idx) setDragOverExpenseIdx(null); }}
-                  onDrop={(ev) => { ev.preventDefault(); if (draggedExpenseIdx !== null) reorderExpenses(draggedExpenseIdx, idx); setDraggedExpenseIdx(null); setDragOverExpenseIdx(null); }}
-                  onDragEnd={() => { setDraggedExpenseIdx(null); setDragOverExpenseIdx(null); }}
+                  onDrop={(ev) => {
+                    ev.preventDefault();
+                    if (draggedExpenseIdx !== null) reorderExpenses(draggedExpenseIdx, idx);
+                    setDraggedExpenseIdx(null);
+                    setDragOverExpenseIdx(null);
+                    setCanDragExpenseIdx(null);
+                  }}
+                  onDragEnd={() => {
+                    setDraggedExpenseIdx(null);
+                    setDragOverExpenseIdx(null);
+                    setCanDragExpenseIdx(null);
+                  }}
                   className={`flex flex-col sm:flex-row sm:items-center gap-3 text-sm bg-black/20 p-3 rounded-xl border transition-all duration-200 group ${
                     isDragging ? "opacity-40 border-dashed border-red-500/50 scale-[0.98]" :
                     isOver ? "border-red-500 bg-red-500/10 shadow-lg shadow-red-500/20 ring-1 ring-red-500/50" :
@@ -682,7 +701,14 @@ export default function IncomeDistributor() {
                 >
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <div className="flex items-center gap-0.5 shrink-0">
-                      <div className="cursor-grab active:cursor-grabbing text-gray-500 hover:text-white transition-colors p-1" title="Arrastrar para reordenar">
+                      <div
+                        className="cursor-grab active:cursor-grabbing text-gray-500 hover:text-white transition-colors p-1 select-none"
+                        title="Arrastrar para reordenar"
+                        onMouseDown={() => setCanDragExpenseIdx(idx)}
+                        onMouseUp={() => setCanDragExpenseIdx(null)}
+                        onTouchStart={() => setCanDragExpenseIdx(idx)}
+                        onTouchEnd={() => setCanDragExpenseIdx(null)}
+                      >
                         <GripVertical className="w-4 h-4" />
                       </div>
                       <div className="flex flex-col opacity-40 group-hover:opacity-100 transition-opacity">
@@ -713,9 +739,6 @@ export default function IncomeDistributor() {
                       <input
                         type="text"
                         value={e.name}
-                        draggable={false}
-                        onMouseDown={ev => ev.stopPropagation()}
-                        onDragStart={ev => { ev.preventDefault(); ev.stopPropagation(); }}
                         onChange={ev => updateExpense(e.id, { name: ev.target.value })}
                         className="bg-transparent text-gray-200 font-bold focus:outline-none focus:border-b focus:border-red-500/50 w-full"
                       />
@@ -728,16 +751,11 @@ export default function IncomeDistributor() {
                       <input
                         type="number"
                         value={e.amount || ""}
-                        draggable={false}
-                        onMouseDown={ev => ev.stopPropagation()}
-                        onDragStart={ev => { ev.preventDefault(); ev.stopPropagation(); }}
                         onChange={ev => updateExpense(e.id, { amount: parseFloat(ev.target.value) || 0 })}
                         className="w-full bg-transparent py-1.5 text-red-400 text-right font-mono font-bold text-xs focus:outline-none select-text cursor-text"
                       />
                       <select
                         value={e.currency}
-                        draggable={false}
-                        onMouseDown={ev => ev.stopPropagation()}
                         onChange={ev => updateExpense(e.id, { currency: ev.target.value as "ARS"|"USD" })}
                         className="ml-1 bg-transparent text-red-400 text-xs font-mono font-bold focus:outline-none cursor-pointer"
                       >
@@ -747,8 +765,6 @@ export default function IncomeDistributor() {
                     </div>
                     <button 
                       onClick={() => removeExpense(e.id)} 
-                      draggable={false}
-                      onMouseDown={ev => ev.stopPropagation()}
                       className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded-lg bg-white/5 sm:bg-transparent sm:p-1 sm:opacity-0 group-hover:opacity-100 shrink-0" 
                       title="Eliminar gasto"
                     >
@@ -766,20 +782,25 @@ export default function IncomeDistributor() {
               return (
                 <div
                   key={c.id}
-                  draggable
+                  draggable={canDragCategoryIdx === idx}
                   onDragStart={(ev) => {
-                    const target = ev.target as HTMLElement;
-                    if (target.closest("input, select, button")) {
-                      ev.preventDefault();
-                      return;
-                    }
                     setDraggedCategoryIdx(idx);
                     ev.dataTransfer.effectAllowed = "move";
                   }}
                   onDragOver={(ev) => { ev.preventDefault(); ev.dataTransfer.dropEffect = "move"; if (dragOverCategoryIdx !== idx) setDragOverCategoryIdx(idx); }}
                   onDragLeave={() => { if (dragOverCategoryIdx === idx) setDragOverCategoryIdx(null); }}
-                  onDrop={(ev) => { ev.preventDefault(); if (draggedCategoryIdx !== null) reorderCategories(draggedCategoryIdx, idx); setDraggedCategoryIdx(null); setDragOverCategoryIdx(null); }}
-                  onDragEnd={() => { setDraggedCategoryIdx(null); setDragOverCategoryIdx(null); }}
+                  onDrop={(ev) => {
+                    ev.preventDefault();
+                    if (draggedCategoryIdx !== null) reorderCategories(draggedCategoryIdx, idx);
+                    setDraggedCategoryIdx(null);
+                    setDragOverCategoryIdx(null);
+                    setCanDragCategoryIdx(null);
+                  }}
+                  onDragEnd={() => {
+                    setDraggedCategoryIdx(null);
+                    setDragOverCategoryIdx(null);
+                    setCanDragCategoryIdx(null);
+                  }}
                   className={`flex flex-col sm:flex-row sm:items-center gap-3 text-sm bg-black/20 p-3 rounded-xl border transition-all duration-200 group ${
                     isDragging ? "opacity-40 border-dashed border-violet-500/50 scale-[0.98]" :
                     isOver ? "border-violet-500 bg-violet-500/10 shadow-lg shadow-violet-500/20 ring-1 ring-violet-500/50" :
@@ -788,7 +809,14 @@ export default function IncomeDistributor() {
                 >
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <div className="flex items-center gap-0.5 shrink-0">
-                      <div className="cursor-grab active:cursor-grabbing text-gray-500 hover:text-white transition-colors p-1" title="Arrastrar para reordenar">
+                      <div
+                        className="cursor-grab active:cursor-grabbing text-gray-500 hover:text-white transition-colors p-1 select-none"
+                        title="Arrastrar para reordenar"
+                        onMouseDown={() => setCanDragCategoryIdx(idx)}
+                        onMouseUp={() => setCanDragCategoryIdx(null)}
+                        onTouchStart={() => setCanDragCategoryIdx(idx)}
+                        onTouchEnd={() => setCanDragCategoryIdx(null)}
+                      >
                         <GripVertical className="w-4 h-4" />
                       </div>
                       <div className="flex flex-col opacity-40 group-hover:opacity-100 transition-opacity">
@@ -819,16 +847,11 @@ export default function IncomeDistributor() {
                       <input
                         type="text"
                         value={c.name}
-                        draggable={false}
-                        onMouseDown={ev => ev.stopPropagation()}
-                        onDragStart={ev => { ev.preventDefault(); ev.stopPropagation(); }}
                         onChange={e => updateCategory(c.id, { name: e.target.value })}
                         className="bg-transparent text-gray-200 font-bold focus:outline-none focus:border-b focus:border-violet-500/50 w-full"
                       />
                       <select
                         value={c.type}
-                        draggable={false}
-                        onMouseDown={ev => ev.stopPropagation()}
                         onChange={e => updateCategory(c.id, { type: e.target.value as CategoryType })}
                         className="bg-transparent text-[10px] text-gray-500 uppercase focus:outline-none w-fit cursor-pointer"
                       >
@@ -843,9 +866,6 @@ export default function IncomeDistributor() {
                       <input
                         type="number"
                         value={c.value || ""}
-                        draggable={false}
-                        onMouseDown={ev => ev.stopPropagation()}
-                        onDragStart={ev => { ev.preventDefault(); ev.stopPropagation(); }}
                         onChange={e => updateCategory(c.id, { value: parseFloat(e.target.value) || 0 })}
                         className="w-full bg-transparent text-white text-center font-bold text-xs focus:outline-none focus:border-violet-500 select-text cursor-text"
                       />
@@ -855,8 +875,6 @@ export default function IncomeDistributor() {
                     </div>
                     <button 
                       onClick={() => removeCategory(c.id)} 
-                      draggable={false}
-                      onMouseDown={ev => ev.stopPropagation()}
                       className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded-lg bg-white/5 sm:bg-transparent sm:p-1 sm:opacity-0 group-hover:opacity-100 shrink-0" 
                       title="Eliminar salida"
                     >
@@ -1102,6 +1120,13 @@ export default function IncomeDistributor() {
           </div>
         </div>
       </div>
+
+      {/* Floating Calculator */}
+      <FloatingCalculator
+        isOpen={isCalculatorOpen}
+        onToggle={setIsCalculatorOpen}
+        onApplyValue={(val) => setTotalIncome(String(val))}
+      />
     </div>
   );
 }

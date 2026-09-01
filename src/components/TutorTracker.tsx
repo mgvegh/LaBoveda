@@ -36,9 +36,16 @@ type TutorClass = {
 type TutorSettings = {
   cetRatePresencial: number;
   cetRateVirtual: number;
+  hiddenStudents?: string[];
+  hiddenSubjects?: string[];
 };
 
-const DEFAULT_SETTINGS: TutorSettings = { cetRatePresencial: 0, cetRateVirtual: 0 };
+const DEFAULT_SETTINGS: TutorSettings = {
+  cetRatePresencial: 0,
+  cetRateVirtual: 0,
+  hiddenStudents: [],
+  hiddenSubjects: [],
+};
 
 const DURATION_OPTIONS = [
   { label: "1 hora",     value: 60  },
@@ -81,8 +88,10 @@ function addMinutesToTime(time: string, minutes: number): string {
 
 export function formatStudentName(name: string): string {
   if (!name) return "";
-  return name
+  const clean = name
     .trim()
+    .replace(/\s+(presencial|virtual|cet|particular|zoom|meet)$/i, "");
+  return clean
     .toLowerCase()
     .split(/\s+/)
     .map(w => w.charAt(0).toUpperCase() + w.slice(1))
@@ -155,6 +164,7 @@ function AutocompleteCombobox({
   options,
   placeholder,
   icon: Icon,
+  onDeleteOption,
 }: {
   id: string;
   value: string;
@@ -162,6 +172,7 @@ function AutocompleteCombobox({
   options: string[];
   placeholder: string;
   icon: React.ElementType;
+  onDeleteOption?: (option: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -187,8 +198,15 @@ function AutocompleteCombobox({
       <input
         ref={inputRef}
         id={id}
+        name={`field_custom_${id}`}
         required
         type="text"
+        autoComplete="off"
+        autoCapitalize="words"
+        autoCorrect="off"
+        spellCheck={false}
+        data-lpignore="true"
+        data-form-type="other"
         value={value}
         onChange={e => { onChange(e.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}
@@ -199,7 +217,7 @@ function AutocompleteCombobox({
         type="button"
         tabIndex={-1}
         onClick={() => { setOpen(o => !o); inputRef.current?.focus(); }}
-        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
       >
         <ChevronDown className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
@@ -213,39 +231,75 @@ function AutocompleteCombobox({
             <button
               type="button"
               onMouseDown={e => { e.preventDefault(); onChange(value.trim()); setOpen(false); }}
-              className="w-full text-left px-4 py-2.5 text-sm text-emerald-400 hover:bg-emerald-500/10 border-b border-white/5 font-medium transition-colors"
+              className="w-full text-left px-4 py-2.5 text-sm text-emerald-400 hover:bg-emerald-500/10 border-b border-white/5 font-medium transition-colors cursor-pointer"
             >
               + Agregar &ldquo;{value.trim()}&rdquo;
             </button>
           )}
           {filtered.length > 0 ? (
-            <div className="max-h-48 overflow-y-auto">
+            <div className="max-h-48 overflow-y-auto divide-y divide-white/5">
               {filtered.map(name => (
-                <button
+                <div
                   key={name}
-                  type="button"
-                  onMouseDown={e => { e.preventDefault(); onChange(name); setOpen(false); }}
-                  className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-white/8 ${
-                    name === value ? "text-emerald-400 bg-emerald-500/10" : "text-gray-200"
+                  className={`flex items-center justify-between group px-3 py-1.5 transition-colors hover:bg-white/10 ${
+                    name === value ? "text-emerald-400 bg-emerald-500/10 font-medium" : "text-gray-200"
                   }`}
                 >
-                  {name}
-                </button>
+                  <button
+                    type="button"
+                    onMouseDown={e => { e.preventDefault(); onChange(name); setOpen(false); }}
+                    className="flex-1 text-left py-1 text-sm truncate cursor-pointer"
+                  >
+                    {name}
+                  </button>
+                  {onDeleteOption && (
+                    <button
+                      type="button"
+                      title={`Eliminar "${name}" de las sugerencias`}
+                      onMouseDown={e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onDeleteOption(name);
+                      }}
+                      className="opacity-40 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/15 text-gray-400 p-1 rounded-lg transition-all shrink-0 ml-2 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           ) : options.length > 0 && !value ? (
-            <div className="max-h-48 overflow-y-auto">
+            <div className="max-h-48 overflow-y-auto divide-y divide-white/5">
               {options.map(name => (
-                <button
+                <div
                   key={name}
-                  type="button"
-                  onMouseDown={e => { e.preventDefault(); onChange(name); setOpen(false); }}
-                  className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-white/8 ${
-                    name === value ? "text-emerald-400 bg-emerald-500/10" : "text-gray-200"
+                  className={`flex items-center justify-between group px-3 py-1.5 transition-colors hover:bg-white/10 ${
+                    name === value ? "text-emerald-400 bg-emerald-500/10 font-medium" : "text-gray-200"
                   }`}
                 >
-                  {name}
-                </button>
+                  <button
+                    type="button"
+                    onMouseDown={e => { e.preventDefault(); onChange(name); setOpen(false); }}
+                    className="flex-1 text-left py-1 text-sm truncate cursor-pointer"
+                  >
+                    {name}
+                  </button>
+                  {onDeleteOption && (
+                    <button
+                      type="button"
+                      title={`Eliminar "${name}" de las sugerencias`}
+                      onMouseDown={e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onDeleteOption(name);
+                      }}
+                      className="opacity-40 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/15 text-gray-400 p-1 rounded-lg transition-all shrink-0 ml-2 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           ) : value && filtered.length === 0 && options.some(o => o.toLowerCase() === value.toLowerCase()) ? null : (
@@ -312,10 +366,45 @@ export default function TutorTracker() {
 
   const uniqueStudents = Array.from(
     new Set(classes.map(c => formatStudentName(c.studentName)).filter(Boolean))
-  ).sort((a, b) => a.localeCompare(b, "es"));
-
-  const uniqueSubjects = Array.from(new Set(classes.map(c => c.subject)))
+  )
+    .filter(name => !(settings.hiddenStudents || []).includes(name))
     .sort((a, b) => a.localeCompare(b, "es"));
+
+  const uniqueSubjects = Array.from(new Set(classes.map(c => c.subject).filter(Boolean)))
+    .filter(subj => !(settings.hiddenSubjects || []).includes(subj))
+    .sort((a, b) => a.localeCompare(b, "es"));
+
+  const handleDeleteStudentSuggestion = async (name: string) => {
+    const formatted = formatStudentName(name);
+    const updatedHidden = Array.from(new Set([...(settings.hiddenStudents || []), formatted]));
+    const updatedSettings = { ...settings, hiddenStudents: updatedHidden };
+    setSettings(updatedSettings);
+
+    const ref = settingsDocPath();
+    if (ref && user) {
+      try {
+        await setDoc(ref, updatedSettings, { merge: true });
+      } catch (e) {
+        console.error("Error saving hidden student suggestion:", e);
+      }
+    }
+  };
+
+  const handleDeleteSubjectSuggestion = async (subj: string) => {
+    const clean = subj.trim();
+    const updatedHidden = Array.from(new Set([...(settings.hiddenSubjects || []), clean]));
+    const updatedSettings = { ...settings, hiddenSubjects: updatedHidden };
+    setSettings(updatedSettings);
+
+    const ref = settingsDocPath();
+    if (ref && user) {
+      try {
+        await setDoc(ref, updatedSettings, { merge: true });
+      } catch (e) {
+        console.error("Error saving hidden subject suggestion:", e);
+      }
+    }
+  };
 
   const formEndTime = formStartTime ? addMinutesToTime(formStartTime, formDuration) : "";
 
@@ -842,6 +931,7 @@ export default function TutorTracker() {
               options={uniqueStudents}
               placeholder="Nombre del alumno"
               icon={User}
+              onDeleteOption={handleDeleteStudentSuggestion}
             />
           </div>
 
@@ -855,6 +945,7 @@ export default function TutorTracker() {
               options={uniqueSubjects}
               placeholder="Ej: Matemáticas, Física..."
               icon={BookOpen}
+              onDeleteOption={handleDeleteSubjectSuggestion}
             />
           </div>
 
