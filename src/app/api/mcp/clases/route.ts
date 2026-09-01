@@ -192,40 +192,28 @@ export async function POST(request: Request) {
     const existingClasses = await restGetClasses(userId);
     const targetDate = dateTime.slice(0, 10);
     const targetTime = dateTime.slice(11, 16);
+    const explicitId = body.id_clase || body.id || body.classId || body.bovedaId;
 
     const match = existingClasses.find((c: any) => {
+      // 1. Explicit Boveda ID match
+      if (explicitId && c.id === explicitId) return true;
+
+      // 2. Calendar Event ID match
+      if (calendarEventId && c.calendarEventId === calendarEventId) return true;
+
       const existingDate = (c.dateTime || "").slice(0, 10);
       const existingTime = (c.dateTime || "").slice(11, 16);
 
-      if (calendarEventId && c.calendarEventId === calendarEventId) {
-        // If exact same date, it's the exact same class instance
-        if (existingDate === targetDate) return true;
-        // If within 4 days (e.g. rescheduled from Friday to Saturday) and same student, it's the same class moved
-        if (isSimilarStudent(c.studentName, studentName)) {
-          const d1 = new Date(existingDate).getTime();
-          const d2 = new Date(targetDate).getTime();
-          const diffDays = Math.abs(d1 - d2) / (1000 * 60 * 60 * 24);
-          if (!isNaN(diffDays) && diffDays <= 4) return true;
+      // 3. Same date + same/similar student match
+      if (existingDate === targetDate && isSimilarStudent(c.studentName, studentName)) {
+        if (existingTime === targetTime) return true;
+        const [eh, em] = existingTime.split(":").map(Number);
+        const [th, tm] = targetTime.split(":").map(Number);
+        if (!isNaN(eh) && !isNaN(th) && Math.abs((eh * 60 + em) - (th * 60 + tm)) <= 60) {
+          return true;
         }
-        return false;
-      }
-
-      // Same date check
-      if (existingDate === targetDate) {
-        // 1. Same or similar student name
-        if (isSimilarStudent(c.studentName, studentName)) {
-          // If exact time matches or within 45 mins, it's the exact same class
-          if (existingTime === targetTime) return true;
-          const [eh, em] = existingTime.split(":").map(Number);
-          const [th, tm] = targetTime.split(":").map(Number);
-          if (!isNaN(eh) && !isNaN(th)) {
-            const diffMins = Math.abs((eh * 60 + em) - (th * 60 + tm));
-            if (diffMins <= 45) return true;
-          }
-          // If no time is specified or either is 00:00, match by date and student
-          if (!existingTime || !targetTime || existingTime === "00:00" || targetTime === "00:00") {
-            return true;
-          }
+        if (!existingTime || !targetTime || existingTime === "00:00" || targetTime === "00:00") {
+          return true;
         }
       }
       return false;
@@ -233,7 +221,7 @@ export async function POST(request: Request) {
 
     if (match) {
       // Keep existing notes if already populated, and ensure studentName is clean
-      payload.studentName = formatStudentName(match.studentName || studentName);
+      payload.studentName = formatStudentName(studentName || match.studentName);
       if (!notes && match.notes) {
         payload.notes = match.notes;
       }
@@ -242,7 +230,7 @@ export async function POST(request: Request) {
         success: true,
         isUpdate: true,
         classId: match.id,
-        message: `Clase existente detectada y actualizada con tarifa oficial para ${payload.studentName}`,
+        message: `Clase existente detectada y actualizada para ${payload.studentName}`,
         class: { id: match.id, ...payload },
       });
     }
@@ -270,11 +258,23 @@ export async function PUT(request: Request) {
   try {
     const body = await request.json();
     const userId = getUserId(request, body);
-    let targetId = body.id_clase || body.id;
+    let targetId = body.id_clase || body.id || body.classId || body.bovedaId;
+
+    const existingClasses = await restGetClasses(userId);
 
     if (!targetId && body.calendarEventId) {
-      const existingClasses = await restGetClasses(userId);
       const match = existingClasses.find((c: any) => c.calendarEventId === body.calendarEventId);
+      if (match) targetId = match.id;
+    }
+
+    // Fallback: match by date and student name if no targetId
+    if (!targetId && (body.dateTime || (body.fecha && body.hora_inicio))) {
+      const dt = body.dateTime || `${body.fecha}T${body.hora_inicio}`;
+      const tDate = dt.slice(0, 10);
+      const sName = formatStudentName(body.alumno || body.studentName);
+      const match = existingClasses.find((c: any) => 
+        (c.dateTime || "").slice(0, 10) === tDate && isSimilarStudent(c.studentName, sName)
+      );
       if (match) targetId = match.id;
     }
 
@@ -284,21 +284,13 @@ export async function PUT(request: Request) {
 
     const updates: any = { updatedAt: new Date().toISOString() };
 
-    if (body.alumno || body.studentName) updates.studentName = body.alumno || body.studentName;
+    if (body.alumno || body.studentName) {
+      updates.studentName = formatStudentName(body.alumno || body.studentName);
+    }
     if (body.materia || body.subject) updates.subject = body.materia || body.subject;
     if (body.modalidad || body.modality) updates.modality = body.modalidad || body.modality;
+    if (body.tipo || body.type) updates.type = body.tipo || body.type;
     if (body.notas !== undefined || body.notes !== undefined) updates.notes = body.notas ?? body.notes;
-    if (body.duracion_minutos || body.duration) {
-      updates.duration = Number(body.duracion_minutos || body.duration);
-      if (!body.amount && !body.tarifa_ars) {
-        const existingClasses = await restGetClasses(userId);
-        const existing = existingClasses.find((c: any) => c.id === targetId);
-        if (existing && existing.amount && existing.duration) {
-          const rate = (existing.amount * 60) / existing.duration;
-          updates.amount = Math.round((rate * updates.duration) / 60);
-        }
-      }
-    }
     if (body.calendarEventId) updates.calendarEventId = body.calendarEventId;
 
     if (body.dateTime) {
@@ -306,6 +298,25 @@ export async function PUT(request: Request) {
     } else if (body.fecha && body.hora_inicio) {
       updates.dateTime = `${body.fecha}T${body.hora_inicio}`;
     }
+
+    const existing = existingClasses.find((c: any) => c.id === targetId);
+    const modality = updates.modality || existing?.modality || "virtual";
+    const duration = Number(body.duracion_minutos || body.duration || existing?.duration || 60);
+    updates.duration = duration;
+
+    // Recalculate amount
+    let rate = Number(body.tarifa_ars || body.rate || 0);
+    if (!rate) {
+      const userSettings = await restGetTutorSettings(userId);
+      rate = modality === "presencial" ? userSettings.cetRatePresencial : userSettings.cetRateVirtual;
+      if (!rate && existing && existing.amount && existing.duration) {
+        rate = Math.round((existing.amount * 60) / existing.duration);
+      }
+      if (!rate) {
+        rate = modality === "presencial" ? 12000 : 10000;
+      }
+    }
+    updates.amount = Math.round((rate * duration) / 60);
 
     await restUpdateClass(userId, targetId, updates);
 
