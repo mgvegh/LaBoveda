@@ -587,7 +587,7 @@ export default function TutorTracker() {
 
     const daysPerRepeat = formFrequency === "weekly" ? 7 : 14;
 
-    const basePayload: Omit<TutorClass, "id" | "dateTime"> = {
+    const basePayload: Omit<TutorClass, "id" | "dateTime"> & { updatedAt: string } = {
       studentName: formStudentName.trim(),
       subject: formSubject.trim(),
       modality: formModality,
@@ -595,6 +595,7 @@ export default function TutorTracker() {
       duration: formDuration,
       amount: (Number(formAmount) || 0) * (formDuration / 60),
       notes: formNotes.trim(),
+      updatedAt: new Date().toISOString(),
     };
 
     try {
