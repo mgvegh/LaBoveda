@@ -16,8 +16,8 @@ export async function GET() {
     const html = await res.text();
     
     // Buscar la sección de "Compras a" y el valor que le sigue
-    const comprasMatch = html.match(/Compras a<\/h3>.*?<div class="text-3xl[^>]*>([\d\.,]+)<\/div>/);
-    const vendesMatch = html.match(/Vendes a<\/h3>.*?<div class="text-3xl[^>]*>([\d\.,]+)<\/div>/);
+    const comprasMatch = html.match(/Compras a<\/h[23]>.*?<div class="text-3xl[^>]*>([\d\.,]+)<\/div>/);
+    const vendesMatch = html.match(/Vendes a<\/h[23]>.*?<div class="text-3xl[^>]*>([\d\.,]+)<\/div>/);
 
     if (comprasMatch && comprasMatch[1]) {
       const compraStr = comprasMatch[1].replace(/\./g, '').replace(/,/g, '.');

@@ -142,8 +142,8 @@ export async function getDollarRates(): Promise<DollarRates> {
     });
     if (ualaRes.ok) {
       const html = await ualaRes.text();
-      const comprasMatch = html.match(/Compras a<\/h3>.*?<div class="text-3xl[^>]*>([\d\.,]+)<\/div>/);
-      const vendesMatch = html.match(/Vendes a<\/h3>.*?<div class="text-3xl[^>]*>([\d\.,]+)<\/div>/);
+      const comprasMatch = html.match(/Compras a<\/h[23]>.*?<div class="text-3xl[^>]*>([\d\.,]+)<\/div>/);
+      const vendesMatch = html.match(/Vendes a<\/h[23]>.*?<div class="text-3xl[^>]*>([\d\.,]+)<\/div>/);
       if (comprasMatch && comprasMatch[1]) {
         const compra = parseFloat(comprasMatch[1].replace(/\./g, "").replace(",", "."));
         const venta = vendesMatch && vendesMatch[1]
