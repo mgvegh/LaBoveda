@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import { Plus, TrendingUp, TrendingDown, RefreshCw, Trash2, PieChart } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, RefreshCw, Trash2, PieChart, DollarSign, Calculator, Sparkles } from "lucide-react";
 import { PieChart as RePieChart, Pie, Cell, ResponsiveContainer, Tooltip as ReTooltip } from "recharts";
 import clsx from "clsx";
 import { useAuth } from "@/components/AuthProvider";
@@ -22,6 +22,11 @@ export default function CriptoPortfolioTracker() {
   const [priceInput, setPriceInput] = useState("");
   const [dateInput, setDateInput] = useState(new Date().toISOString().split("T")[0]);
   const [operationType, setOperationType] = useState<"compra" | "venta">("compra");
+  const [currencyMode, setCurrencyMode] = useState<"USD" | "ARS">("USD");
+  const [arsSpentInput, setArsSpentInput] = useState("");
+  const [arsRateInput, setArsRateInput] = useState("");
+  const [usdtReceivedInput, setUsdtReceivedInput] = useState("");
+  const [liveCriptoRate, setLiveCriptoRate] = useState<number | null>(null);
   const { user } = useAuth();
   const colRef = user ? collection(db, "users", user.uid, "cripto_portfolio") : null;
 
@@ -115,19 +120,77 @@ export default function CriptoPortfolioTracker() {
 
   useEffect(() => { if (purchases.length > 0 && isClient) refreshMarketData(); }, [isClient, purchases.length]); // eslint-disable-line
 
+  const fetchLiveCriptoRate = async () => {
+    try {
+      const res = await fetch("/api/dolar/cripto");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.venta) {
+          setLiveCriptoRate(data.venta);
+          if (!arsRateInput && !usdtReceivedInput) {
+            setArsRateInput(data.venta.toString());
+          }
+        }
+      }
+    } catch {
+      // skip
+    }
+  };
+
+  // Cálculos automáticos para modo ARS
+  const arsSpent = parseFloat(arsSpentInput) || 0;
+  const arsRate = parseFloat(arsRateInput) || 0;
+  const usdtReceived = parseFloat(usdtReceivedInput) || 0;
+  const parsedQty = parseFloat(qtyInput) || 0;
+
+  let effectiveUsd = 0;
+  let implicitRate = arsRate;
+  if (usdtReceived > 0) {
+    effectiveUsd = usdtReceived;
+    if (arsSpent > 0) {
+      implicitRate = arsSpent / usdtReceived;
+    }
+  } else if (arsSpent > 0 && arsRate > 0) {
+    effectiveUsd = arsSpent / arsRate;
+  }
+
+  const calculatedUnitPriceUsd = parsedQty > 0 && effectiveUsd > 0 ? effectiveUsd / parsedQty : 0;
+
   const handleAddPurchase = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!tickerInput || !qtyInput || !priceInput || !user || !colRef) return;
+    if (!tickerInput || !qtyInput || !user || !colRef) return;
     let t = tickerInput.toUpperCase().trim();
     if (!t.includes("-")) t = t + "-USD";
     
     const qty = parseFloat(qtyInput);
+    if (isNaN(qty) || qty <= 0) return;
+
+    let finalPrice = 0;
+    if (operationType === "compra" && currencyMode === "ARS") {
+      if (calculatedUnitPriceUsd <= 0) {
+        alert("Por favor ingresá un monto válido en pesos y la cotización o USDT recibidos.");
+        return;
+      }
+      finalPrice = calculatedUnitPriceUsd;
+    } else {
+      finalPrice = parseFloat(priceInput);
+      if (isNaN(finalPrice) || finalPrice <= 0) {
+        alert("Por favor ingresá un precio válido en USD.");
+        return;
+      }
+    }
+
     const signedQty = operationType === "compra" ? qty : -qty;
 
-    const newRow = { ticker: t, quantity: signedQty, purchasePrice: parseFloat(priceInput), date: dateInput };
+    const newRow = { ticker: t, quantity: signedQty, purchasePrice: finalPrice, date: dateInput };
     const docRef = await addDoc(colRef, newRow);
     setPurchases(prev => [...prev, { id: docRef.id, ...newRow }]);
-    setTickerInput(""); setQtyInput(""); setPriceInput(""); setDateInput(new Date().toISOString().split("T")[0]);
+    setTickerInput(""); 
+    setQtyInput(""); 
+    setPriceInput(""); 
+    setArsSpentInput("");
+    setUsdtReceivedInput("");
+    setDateInput(new Date().toISOString().split("T")[0]);
     setOperationType("compra");
   };
 
@@ -206,20 +269,162 @@ export default function CriptoPortfolioTracker() {
                 <option value="venta" className="bg-[#09090b]">Venta (Spot)</option>
               </select>
             </div>
+
+            {operationType === "compra" && (
+              <div>
+                <label className="block text-xs text-gray-400 mb-1 tracking-wide uppercase">Modo de Carga</label>
+                <div className="grid grid-cols-2 gap-1.5 p-1 bg-black/40 border border-white/10 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => setCurrencyMode("USD")}
+                    className={clsx(
+                      "py-1.5 px-3 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5",
+                      currencyMode === "USD"
+                        ? "bg-teal-500/20 text-teal-300 border border-teal-500/30"
+                        : "text-gray-400 hover:text-gray-200"
+                    )}
+                  >
+                    <DollarSign className="w-3.5 h-3.5" /> En USD
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrencyMode("ARS");
+                      if (!liveCriptoRate) fetchLiveCriptoRate();
+                    }}
+                    className={clsx(
+                      "py-1.5 px-3 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5",
+                      currencyMode === "ARS"
+                        ? "bg-teal-500/20 text-teal-300 border border-teal-500/30"
+                        : "text-gray-400 hover:text-gray-200"
+                    )}
+                  >
+                    <Calculator className="w-3.5 h-3.5" /> En Pesos (ARS)
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-xs text-gray-400 mb-1 tracking-wide uppercase">Criptomoneda (ej. BTC, ETH)</label>
               <input type="text" required placeholder="BTC" value={tickerInput} onChange={e => setTickerInput(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-teal-500 uppercase transition-colors" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-gray-400 mb-1 tracking-wide uppercase">Cantidad</label>
-                <input type="number" required step="0.00000001" min="0.00000001" placeholder="0.05" value={qtyInput} onChange={e => setQtyInput(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-teal-500 transition-colors" />
+
+            {currencyMode === "ARS" && operationType === "compra" ? (
+              <div className="space-y-3 bg-teal-500/5 p-3.5 rounded-xl border border-teal-500/15">
+                <div>
+                  <label className="block text-xs text-gray-300 mb-1 font-medium">Gastado en Pesos (ARS)</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-gray-400 text-sm font-mono">$</span>
+                    <input 
+                      type="number" 
+                      step="any" 
+                      required 
+                      min="1" 
+                      placeholder="Ej. 318700" 
+                      value={arsSpentInput} 
+                      onChange={e => setArsSpentInput(e.target.value)} 
+                      className="w-full bg-black/50 border border-white/10 rounded-lg pl-7 pr-3 py-2 text-white focus:outline-none focus:border-teal-500 font-mono transition-colors text-sm" 
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] text-gray-400">Dólar Cripto (ARS)</label>
+                      {liveCriptoRate && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setArsRateInput(liveCriptoRate.toString());
+                            setUsdtReceivedInput("");
+                          }}
+                          className="text-[10px] text-teal-400 hover:underline flex items-center gap-0.5"
+                          title="Usar cotización actual del mercado"
+                        >
+                          <Sparkles className="w-2.5 h-2.5" /> ${liveCriptoRate.toFixed(0)}
+                        </button>
+                      )}
+                    </div>
+                    <input 
+                      type="number" 
+                      step="any" 
+                      placeholder="Ej. 1593.5" 
+                      value={arsRateInput} 
+                      onChange={e => {
+                        setArsRateInput(e.target.value);
+                        setUsdtReceivedInput("");
+                      }} 
+                      className="w-full bg-black/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-teal-500 font-mono text-xs" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-gray-400 mb-1">o USDT recibidos</label>
+                    <input 
+                      type="number" 
+                      step="any" 
+                      placeholder="Ej. 200" 
+                      value={usdtReceivedInput} 
+                      onChange={e => {
+                        setUsdtReceivedInput(e.target.value);
+                        if (arsSpent > 0 && parseFloat(e.target.value) > 0) {
+                          setArsRateInput((arsSpent / parseFloat(e.target.value)).toFixed(2));
+                        }
+                      }} 
+                      className="w-full bg-black/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-teal-500 font-mono text-xs" 
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-300 mb-1 font-medium">Cantidad de Cripto comprada</label>
+                  <input 
+                    type="number" 
+                    required 
+                    step="0.00000001" 
+                    min="0.00000001" 
+                    placeholder="Ej. 0.00263935" 
+                    value={qtyInput} 
+                    onChange={e => setQtyInput(e.target.value)} 
+                    className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-teal-500 font-mono text-sm" 
+                  />
+                </div>
+
+                {/* Previsualización en vivo */}
+                {effectiveUsd > 0 && (
+                  <div className="pt-2 border-t border-teal-500/20 text-xs space-y-1">
+                    <div className="flex justify-between text-gray-400">
+                      <span>Inversión calculada:</span>
+                      <span className="font-semibold text-white font-mono">${effectiveUsd.toFixed(2)} USD</span>
+                    </div>
+                    {implicitRate > 0 && (
+                      <div className="flex justify-between text-gray-400">
+                        <span>Tasa efectiva:</span>
+                        <span className="text-teal-400 font-mono">${implicitRate.toFixed(2)} ARS/USD</span>
+                      </div>
+                    )}
+                    {calculatedUnitPriceUsd > 0 && (
+                      <div className="flex justify-between text-gray-300 font-medium">
+                        <span>Precio de compra:</span>
+                        <span className="text-teal-300 font-mono font-bold">${calculatedUnitPriceUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD/u</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              <div>
-                <label className="block text-xs text-gray-400 mb-1 tracking-wide uppercase">Precio (USD/u)</label>
-                <input type="number" step="0.01" required min="0" placeholder="65000" value={priceInput} onChange={e => setPriceInput(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-teal-500 transition-colors" />
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1 tracking-wide uppercase">Cantidad</label>
+                  <input type="number" required step="0.00000001" min="0.00000001" placeholder="0.05" value={qtyInput} onChange={e => setQtyInput(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-teal-500 transition-colors" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1 tracking-wide uppercase">Precio (USD/u)</label>
+                  <input type="number" step="0.01" required min="0" placeholder="65000" value={priceInput} onChange={e => setPriceInput(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-teal-500 transition-colors" />
+                </div>
               </div>
-            </div>
+            )}
             <div>
               <label className="block text-xs text-gray-400 mb-1 tracking-wide uppercase">Fecha</label>
               <input type="date" required value={dateInput} onChange={e => setDateInput(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-teal-500 transition-colors" />
