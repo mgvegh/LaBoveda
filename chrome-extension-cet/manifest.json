@@ -1,0 +1,56 @@
+{
+  "manifest_version": 3,
+  "name": "CET & La Bóveda - Comparador de Clases",
+  "version": "1.0.1",
+  "description": "Compara en tiempo real las clases del panel de CET con las registradas en La Bóveda.",
+  "permissions": [
+    "tabs",
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "*://cet.com.ar/*",
+    "*://*.cet.com.ar/*",
+    "*://laboveda.vercel.app/*",
+    "*://*.vercel.app/*",
+    "http://localhost:*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://laboveda.vercel.app/*",
+        "*://*.vercel.app/*",
+        "http://localhost:*/*"
+      ],
+      "js": ["content-boveda.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://cet.com.ar/*",
+        "*://*.cet.com.ar/*"
+      ],
+      "js": ["content-cet.js"],
+      "css": ["content-cet.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Comparador CET - La Bóveda",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

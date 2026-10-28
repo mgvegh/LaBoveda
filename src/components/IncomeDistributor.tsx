@@ -40,6 +40,7 @@ type MonthlyRecord = {
   completedIds?: string[];
   expenses?: Expense[];
   categories?: Category[];
+  paidAmounts?: Record<string, number>;
 };
 
 type IncomeConfig = {
@@ -47,6 +48,7 @@ type IncomeConfig = {
   expenses: Expense[];
   lastIncome?: string;
   completedIds?: string[];
+  paidAmounts?: Record<string, number>;
   debts?: Debt[];
   baseSalary?: string;
   monthlyRecords?: Record<string, MonthlyRecord>;
@@ -137,6 +139,7 @@ export default function IncomeDistributor() {
       expenses: activeExpenses,
       categories: activeCategories,
       completedIds: activeCompletedIds,
+      paidAmounts: activePaidAmounts,
     };
 
     const updatedConfig: IncomeConfig = {
@@ -208,6 +211,7 @@ export default function IncomeDistributor() {
             categories: localData.categories && localData.categories.length > 0 ? localData.categories : DEFAULT_CATEGORIES,
             expenses: localData.expenses || [],
             completedIds: localData.completedIds || [],
+            paidAmounts: localData.paidAmounts || {},
             debts: localData.debts || [],
             baseSalary: localData.baseSalary || "",
             monthlyRecords: localData.monthlyRecords || {},
@@ -233,6 +237,7 @@ export default function IncomeDistributor() {
           : (localData?.categories && localData.categories.length > 0 ? localData.categories : DEFAULT_CATEGORIES);
         const newExpenses = data.expenses !== undefined ? data.expenses : (localData?.expenses || []);
         const newCompletedIds = data.completedIds !== undefined ? data.completedIds : (localData?.completedIds || []);
+        const newPaidAmounts = data.paidAmounts !== undefined ? data.paidAmounts : (localData?.paidAmounts || {});
         const newDebts = data.debts !== undefined ? data.debts : (localData?.debts || []);
         const newLastIncome = data.lastIncome !== undefined ? data.lastIncome : (localData?.lastIncome || "");
         const newBaseSalary = data.baseSalary || localData?.baseSalary || "";
@@ -242,6 +247,7 @@ export default function IncomeDistributor() {
           categories: newCategories,
           expenses: newExpenses,
           completedIds: newCompletedIds,
+          paidAmounts: newPaidAmounts,
           debts: newDebts,
           lastIncome: newLastIncome,
           baseSalary: newBaseSalary,
@@ -304,8 +310,14 @@ export default function IncomeDistributor() {
   const activeCompletedIds = useMemo(() => {
     const mRec = config.monthlyRecords?.[selectedMonthKey];
     if (mRec?.completedIds !== undefined) return mRec.completedIds;
-    return [];
-  }, [config.monthlyRecords, selectedMonthKey]);
+    return config.completedIds || [];
+  }, [config.monthlyRecords, config.completedIds, selectedMonthKey]);
+
+  const activePaidAmounts = useMemo<Record<string, number>>(() => {
+    const mRec = config.monthlyRecords?.[selectedMonthKey];
+    if (mRec?.paidAmounts !== undefined) return mRec.paidAmounts;
+    return config.paidAmounts || {};
+  }, [config.monthlyRecords, config.paidAmounts, selectedMonthKey]);
 
   const otherConfiguredMonths = useMemo(() => {
     const keys = Object.keys(config.monthlyRecords || {}).filter(k => k !== selectedMonthKey);
@@ -318,6 +330,7 @@ export default function IncomeDistributor() {
       expenses: Expense[];
       categories: Category[];
       completedIds: string[];
+      paidAmounts: Record<string, number>;
     }) => Partial<MonthlyRecord>
   ) => {
     setConfig(prev => {
@@ -326,7 +339,8 @@ export default function IncomeDistributor() {
         income: currentRec.income !== undefined ? currentRec.income : (prev.lastIncome ?? totalIncome ?? ""),
         expenses: currentRec.expenses !== undefined ? currentRec.expenses : (prev.expenses || []),
         categories: (currentRec.categories && currentRec.categories.length > 0) ? currentRec.categories : (prev.categories && prev.categories.length > 0 ? prev.categories : DEFAULT_CATEGORIES),
-        completedIds: currentRec.completedIds !== undefined ? currentRec.completedIds : [],
+        completedIds: currentRec.completedIds !== undefined ? currentRec.completedIds : (prev.completedIds || []),
+        paidAmounts: currentRec.paidAmounts !== undefined ? currentRec.paidAmounts : (prev.paidAmounts || {}),
       };
 
       const updates = updater(current);
@@ -366,55 +380,144 @@ export default function IncomeDistributor() {
   const result = useMemo(() => {
     if (usdRate <= 0) return null;
 
-    const totalExpensesARS = activeExpenses.reduce((acc, e) => {
-      return acc + (e.currency === "USD" ? e.amount * usdRate : e.amount);
-    }, 0);
+    // 1. Gastos (expenses): si están pagados usan el monto congelado en ARS, si no varían con el dólar si son USD
+    const expensesWithAmounts = activeExpenses.map(e => {
+      const isCompleted = activeCompletedIds.includes(e.id);
+      const isFrozen = isCompleted && activePaidAmounts[e.id] !== undefined;
+      const amountARS = isFrozen 
+        ? activePaidAmounts[e.id] 
+        : (e.currency === "USD" ? e.amount * usdRate : e.amount);
+      return {
+        ...e,
+        amountARS,
+        isFrozen,
+        isCompleted
+      };
+    });
 
+    const totalExpensesARS = expensesWithAmounts.reduce((acc, e) => acc + e.amountARS, 0);
+
+    // 2. Asignaciones fijas (fixed_usd, fixed_ars): si están pagadas quedan fijas en ARS, si no varían con el dólar
     const fixedAllocations = activeCategories
       .filter(c => c.type !== "percentage")
-      .map(c => ({
-        ...c,
-        amountARS: c.type === "fixed_usd" ? c.value * usdRate : c.value,
-      }));
+      .map(c => {
+        const isCompleted = activeCompletedIds.includes(c.id);
+        const isFrozen = isCompleted && activePaidAmounts[c.id] !== undefined;
+        const amountARS = isFrozen
+          ? activePaidAmounts[c.id]
+          : (c.type === "fixed_usd" ? c.value * usdRate : c.value);
+        return {
+          ...c,
+          amountARS,
+          isFrozen,
+          isCompleted
+        };
+      });
 
     const totalFixedAllocations = fixedAllocations.reduce((acc, c) => acc + c.amountARS, 0);
 
     const isNeededMode = income <= 0;
 
     if (isNeededMode) {
+      const paidExpensesARS = expensesWithAmounts
+        .filter(e => e.isCompleted)
+        .reduce((acc, e) => acc + e.amountARS, 0);
+      const paidAllocationsARS = fixedAllocations
+        .filter(a => a.isCompleted)
+        .reduce((acc, a) => acc + a.amountARS, 0);
+      const totalPaidARS = paidExpensesARS + paidAllocationsARS;
+
       return {
         isNeededMode,
         totalNeededARS: totalExpensesARS + totalFixedAllocations,
         totalExpensesARS,
-        allocations: fixedAllocations.map(a => ({...a, pctOfTotal: 0})),
+        expensesWithAmounts,
+        allocations: fixedAllocations.map(a => ({ ...a, pctOfTotal: 0, isFrozen: a.isFrozen, isCompleted: a.isCompleted })),
         unallocated: 0,
-        afterExpenses: 0
+        afterExpenses: 0,
+        totalPaidARS,
+        remainingIncome: 0,
       };
     }
 
     const afterExpenses = Math.max(0, income - totalExpensesARS);
     const afterFixed = Math.max(0, afterExpenses - totalFixedAllocations);
 
+    // 3. Categorías porcentuales:
+    // Las que ya se pagaron quedan fijas con su monto congelado; el resto del remanente se distribuye entre las pendientes
     const percentageCategories = activeCategories.filter(c => c.type === "percentage");
-    const totalPercentDefined = percentageCategories.reduce((acc, c) => acc + c.value, 0);
+
+    let paidPercentageTotalARS = 0;
+    const frozenPercentageAllocations: Record<string, number> = {};
+
+    percentageCategories.forEach(cat => {
+      const isCompleted = activeCompletedIds.includes(cat.id);
+      if (isCompleted && activePaidAmounts[cat.id] !== undefined) {
+        frozenPercentageAllocations[cat.id] = activePaidAmounts[cat.id];
+        paidPercentageTotalARS += activePaidAmounts[cat.id];
+      }
+    });
+
+    const remainingForUnpaidPercentages = Math.max(0, afterFixed - paidPercentageTotalARS);
+    const unpaidPercentageCategories = percentageCategories.filter(c => frozenPercentageAllocations[c.id] === undefined);
+    const unpaidPercentDefined = unpaidPercentageCategories.reduce((acc, c) => acc + c.value, 0);
 
     const allocations = activeCategories.map(cat => {
+      const isCompleted = activeCompletedIds.includes(cat.id);
       if (cat.type === "percentage") {
-        const weight = totalPercentDefined > 0 ? (cat.value / totalPercentDefined) : 0;
-        const amount = weight * afterFixed;
-        return { ...cat, amountARS: amount, pctOfTotal: income > 0 ? (amount / income) * 100 : 0 };
+        let amount = 0;
+        const isFrozen = frozenPercentageAllocations[cat.id] !== undefined;
+        if (isFrozen) {
+          amount = frozenPercentageAllocations[cat.id];
+        } else {
+          const weight = unpaidPercentDefined > 0 ? (cat.value / unpaidPercentDefined) : 0;
+          amount = weight * remainingForUnpaidPercentages;
+        }
+        return {
+          ...cat,
+          amountARS: amount,
+          pctOfTotal: income > 0 ? (amount / income) * 100 : 0,
+          isFrozen,
+          isCompleted,
+        };
       } else {
         const fixed = fixedAllocations.find(f => f.id === cat.id);
         const amount = fixed?.amountARS ?? 0;
-        return { ...cat, amountARS: amount, pctOfTotal: income > 0 ? (amount / income) * 100 : 0 };
+        return {
+          ...cat,
+          amountARS: amount,
+          pctOfTotal: income > 0 ? (amount / income) * 100 : 0,
+          isFrozen: fixed?.isFrozen ?? false,
+          isCompleted,
+        };
       }
     });
 
     const totalAllocated = allocations.reduce((a, c) => a + c.amountARS, 0);
     const unallocated = income - totalExpensesARS - totalAllocated;
 
-    return { isNeededMode, totalNeededARS: 0, allocations, totalExpensesARS, unallocated, afterExpenses };
-  }, [income, activeExpenses, activeCategories, usdRate]);
+    // Métricas de pagos y saldo restante del ingreso
+    const paidExpensesARS = expensesWithAmounts
+      .filter(e => e.isCompleted)
+      .reduce((acc, e) => acc + e.amountARS, 0);
+    const paidAllocationsARS = allocations
+      .filter(a => a.isCompleted)
+      .reduce((acc, a) => acc + a.amountARS, 0);
+    const totalPaidARS = paidExpensesARS + paidAllocationsARS;
+    const remainingIncome = Math.max(0, income - totalPaidARS);
+
+    return {
+      isNeededMode,
+      totalNeededARS: 0,
+      allocations,
+      expensesWithAmounts,
+      totalExpensesARS,
+      unallocated,
+      afterExpenses,
+      totalPaidARS,
+      remainingIncome,
+    };
+  }, [income, activeExpenses, activeCategories, usdRate, activeCompletedIds, activePaidAmounts]);
 
   const debtTotals = useMemo(() => {
     let totalARS = 0;
@@ -490,10 +593,38 @@ export default function IncomeDistributor() {
     reorderExpenses(index, targetIndex);
   };
 
-  const toggleCompleted = (id: string) => {
+  const toggleCompleted = (id: string, currentAmountARS?: number) => {
     const isCompleted = activeCompletedIds.includes(id);
     const updatedList = isCompleted ? activeCompletedIds.filter(i => i !== id) : [...activeCompletedIds, id];
-    updateCurrentMonthRecord(() => ({ completedIds: updatedList }));
+    const updatedPaidAmounts = { ...activePaidAmounts };
+
+    if (isCompleted) {
+      delete updatedPaidAmounts[id];
+    } else {
+      let freezeAmount = currentAmountARS;
+      if (freezeAmount === undefined) {
+        const exp = result?.expensesWithAmounts?.find(e => e.id === id);
+        if (exp) {
+          freezeAmount = exp.amountARS;
+        } else {
+          const alloc = result?.allocations?.find(a => a.id === id);
+          if (alloc) {
+            freezeAmount = alloc.amountARS;
+          } else {
+            const cat = activeCategories.find(c => c.id === id);
+            if (cat) {
+              freezeAmount = cat.type === "fixed_usd" ? cat.value * (usdRate || 0) : cat.value;
+            }
+          }
+        }
+      }
+      updatedPaidAmounts[id] = Math.round((freezeAmount || 0) * 100) / 100;
+    }
+
+    updateCurrentMonthRecord(() => ({
+      completedIds: updatedList,
+      paidAmounts: updatedPaidAmounts,
+    }));
   };
 
   const addDebt = (debtorName: string, description: string, amount: number, currency: "ARS" | "USD") => {
@@ -733,6 +864,61 @@ export default function IncomeDistributor() {
             Equivale a <strong>USD {(income / usdRate).toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong>
           </p>
         )}
+
+        {/* Panel de Saldo Restante y Progreso de Pagos */}
+        {income > 0 && result && (
+          <div className="mt-5 pt-5 border-t border-white/10 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-black/30 border border-white/10 rounded-2xl p-3.5">
+                <span className="text-[11px] text-gray-400 uppercase font-semibold block mb-1">Ingreso Planificado</span>
+                <div className="text-xl font-mono font-bold text-white">
+                  ${income.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </div>
+                <div className="text-[11px] text-gray-500 mt-0.5">Base para el mes</div>
+              </div>
+
+              <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-3.5">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[11px] text-red-300 uppercase font-semibold">Salidas Pagadas</span>
+                  <span className="text-[10px] text-red-400 font-bold bg-red-500/20 px-2 py-0.5 rounded-full">
+                    {activeCompletedIds.length} tildada{activeCompletedIds.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+                <div className="text-xl font-mono font-bold text-red-400">
+                  -${result.totalPaidARS.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+                <div className="text-[11px] text-red-400/80 mt-0.5">
+                  {((result.totalPaidARS / (income || 1)) * 100).toFixed(1)}% ya abonado
+                </div>
+              </div>
+
+              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-3.5 shadow-lg shadow-emerald-500/5">
+                <span className="text-[11px] text-emerald-300 uppercase font-semibold block mb-1">Saldo Restante en Mano</span>
+                <div className="text-2xl font-mono font-black text-emerald-400">
+                  ${result.remainingIncome.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+                {usdRate > 0 && (
+                  <div className="text-[11px] text-emerald-400/80 font-medium mt-0.5">
+                    ≈ USD {(result.remainingIncome / usdRate).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Barra de progreso visual */}
+            <div className="bg-black/40 border border-white/5 rounded-xl p-2.5 flex items-center gap-3">
+              <div className="flex-1 bg-white/5 h-2 rounded-full overflow-hidden">
+                <div 
+                  className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, Math.max(0, (result.totalPaidARS / (income || 1)) * 100))}%` }}
+                />
+              </div>
+              <span className="text-xs font-mono font-bold text-gray-300 shrink-0">
+                {Math.round((result.totalPaidARS / (income || 1)) * 100)}% pagado
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modal Autocompletar Sueldo + Clases */}
@@ -884,44 +1070,82 @@ export default function IncomeDistributor() {
               
               <div className="divide-y divide-white/5">
                 {/* Gastos Fijos (Como parte de las Salidas) */}
-                {activeExpenses.map(e => {
-                  const amount = e.currency === "USD" ? e.amount * usdRate : e.amount;
-                  const isCompleted = activeCompletedIds.includes(e.id);
+                {result.expensesWithAmounts.map(e => {
+                  const isCompleted = e.isCompleted;
                   return (
-                    <div key={e.id} className={`p-4 flex justify-between items-center hover:bg-white/5 transition-colors ${isCompleted ? 'opacity-40 grayscale' : ''}`}>
+                    <div key={e.id} className={`p-4 flex justify-between items-center hover:bg-white/5 transition-colors ${isCompleted ? 'opacity-50' : ''}`}>
                       <div className="flex items-center gap-3">
-                        <button onClick={() => toggleCompleted(e.id)} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isCompleted ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'}`} title="Marcar como completado">
+                        <button
+                          onClick={() => toggleCompleted(e.id, e.amountARS)}
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${isCompleted ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'}`}
+                          title={isCompleted ? "Marcar como pendiente" : "Marcar como pagado (fijar monto)"}
+                        >
                           <CheckCircleIcon />
                         </button>
-                        <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400"><DollarSign className="w-4 h-4" /></div>
-                        <span className={`text-gray-300 text-sm font-medium ${isCompleted ? 'line-through' : ''}`}>{e.name}</span>
+                        <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 shrink-0">
+                          <DollarSign className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-gray-300 text-sm font-medium ${isCompleted ? 'line-through text-gray-400' : ''}`}>
+                              {e.name}
+                            </span>
+                            {e.isFrozen && (
+                              <span className="text-[10px] text-emerald-300 bg-emerald-500/15 px-1.5 py-0.5 rounded border border-emerald-500/20 font-semibold">
+                                ✓ Pagado (Fijo)
+                              </span>
+                            )}
+                          </div>
+                          {e.currency === "USD" && (
+                            <div className="text-[10px] text-gray-500 font-mono">
+                              {e.amount} USD {e.isFrozen ? '(fijado en ARS al pagar)' : `(al cambio actual: $${usdRate})`}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <span className="text-red-400 font-mono font-bold">
-                        ${amount.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
+                      <div className="text-right">
+                        <span className={`font-mono font-bold ${isCompleted ? 'text-gray-400 line-through' : 'text-red-400'}`}>
+                          ${e.amountARS.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
                     </div>
                   );
                 })}
 
                 {/* Distribución (Como parte de las Salidas) */}
                 {result.allocations.map(a => {
-                  const isCompleted = activeCompletedIds.includes(a.id);
+                  const isCompleted = a.isCompleted;
                   return (
-                    <div key={a.id} className={`p-4 flex justify-between items-center hover:bg-white/5 transition-colors ${isCompleted ? 'opacity-40 grayscale' : ''}`}>
+                    <div key={a.id} className={`p-4 flex justify-between items-center hover:bg-white/5 transition-colors ${isCompleted ? 'opacity-50' : ''}`}>
                       <div className="flex items-center gap-3">
-                        <button onClick={() => toggleCompleted(a.id)} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isCompleted ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'}`} title="Marcar como completado">
+                        <button
+                          onClick={() => toggleCompleted(a.id, a.amountARS)}
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${isCompleted ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'}`}
+                          title={isCompleted ? "Marcar como pendiente" : "Marcar como pagado (fijar monto)"}
+                        >
                           <CheckCircleIcon />
                         </button>
-                        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-lg">{a.icon}</div>
+                        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-lg shrink-0">{a.icon}</div>
                         <div>
-                          <div className={`text-sm font-bold text-white ${isCompleted ? 'line-through' : ''}`}>{a.name}</div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-bold text-white ${isCompleted ? 'line-through text-gray-400' : ''}`}>{a.name}</span>
+                            {a.isFrozen && (
+                              <span className="text-[10px] text-emerald-300 bg-emerald-500/15 px-1.5 py-0.5 rounded border border-emerald-500/20 font-semibold">
+                                ✓ Pagado (Fijo)
+                              </span>
+                            )}
+                          </div>
                           <div className="text-[10px] text-gray-500 uppercase tracking-tighter">
-                            {a.type === "fixed_usd" ? `${a.value} USD fijo` : a.type === "fixed_ars" ? `${a.value} ARS fijo` : `${a.value}% del resto`}
+                            {a.type === "fixed_usd" 
+                              ? `${a.value} USD fijo ${a.isFrozen ? '(fijado en ARS al pagar)' : `(al cambio actual: $${usdRate})`}` 
+                              : a.type === "fixed_ars" 
+                              ? `${a.value} ARS fijo` 
+                              : `${a.value}% del resto ${a.isFrozen ? '(fijado al pagar)' : ''}`}
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-xl font-mono font-black text-white">
+                        <div className={`text-xl font-mono font-black ${isCompleted ? 'text-gray-400 line-through' : 'text-white'}`}>
                           ${a.amountARS.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                         <div className="text-[10px] text-gray-500">
@@ -934,13 +1158,33 @@ export default function IncomeDistributor() {
               </div>
 
               {/* Total Summary Row */}
-              <div className="p-6 bg-black/40 border-t border-white/10 flex justify-between items-center">
-                <span className="text-gray-400 font-bold uppercase text-xs tracking-widest">
-                  {result.isNeededMode ? "Total Necesario" : "Total Salidas"}
-                </span>
-                <span className="text-2xl font-black text-white">
-                  ${(result.isNeededMode ? result.totalNeededARS : result.totalExpensesARS + result.allocations.reduce((a,c) => a + c.amountARS, 0)).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
+              <div className="p-6 bg-black/40 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <span className="text-gray-400 font-bold uppercase text-xs tracking-widest block">
+                    {result.isNeededMode ? "Total Necesario" : "Total Salidas Planificadas"}
+                  </span>
+                  {!result.isNeededMode && (
+                    <div className="flex items-center gap-3 text-xs mt-1.5">
+                      <span className="text-emerald-400">
+                        Pagado: <strong>${result.totalPaidARS.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</strong>
+                      </span>
+                      <span className="text-gray-600">•</span>
+                      <span className="text-amber-400">
+                        Pendiente: <strong>${Math.max(0, (result.totalExpensesARS + result.allocations.reduce((a,c) => a + c.amountARS, 0)) - result.totalPaidARS).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</strong>
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="text-left sm:text-right">
+                  <span className="text-2xl font-black text-white block">
+                    ${(result.isNeededMode ? result.totalNeededARS : result.totalExpensesARS + result.allocations.reduce((a,c) => a + c.amountARS, 0)).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                  {!result.isNeededMode && (
+                    <span className="text-xs text-emerald-400/90 font-medium block mt-0.5">
+                      Saldo restante disponible: ${result.remainingIncome.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 

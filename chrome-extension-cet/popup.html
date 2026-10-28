@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>CET & La Bóveda</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <div class="popup-header">
+      <div class="popup-logo">
+        <span class="icon">⚡</span>
+        <div>
+          <h1>La Bóveda & CET</h1>
+          <p>Comparador Inteligente de Clases</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="popup-body">
+      <div class="status-card" id="status-card">
+        <div class="status-indicator">
+          <span class="dot" id="sync-dot"></span>
+          <span class="status-title" id="sync-title">Verificando conexión...</span>
+        </div>
+        <p class="status-desc" id="sync-desc">Buscando pestaña de La Bóveda...</p>
+      </div>
+
+      <div class="quick-actions">
+        <button id="btn-sync" class="btn btn-primary">
+          🔄 Forzar Sincronización Ahora
+        </button>
+        <button id="btn-open-cet" class="btn btn-secondary">
+          🏫 Ir a CET (Mis Clases)
+        </button>
+        <button id="btn-open-boveda" class="btn btn-secondary">
+          ⚡ Ir a La Bóveda (Clases)
+        </button>
+      </div>
+
+      <div class="instructions-box">
+        <h4>⚠️ Paso clave inicial:</h4>
+        <p style="margin: 0; font-size: 11px; line-height: 1.4; color: #cbd5e1;">
+          Al instalar una extensión nueva en Chrome, <strong>debés recargar (F5)</strong> las pestañas de CET y de La Bóveda que ya tenías abiertas para que Chrome active la extensión en ellas.
+        </p>
+      </div>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

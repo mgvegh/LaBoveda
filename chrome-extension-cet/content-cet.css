@@ -1,0 +1,507 @@
+/* CSS styles for CET & La Bóveda Comparator */
+
+/* ─── FLOATING LAUNCHER BUTTON (ABRIR / CERRAR) ─── */
+#boveda-launcher-btn {
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 24px !important;
+  z-index: 2147483646 !important;
+  background: linear-gradient(135deg, #0f172a, #1e293b) !important;
+  border: 2px solid rgba(56, 189, 248, 0.5) !important;
+  border-radius: 9999px !important;
+  padding: 8px 16px !important;
+  color: #f8fafc !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 15px rgba(56, 189, 248, 0.25) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  user-select: none !important;
+  box-sizing: border-box !important;
+}
+
+#boveda-launcher-btn:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  border-color: #38bdf8 !important;
+  box-shadow: 0 14px 30px -5px rgba(0, 0, 0, 0.7), 0 0 20px rgba(56, 189, 248, 0.45) !important;
+}
+
+#boveda-launcher-btn.active {
+  background: linear-gradient(135deg, #0284c7, #2563eb) !important;
+  border-color: #60a5fa !important;
+  color: #ffffff !important;
+}
+
+#boveda-launcher-btn.boveda-hidden {
+  display: none !important;
+}
+
+.boveda-launcher-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 2px 7px !important;
+  border-radius: 9999px !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+}
+
+.boveda-launcher-badge.missing {
+  background: #f43f5e !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.6) !important;
+}
+
+.boveda-launcher-badge.ok {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6) !important;
+}
+
+.boveda-launcher-badge.diff {
+  background: #f59e0b !important;
+  color: #ffffff !important;
+}
+
+/* ─── MAIN COMPARATOR PANEL ─── */
+#boveda-cet-toolbar {
+  position: fixed !important;
+  bottom: 74px !important;
+  right: 24px !important;
+  z-index: 2147483647 !important;
+  background: #0f172a !important;
+  border: 2px solid rgba(56, 189, 248, 0.4) !important;
+  border-radius: 18px !important;
+  padding: 14px 18px !important;
+  color: #f8fafc !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 13px !important;
+  box-shadow: 0 16px 40px -5px rgba(0, 0, 0, 0.75), 0 0 20px rgba(56, 189, 248, 0.25) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  min-width: 330px !important;
+  max-width: 440px !important;
+  max-height: calc(100vh - 100px) !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
+  pointer-events: auto !important;
+  transition: opacity 0.2s ease, transform 0.2s ease !important;
+}
+
+/* Alternate top position if chosen */
+#boveda-cet-toolbar.boveda-pos-top {
+  bottom: auto !important;
+  top: 70px !important;
+}
+
+#boveda-cet-toolbar.boveda-panel-closed {
+  display: none !important;
+}
+
+.boveda-cet-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding-bottom: 2px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.boveda-cet-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-weight: 800 !important;
+  font-size: 14px !important;
+  color: #38bdf8 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.boveda-cet-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.boveda-cet-btn {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #f1f5f9 !important;
+  border-radius: 8px !important;
+  padding: 5px 10px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+
+.boveda-cet-btn:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+.boveda-cet-btn-close {
+  background: rgba(244, 63, 94, 0.15) !important;
+  border: 1px solid rgba(244, 63, 94, 0.35) !important;
+  color: #fda4af !important;
+  padding: 4px 9px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+}
+
+.boveda-cet-btn-close:hover {
+  background: rgba(244, 63, 94, 0.35) !important;
+  color: #ffffff !important;
+  border-color: rgba(244, 63, 94, 0.6) !important;
+}
+
+.boveda-cet-btn-primary {
+  background: linear-gradient(135deg, #0284c7, #2563eb) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35) !important;
+}
+
+.boveda-cet-btn-primary:hover {
+  background: linear-gradient(135deg, #0369a1, #1d4ed8) !important;
+}
+
+.boveda-cet-status {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 12px !important;
+  padding: 6px 10px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.boveda-status-dot {
+  width: 9px !important;
+  height: 9px !important;
+  border-radius: 50% !important;
+  flex-shrink: 0 !important;
+}
+.boveda-status-dot.online { background: #10b981 !important; box-shadow: 0 0 8px #10b981 !important; }
+.boveda-status-dot.offline { background: #f43f5e !important; box-shadow: 0 0 8px #f43f5e !important; }
+.boveda-status-dot.cache { background: #f59e0b !important; box-shadow: 0 0 8px #f59e0b !important; }
+
+/* Month Filter Controls */
+.boveda-filter-box {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 10px !important;
+  padding: 8px 10px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+.boveda-filter-row {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+}
+
+.boveda-filter-label {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  color: #94a3b8 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+.boveda-month-select {
+  background: #1e293b !important;
+  border: 1px solid rgba(56, 189, 248, 0.4) !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  padding: 5px 8px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  outline: none !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  transition: all 0.2s ease !important;
+}
+
+.boveda-month-select:focus {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25) !important;
+}
+
+.boveda-checkbox-row {
+  display: flex !important;
+  align-items: center !important;
+  margin-top: 2px !important;
+}
+
+.boveda-checkbox-label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 11px !important;
+  color: #cbd5e1 !important;
+  cursor: pointer !important;
+  user-select: none !important;
+}
+
+.boveda-checkbox-label input[type="checkbox"] {
+  cursor: pointer !important;
+  accent-color: #0284c7 !important;
+}
+
+.boveda-cet-stats {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 8px !important;
+  margin-top: 2px !important;
+}
+
+.boveda-stat-card {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-radius: 10px !important;
+  padding: 8px 10px !important;
+  text-align: center !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.boveda-stat-value {
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+}
+
+.boveda-stat-label {
+  font-size: 10px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  opacity: 0.8 !important;
+  margin-top: 2px !important;
+}
+
+.boveda-stat-exact .boveda-stat-value { color: #34d399 !important; }
+.boveda-stat-diff .boveda-stat-value { color: #fbbf24 !important; }
+.boveda-stat-missing .boveda-stat-value { color: #f87171 !important; }
+
+.boveda-missing-alert {
+  background: rgba(244, 63, 94, 0.15) !important;
+  border: 1px solid rgba(244, 63, 94, 0.4) !important;
+  color: #fecdd3 !important;
+  padding: 8px 12px !important;
+  border-radius: 10px !important;
+  font-size: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.boveda-missing-alert:hover {
+  background: rgba(244, 63, 94, 0.25) !important;
+  border-color: rgba(244, 63, 94, 0.6) !important;
+}
+
+/* Card badges injected into CET */
+.boveda-badge-container {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  margin-bottom: 8px !important;
+}
+
+.boveda-card-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 4px 10px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  transition: all 0.2s ease !important;
+  width: fit-content !important;
+}
+
+.boveda-card-badge-exact {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #059669 !important;
+  border: 1px solid rgba(16, 185, 129, 0.4) !important;
+}
+
+.boveda-card-badge-diff {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #d97706 !important;
+  border: 1px solid rgba(245, 158, 11, 0.4) !important;
+}
+
+.boveda-card-badge-missing {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #dc2626 !important;
+  border: 1px solid rgba(239, 68, 68, 0.4) !important;
+}
+
+.boveda-cet-card-exact {
+  border-color: rgba(16, 185, 129, 0.6) !important;
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.3) !important;
+}
+
+.boveda-cet-card-diff {
+  border-color: rgba(245, 158, 11, 0.6) !important;
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.3) !important;
+}
+
+.boveda-cet-card-missing {
+  border-color: rgba(239, 68, 68, 0.6) !important;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.3) !important;
+}
+
+/* Button to add class to La Bóveda */
+.boveda-btn-add-class {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35) !important;
+  transition: all 0.2s ease !important;
+}
+
+.boveda-btn-add-class:hover {
+  background: linear-gradient(135deg, #059669, #047857) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.45) !important;
+}
+
+.boveda-btn-add-class:disabled {
+  opacity: 0.65 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+.boveda-btn-add-class.success {
+  background: #065f46 !important;
+  color: #a7f3d0 !important;
+  border: 1px solid #10b981 !important;
+}
+
+.boveda-btn-add-all {
+  background: linear-gradient(135deg, #10b981, #0d9488) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 7px 12px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  margin-top: 4px !important;
+  transition: all 0.2s ease !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.boveda-btn-add-all:hover {
+  filter: brightness(1.1) !important;
+  transform: translateY(-1px) !important;
+}
+
+.boveda-btn-add-all:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* Modal for unmatched classes in La Bóveda */
+#boveda-missing-modal-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(0, 0, 0, 0.75) !important;
+  backdrop-filter: blur(6px) !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px !important;
+  box-sizing: border-box !important;
+}
+
+#boveda-missing-modal {
+  background: #0f172a !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 20px !important;
+  max-width: 650px !important;
+  width: 100% !important;
+  max-height: 85vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8) !important;
+  color: #f1f5f9 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+.boveda-modal-header {
+  padding: 16px 20px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.boveda-modal-body {
+  padding: 20px !important;
+  overflow-y: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+.boveda-unmatched-item {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+  padding: 12px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+}
+
+.boveda-unmatched-name {
+  font-weight: 700 !important;
+  font-size: 15px !important;
+  color: #ffffff !important;
+}
+
+.boveda-unmatched-meta {
+  font-size: 13px !important;
+  color: #94a3b8 !important;
+  margin-top: 2px !important;
+  display: flex !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}

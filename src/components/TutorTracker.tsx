@@ -515,6 +515,62 @@ export default function TutorTracker() {
     load();
   }, [user, classesColPath, settingsDocPath]);
 
+  // Expose classes to localStorage for the Chrome comparison extension
+  useEffect(() => {
+    if (typeof window !== "undefined" && classes.length > 0) {
+      try {
+        localStorage.setItem("boveda_tutor_classes", JSON.stringify(classes));
+      } catch (e) {
+        console.error("Error saving boveda_tutor_classes to localStorage:", e);
+      }
+    }
+  }, [classes]);
+
+  // Listen for direct class creation from the CET Chrome Extension
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleCreateFromExtension = async (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const data = customEvent.detail;
+      if (!data || !user) return;
+
+      try {
+        const col = classesColPath();
+        if (!col) return;
+
+        const modality = data.modality === "presencial" ? "presencial" : "virtual";
+        const duration = Number(data.duration) || 60;
+        const rate = modality === "presencial" ? settings.cetRatePresencial : settings.cetRateVirtual;
+        const amount = rate > 0 ? Math.round((rate * duration) / 60) : 0;
+
+        const payload: Omit<TutorClass, "id"> & { updatedAt: string } = {
+          studentName: formatStudentName(data.studentName || ""),
+          subject: data.subject || "Matemática",
+          modality,
+          type: "CET",
+          dateTime: data.dateTime,
+          duration,
+          amount,
+          notes: data.notes || "",
+          updatedAt: new Date().toISOString()
+        };
+
+        const docRef = await addDoc(col, payload);
+        const newClass: TutorClass = { id: docRef.id, ...payload };
+
+        setClasses(prev => [newClass, ...prev].sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()));
+        window.dispatchEvent(new CustomEvent("boveda:create-class-response", { detail: { success: true, class: newClass } }));
+      } catch (err) {
+        console.error("Error creating class from extension:", err);
+        window.dispatchEvent(new CustomEvent("boveda:create-class-response", { detail: { success: false, error: String(err) } }));
+      }
+    };
+
+    window.addEventListener("boveda:create-class", handleCreateFromExtension);
+    return () => window.removeEventListener("boveda:create-class", handleCreateFromExtension);
+  }, [user, classesColPath, settings]);
+
   // ─── Settings save ──────────────────────────────────────────────────────
 
   const handleSaveSettings = async () => {
