@@ -226,78 +226,77 @@ export default function FloatingCalculator({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white px-4 py-3 rounded-2xl shadow-xl shadow-violet-600/30 border border-violet-400/30 hover:scale-105 active:scale-95 transition-all group cursor-pointer"
-          title="Abrir Calculadora"
+          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 h-10 bg-[#232325] hover:bg-[#2a2a2d] text-[#ededed] px-4 rounded-xl border border-[rgba(237,237,237,0.12)] transition-colors duration-150 cursor-pointer"
+          title="Abrir calculadora"
         >
-          <Calculator className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-          <span className="text-xs font-bold hidden sm:inline">Calculadora</span>
+          <Calculator className="w-4 h-4 text-[#d99b43]" strokeWidth={1.5} />
+          <span className="text-xs font-medium hidden sm:inline">Calculadora</span>
         </button>
       )}
 
-      {/* Calculator Window / Floating Card */}
+      {/* Calculator Window */}
       {isOpen && (
         <div
           ref={calcRef}
-          className="fixed bottom-6 right-6 z-50 w-[320px] bg-zinc-950/95 backdrop-blur-xl border border-violet-500/30 rounded-3xl shadow-2xl shadow-black/80 overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-200"
-          style={{ boxShadow: "0 20px 50px rgba(0,0,0,0.7), 0 0 30px rgba(139, 92, 246, 0.15)" }}
+          className="fixed bottom-6 right-6 z-50 w-[308px] bg-[#19191b] border border-[rgba(237,237,237,0.14)] rounded-2xl overflow-hidden"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/5">
-            <div className="flex items-center gap-2 text-violet-400">
-              <Calculator className="w-4 h-4" />
-              <span className="text-xs font-bold tracking-wide uppercase text-white">Calculadora</span>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(237,237,237,0.08)] bg-[#141415]">
+            <div className="flex items-center gap-2">
+              <Calculator className="w-4 h-4 text-[#d99b43]" strokeWidth={1.5} />
+              <span className="text-xs font-medium text-[#ededed]">Calculadora</span>
             </div>
             <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={handleCopy}
-                className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+                className="p-1.5 text-[#85858b] hover:text-[#ededed] rounded-md hover:bg-[#232325] transition-colors cursor-pointer"
                 title="Copiar resultado"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? <Check className="w-3.5 h-3.5 text-[#4cc38a]" strokeWidth={1.5} /> : <Copy className="w-3.5 h-3.5" strokeWidth={1.5} />}
               </button>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                className="p-1.5 text-[#85858b] hover:text-[#ededed] rounded-md hover:bg-[#232325] transition-colors cursor-pointer"
                 title="Cerrar calculadora"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3.5 h-3.5" strokeWidth={1.5} />
               </button>
             </div>
           </div>
 
           {/* Screen / Display */}
-          <div className="p-4 bg-black/40 border-b border-white/5 flex flex-col justify-end min-h-[90px] select-none">
-            <div className="text-xs text-gray-400 font-mono text-right min-h-[16px] overflow-hidden truncate">
+          <div className="p-4 bg-[#0f0f10] border-b border-[rgba(237,237,237,0.08)] flex flex-col justify-end min-h-[88px] select-none">
+            <div className="text-xs text-[#85858b] font-mono text-right min-h-[16px] overflow-hidden truncate tabular">
               {equation || "\u00A0"}
             </div>
-            <div className="text-3xl font-mono font-extrabold text-white text-right tracking-tight overflow-hidden whitespace-nowrap mt-1">
+            <div className="text-3xl font-mono font-medium text-[#ededed] text-right tabular overflow-hidden whitespace-nowrap mt-1">
               {formatDisplay(display)}
             </div>
           </div>
 
           {/* Keypad */}
-          <div className="p-3 grid grid-cols-4 gap-2 bg-black/20 text-sm">
+          <div className="p-3 grid grid-cols-4 gap-2 bg-[#141415] text-sm">
             {/* Row 1 */}
             <button
               type="button"
               onClick={handleClear}
-              className="p-2.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-300 font-bold active:scale-95 transition-all text-xs cursor-pointer"
+              className="h-10 rounded-lg bg-[#e5484d]/15 hover:bg-[#e5484d]/25 text-[#e5484d] font-medium transition-colors duration-150 text-xs cursor-pointer"
             >
               AC
             </button>
             <button
               type="button"
               onClick={handleToggleSign}
-              className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 font-bold active:scale-95 transition-all cursor-pointer"
+              className="h-10 rounded-lg bg-[#232325] hover:bg-[#2c2c2f] text-[#a1a1a6] font-medium transition-colors duration-150 cursor-pointer"
             >
               +/-
             </button>
             <button
               type="button"
               onClick={handlePercentage}
-              className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 font-bold active:scale-95 transition-all cursor-pointer"
+              className="h-10 rounded-lg bg-[#232325] hover:bg-[#2c2c2f] text-[#a1a1a6] font-medium transition-colors duration-150 cursor-pointer"
             >
               %
             </button>
@@ -305,139 +304,73 @@ export default function FloatingCalculator({
               type="button"
               onClick={() => handleOperator("÷")}
               className={clsx(
-                "p-2.5 rounded-xl font-bold active:scale-95 transition-all text-base cursor-pointer",
-                operation === "÷" ? "bg-violet-600 text-white" : "bg-violet-500/20 hover:bg-violet-500/30 text-violet-300"
+                "h-10 rounded-lg font-medium transition-colors duration-150 text-base cursor-pointer",
+                operation === "÷" ? "bg-[#d99b43] text-[#141415]" : "bg-[#232325] hover:bg-[#2c2c2f] text-[#d99b43]"
               )}
             >
               ÷
             </button>
 
             {/* Row 2 */}
-            <button
-              type="button"
-              onClick={() => handleDigit("7")}
-              className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold active:scale-95 transition-all cursor-pointer"
-            >
-              7
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDigit("8")}
-              className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold active:scale-95 transition-all cursor-pointer"
-            >
-              8
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDigit("9")}
-              className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold active:scale-95 transition-all cursor-pointer"
-            >
-              9
-            </button>
+            <button type="button" onClick={() => handleDigit("7")} className="h-10 rounded-lg bg-[#19191b] hover:bg-[#232325] border border-[rgba(237,237,237,0.06)] text-[#ededed] font-mono transition-colors duration-150 cursor-pointer">7</button>
+            <button type="button" onClick={() => handleDigit("8")} className="h-10 rounded-lg bg-[#19191b] hover:bg-[#232325] border border-[rgba(237,237,237,0.06)] text-[#ededed] font-mono transition-colors duration-150 cursor-pointer">8</button>
+            <button type="button" onClick={() => handleDigit("9")} className="h-10 rounded-lg bg-[#19191b] hover:bg-[#232325] border border-[rgba(237,237,237,0.06)] text-[#ededed] font-mono transition-colors duration-150 cursor-pointer">9</button>
             <button
               type="button"
               onClick={() => handleOperator("×")}
               className={clsx(
-                "p-2.5 rounded-xl font-bold active:scale-95 transition-all text-base cursor-pointer",
-                operation === "×" ? "bg-violet-600 text-white" : "bg-violet-500/20 hover:bg-violet-500/30 text-violet-300"
+                "h-10 rounded-lg font-medium transition-colors duration-150 text-base cursor-pointer",
+                operation === "×" ? "bg-[#d99b43] text-[#141415]" : "bg-[#232325] hover:bg-[#2c2c2f] text-[#d99b43]"
               )}
             >
               ×
             </button>
 
             {/* Row 3 */}
-            <button
-              type="button"
-              onClick={() => handleDigit("4")}
-              className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold active:scale-95 transition-all cursor-pointer"
-            >
-              4
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDigit("5")}
-              className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold active:scale-95 transition-all cursor-pointer"
-            >
-              5
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDigit("6")}
-              className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold active:scale-95 transition-all cursor-pointer"
-            >
-              6
-            </button>
+            <button type="button" onClick={() => handleDigit("4")} className="h-10 rounded-lg bg-[#19191b] hover:bg-[#232325] border border-[rgba(237,237,237,0.06)] text-[#ededed] font-mono transition-colors duration-150 cursor-pointer">4</button>
+            <button type="button" onClick={() => handleDigit("5")} className="h-10 rounded-lg bg-[#19191b] hover:bg-[#232325] border border-[rgba(237,237,237,0.06)] text-[#ededed] font-mono transition-colors duration-150 cursor-pointer">5</button>
+            <button type="button" onClick={() => handleDigit("6")} className="h-10 rounded-lg bg-[#19191b] hover:bg-[#232325] border border-[rgba(237,237,237,0.06)] text-[#ededed] font-mono transition-colors duration-150 cursor-pointer">6</button>
             <button
               type="button"
               onClick={() => handleOperator("-")}
               className={clsx(
-                "p-2.5 rounded-xl font-bold active:scale-95 transition-all text-base cursor-pointer",
-                operation === "-" ? "bg-violet-600 text-white" : "bg-violet-500/20 hover:bg-violet-500/30 text-violet-300"
+                "h-10 rounded-lg font-medium transition-colors duration-150 text-base cursor-pointer",
+                operation === "-" ? "bg-[#d99b43] text-[#141415]" : "bg-[#232325] hover:bg-[#2c2c2f] text-[#d99b43]"
               )}
             >
               -
             </button>
 
             {/* Row 4 */}
-            <button
-              type="button"
-              onClick={() => handleDigit("1")}
-              className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold active:scale-95 transition-all cursor-pointer"
-            >
-              1
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDigit("2")}
-              className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold active:scale-95 transition-all cursor-pointer"
-            >
-              2
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDigit("3")}
-              className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold active:scale-95 transition-all cursor-pointer"
-            >
-              3
-            </button>
+            <button type="button" onClick={() => handleDigit("1")} className="h-10 rounded-lg bg-[#19191b] hover:bg-[#232325] border border-[rgba(237,237,237,0.06)] text-[#ededed] font-mono transition-colors duration-150 cursor-pointer">1</button>
+            <button type="button" onClick={() => handleDigit("2")} className="h-10 rounded-lg bg-[#19191b] hover:bg-[#232325] border border-[rgba(237,237,237,0.06)] text-[#ededed] font-mono transition-colors duration-150 cursor-pointer">2</button>
+            <button type="button" onClick={() => handleDigit("3")} className="h-10 rounded-lg bg-[#19191b] hover:bg-[#232325] border border-[rgba(237,237,237,0.06)] text-[#ededed] font-mono transition-colors duration-150 cursor-pointer">3</button>
             <button
               type="button"
               onClick={() => handleOperator("+")}
               className={clsx(
-                "p-2.5 rounded-xl font-bold active:scale-95 transition-all text-base cursor-pointer",
-                operation === "+" ? "bg-violet-600 text-white" : "bg-violet-500/20 hover:bg-violet-500/30 text-violet-300"
+                "h-10 rounded-lg font-medium transition-colors duration-150 text-base cursor-pointer",
+                operation === "+" ? "bg-[#d99b43] text-[#141415]" : "bg-[#232325] hover:bg-[#2c2c2f] text-[#d99b43]"
               )}
             >
               +
             </button>
 
             {/* Row 5 */}
-            <button
-              type="button"
-              onClick={() => handleDigit("0")}
-              className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold active:scale-95 transition-all cursor-pointer"
-            >
-              0
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDigit(".")}
-              className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold active:scale-95 transition-all cursor-pointer"
-            >
-              .
-            </button>
+            <button type="button" onClick={() => handleDigit("0")} className="h-10 rounded-lg bg-[#19191b] hover:bg-[#232325] border border-[rgba(237,237,237,0.06)] text-[#ededed] font-mono transition-colors duration-150 cursor-pointer">0</button>
+            <button type="button" onClick={() => handleDigit(".")} className="h-10 rounded-lg bg-[#19191b] hover:bg-[#232325] border border-[rgba(237,237,237,0.06)] text-[#ededed] font-mono transition-colors duration-150 cursor-pointer">.</button>
             <button
               type="button"
               onClick={handleBackspace}
-              className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center active:scale-95 transition-all cursor-pointer"
+              className="h-10 rounded-lg bg-[#19191b] hover:bg-[#232325] border border-[rgba(237,237,237,0.06)] text-[#85858b] hover:text-[#ededed] flex items-center justify-center transition-colors duration-150 cursor-pointer"
               title="Borrar último dígito"
             >
-              <Delete className="w-4 h-4" />
+              <Delete className="w-4 h-4" strokeWidth={1.5} />
             </button>
             <button
               type="button"
               onClick={handleEquals}
-              className="p-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold active:scale-95 transition-all text-base shadow-lg shadow-violet-600/30 cursor-pointer"
+              className="h-10 rounded-lg bg-[#d99b43] hover:bg-[#e3a852] text-[#141415] font-medium transition-colors duration-150 text-base cursor-pointer"
             >
               =
             </button>

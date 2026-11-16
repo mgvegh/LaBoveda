@@ -8,36 +8,11 @@ import Image from "next/image";
 import ProfileButton from "@/components/ProfileButton";
 
 const navItems = [
-  {
-    href: "/ingresos",
-    label: "Ingresos",
-    icon: PiggyBank,
-    activeClass: "bg-violet-500/15 text-violet-400 border border-violet-500/20",
-  },
-  {
-    href: "/cedears",
-    label: "CEDEARs",
-    icon: Wallet,
-    activeClass: "bg-blue-500/15 text-blue-400 border border-blue-500/20",
-  },
-  {
-    href: "/portfolio-cripto",
-    label: "Cripto",
-    icon: null,
-    activeClass: "bg-teal-500/15 text-teal-400 border border-teal-500/20",
-  },
-  {
-    href: "/clases",
-    label: "Clases",
-    icon: GraduationCap,
-    activeClass: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20",
-  },
-  {
-    href: "/otras-herramientas",
-    label: "Más",
-    icon: LayoutGrid,
-    activeClass: "bg-amber-500/15 text-amber-400 border border-amber-500/20",
-  },
+  { href: "/ingresos", label: "Ingresos", icon: PiggyBank },
+  { href: "/cedears", label: "CEDEARs", icon: Wallet },
+  { href: "/portfolio-cripto", label: "Cripto", icon: Bitcoin },
+  { href: "/clases", label: "Clases", icon: GraduationCap },
+  { href: "/otras-herramientas", label: "Más", icon: LayoutGrid },
 ];
 
 export default function Navbar() {
@@ -59,36 +34,33 @@ export default function Navbar() {
 
   return (
     <nav
-      className="sticky top-0 z-50 w-full backdrop-blur-xl"
+      className="sticky top-0 z-50 w-full"
       style={{
         background: "var(--navbar-bg)",
         borderBottom: "1px solid var(--navbar-border)",
       }}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-2">
-          {/* ── Brand ───────────────────────────────────────────── */}
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 gap-4">
           <Link
             href="/"
-            className="flex items-center gap-2.5 shrink-0 hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2.5 shrink-0 hover:opacity-85 transition-opacity duration-150"
           >
             <Image
               src="/logo.png"
               alt="La Bóveda"
-              width={40}
-              height={40}
-              className="rounded-lg object-contain"
+              width={32}
+              height={32}
+              className="rounded-md object-contain"
             />
-            <span className="hidden sm:block font-bold tracking-tight text-base" style={{ color: "var(--fg)" }}>
+            <span className="hidden sm:block font-medium tracking-tight text-base text-[#ededed]">
               La Bóveda
             </span>
           </Link>
 
-          {/* ── Nav items ────────────────────────────────────────── */}
           {pathname !== "/login" && (
-            <div className="flex items-center gap-1">
-              {/* Scrollable nav links */}
-              <div className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
                 {navItems.map((item) => {
                   const active = isActive(item.href);
                   const Icon = item.icon;
@@ -98,30 +70,27 @@ export default function Navbar() {
                       key={item.href}
                       href={item.href}
                       className={clsx(
-                        "flex items-center gap-1.5 px-2.5 sm:px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 whitespace-nowrap shrink-0",
-                        active ? item.activeClass : "hover:bg-white/5",
+                        "flex items-center gap-2 h-9 px-3 text-sm font-medium rounded-lg transition-colors duration-150 whitespace-nowrap shrink-0",
+                        active
+                          ? "bg-[#232325] text-[#ededed] border border-[rgba(237,237,237,0.12)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+                          : "text-[#a1a1a6] hover:text-[#ededed] hover:bg-[#19191b] border border-transparent"
                       )}
-                      style={active ? undefined : { color: "var(--fg-muted)" }}
                     >
-                      {item.href === "/portfolio-cripto" ? (
-                        <div className="flex -space-x-1 items-center">
-                          <Bitcoin className="w-4 h-4 relative z-10" />
-                          <svg viewBox="0 0 32 32" className="w-4 h-4 fill-current text-purple-400">
-                            <path d="M15.925 23.969l-9.819-5.794L16 32l9.894-13.825-9.969 5.794zM16.075 0L6.181 16.481l9.819 5.806 9.894-5.806L16.075 0z" />
-                          </svg>
-                        </div>
-                      ) : (
-                        Icon && <Icon className="w-4 h-4 shrink-0" />
-                      )}
+                      <Icon
+                        className={clsx(
+                          "w-4 h-4 shrink-0",
+                          active ? "text-[#d99b43]" : "text-[#85858b]"
+                        )}
+                        strokeWidth={1.5}
+                      />
                       <span className="hidden lg:inline">{item.label}</span>
                     </Link>
                   );
                 })}
               </div>
 
-              {/* Profile — outside overflow container */}
               {user && (
-                <div className="shrink-0 ml-1">
+                <div className="shrink-0 pl-1 border-l border-[rgba(237,237,237,0.08)]">
                   <ProfileButton />
                 </div>
               )}

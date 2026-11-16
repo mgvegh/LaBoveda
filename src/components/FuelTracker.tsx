@@ -526,32 +526,29 @@ export default function FuelTracker() {
 
   return (
     <div className="space-y-6">
-
       {/* Vehicle Selection Header Bar */}
-      <div className="glass rounded-3xl p-5 border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-900/60 to-sky-950/20">
+      <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-sky-500/10 border border-sky-500/20 rounded-2xl text-sky-400">
-            <Car className="w-6 h-6" />
+          <div className="w-10 h-10 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg flex items-center justify-center text-[#d99b43] shrink-0">
+            <Car className="w-4 h-4" strokeWidth={1.5} />
           </div>
-          <div>
-            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Vehículo Seleccionado</h2>
-            <div className="flex items-center gap-2 mt-0.5">
-              <select
-                value={selectedVehicleId}
-                onChange={(e) => setSelectedVehicleId(e.target.value)}
-                className="bg-black/40 border border-white/10 rounded-xl px-3 py-1.5 text-sm font-bold text-sky-400 focus:outline-none focus:border-sky-500/50 cursor-pointer"
-              >
-                <option value="all">🚗 Todos los vehículos ({records.length} cargas)</option>
-                {vehicles.map(v => (
-                  <option key={v.id} value={v.id}>
-                    🚘 {v.name} {v.plate ? `[${v.plate}]` : ""}
-                  </option>
-                ))}
-                {unassignedCount > 0 && (
-                  <option value="unassigned">⚠️ Cargas sin auto asignado ({unassignedCount})</option>
-                )}
-              </select>
-            </div>
+          <div className="space-y-1">
+            <h2 className="text-xs text-[#85858b]">Vehículo seleccionado</h2>
+            <select
+              value={selectedVehicleId}
+              onChange={(e) => setSelectedVehicleId(e.target.value)}
+              className="h-9 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-3 text-sm font-medium text-[#ededed] focus:outline-none focus:border-[#d99b43] cursor-pointer"
+            >
+              <option value="all">Todos los vehículos ({records.length} cargas)</option>
+              {vehicles.map(v => (
+                <option key={v.id} value={v.id}>
+                  {v.name} {v.plate ? `[${v.plate}]` : ""}
+                </option>
+              ))}
+              {unassignedCount > 0 && (
+                <option value="unassigned">Cargas sin auto asignado ({unassignedCount})</option>
+              )}
+            </select>
           </div>
         </div>
 
@@ -562,30 +559,30 @@ export default function FuelTracker() {
             setNewVehiclePlate("");
             setShowVehicleModal(true);
           }}
-          className="flex items-center gap-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+          className="inline-flex items-center gap-2 h-9 bg-[#232325] hover:bg-[#2c2c2f] text-[#ededed] border border-[rgba(237,237,237,0.08)] px-3.5 rounded-lg text-xs font-medium transition-colors cursor-pointer"
         >
-          <Plus className="w-4 h-4" />
-          <span>Gestionar / Nuevo Auto</span>
+          <Plus className="w-4 h-4 text-[#d99b43]" strokeWidth={1.5} />
+          <span>Gestionar autos</span>
         </button>
       </div>
 
       {/* Unassigned Loads Batch Assignment Alert Banner */}
       {unassignedCount > 0 && vehicles.length > 0 && (
-        <div className="glass rounded-2xl p-4 border-amber-500/20 bg-amber-500/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-200">
+        <div className="bg-[#19191b] rounded-xl p-4 border border-[#d99b43]/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-[#a1a1a6]">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-[#d99b43] shrink-0" strokeWidth={1.5} />
             <span>
-              Tienes <strong className="text-white font-bold">{unassignedCount}</strong> carga(s) sin vehículo asignado.
+              Tenés <strong className="text-[#ededed] font-mono tabular">{unassignedCount}</strong> carga(s) sin vehículo asignado.
             </span>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <span className="text-gray-400 whitespace-nowrap">Asignar todas a:</span>
+            <span className="text-[#85858b] whitespace-nowrap">Asignar a</span>
             <select
               value={assignTargetVehicleId}
               onChange={(e) => setAssignTargetVehicleId(e.target.value)}
-              className="bg-black/50 border border-amber-500/30 rounded-xl px-2.5 py-1 text-xs text-amber-100 focus:outline-none cursor-pointer"
+              className="h-8 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-2.5 text-xs text-[#ededed] focus:outline-none cursor-pointer"
             >
-              <option value="">Seleccionar auto...</option>
+              <option value="">Seleccionar auto</option>
               {vehicles.map(v => (
                 <option key={v.id} value={v.id}>
                   {v.name} {v.plate ? `(${v.plate})` : ""}
@@ -595,9 +592,9 @@ export default function FuelTracker() {
             <button
               onClick={() => handleBatchAssignUnassigned(assignTargetVehicleId)}
               disabled={!assignTargetVehicleId || loading}
-              className="bg-amber-500 hover:bg-amber-400 text-black font-bold px-3.5 py-1 rounded-xl shadow transition-all disabled:opacity-50 whitespace-nowrap cursor-pointer"
+              className="h-8 bg-[#d99b43] hover:bg-[#e3a852] text-[#141415] font-medium px-3 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap cursor-pointer"
             >
-              Asignar Cargas
+              Asignar cargas
             </button>
           </div>
         </div>
@@ -605,51 +602,50 @@ export default function FuelTracker() {
 
       {/* Vehicle Management Modal */}
       {showVehicleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="glass bg-[#12141c] border border-white/10 rounded-3xl p-6 w-full max-w-md space-y-5 shadow-2xl relative">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="text-base font-bold text-gray-100 flex items-center gap-2">
-                <Car className="w-5 h-5 text-sky-400" />
-                {editingVehicleId ? "Editar Auto" : "Agregar Nuevo Auto"}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
+          <div className="bg-[#19191b] border border-[rgba(237,237,237,0.12)] rounded-2xl p-6 w-full max-w-md space-y-5 relative">
+            <div className="flex items-center justify-between border-b border-[rgba(237,237,237,0.08)] pb-3">
+              <h3 className="text-base font-medium text-[#ededed] flex items-center gap-2">
+                <Car className="w-4 h-4 text-[#d99b43]" strokeWidth={1.5} />
+                {editingVehicleId ? "Editar auto" : "Agregar nuevo auto"}
               </h3>
-              <button 
+              <button
                 onClick={() => {
                   setShowVehicleModal(false);
                   setEditingVehicleId(null);
                 }}
-                className="text-gray-400 hover:text-gray-200 p-1 rounded-lg hover:bg-white/5 cursor-pointer"
+                className="text-[#85858b] hover:text-[#ededed] p-1 rounded-md hover:bg-[#232325] cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" strokeWidth={1.5} />
               </button>
             </div>
 
-            {/* List of Existing Vehicles */}
             {vehicles.length > 0 && !editingVehicleId && (
               <div className="space-y-2">
-                <span className="text-xs text-gray-400 font-medium">Tus vehículos registrados:</span>
+                <span className="text-xs text-[#85858b]">Vehículos registrados</span>
                 <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
                   {vehicles.map(v => (
-                    <div key={v.id} className="flex items-center justify-between bg-black/30 border border-white/5 rounded-xl px-3 py-2 text-xs">
+                    <div key={v.id} className="flex items-center justify-between bg-[#141415] border border-[rgba(237,237,237,0.06)] rounded-lg px-3 py-2 text-xs">
                       <div>
-                        <span className="font-semibold text-gray-200">{v.name}</span>
-                        {v.plate && <span className="ml-2 text-gray-400 text-[11px]">({v.plate})</span>}
+                        <span className="font-medium text-[#ededed]">{v.name}</span>
+                        {v.plate && <span className="ml-2 font-mono text-[#85858b]">({v.plate})</span>}
                       </div>
                       <div className="flex items-center gap-1">
                         <button
                           type="button"
                           onClick={() => handleEditVehicleClick(v)}
-                          className="p-1 text-gray-400 hover:text-sky-400 hover:bg-white/5 rounded-md cursor-pointer"
+                          className="p-1 text-[#85858b] hover:text-[#ededed] hover:bg-[#232325] rounded cursor-pointer"
                           title="Editar vehículo"
                         >
-                          <Pencil className="w-3.5 h-3.5" />
+                          <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDeleteVehicle(v.id)}
-                          className="p-1 text-gray-400 hover:text-red-400 hover:bg-white/5 rounded-md cursor-pointer"
+                          className="p-1 text-[#85858b] hover:text-[#e5484d] hover:bg-[#232325] rounded cursor-pointer"
                           title="Eliminar vehículo"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
                         </button>
                       </div>
                     </div>
@@ -658,39 +654,38 @@ export default function FuelTracker() {
               </div>
             )}
 
-            {/* Vehicle Form */}
             <form onSubmit={handleSaveVehicle} className="space-y-3 pt-1">
-              <div>
-                <label className="text-xs text-gray-400 font-medium block mb-1">
-                  Nombre / Modelo <span className="text-sky-400">*</span>
+              <div className="space-y-1">
+                <label className="text-xs text-[#a1a1a6] block">
+                  Nombre o modelo
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="ej: Peugeot 208 Active"
+                  placeholder="Peugeot 208 Active"
                   value={newVehicleName}
                   onChange={(e) => setNewVehicleName(e.target.value)}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-sky-500/50"
+                  className="w-full h-9 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-3 text-sm text-[#ededed] focus:outline-none focus:border-[#d99b43]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-gray-400 font-medium block mb-1">Patente (Opcional)</label>
+                <div className="space-y-1">
+                  <label className="text-xs text-[#a1a1a6] block">Patente (opcional)</label>
                   <input
                     type="text"
-                    placeholder="ej: AF123CD"
+                    placeholder="AF123CD"
                     value={newVehiclePlate}
                     onChange={(e) => setNewVehiclePlate(e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-sky-500/50"
+                    className="w-full h-9 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-3 text-sm font-mono text-[#ededed] focus:outline-none focus:border-[#d99b43]"
                   />
                 </div>
-                <div>
-                  <label className="text-xs text-gray-400 font-medium block mb-1">Combustible Usual</label>
+                <div className="space-y-1">
+                  <label className="text-xs text-[#a1a1a6] block">Combustible usual</label>
                   <select
                     value={newVehicleFuelType}
                     onChange={(e) => setNewVehicleFuelType(e.target.value)}
-                    className="w-full bg-[#18181b] border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-sky-500/50 cursor-pointer"
+                    className="w-full h-9 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-3 text-sm text-[#ededed] focus:outline-none focus:border-[#d99b43] cursor-pointer"
                   >
                     <option value="Nafta Súper">Nafta Súper</option>
                     <option value="Nafta Premium">Nafta Premium</option>
@@ -709,15 +704,15 @@ export default function FuelTracker() {
                     setShowVehicleModal(false);
                     setEditingVehicleId(null);
                   }}
-                  className="px-4 py-2 text-xs font-semibold text-gray-400 hover:text-gray-200 rounded-xl hover:bg-white/5 cursor-pointer"
+                  className="h-9 px-3 text-xs font-medium text-[#a1a1a6] hover:text-[#ededed] rounded-lg hover:bg-[#232325] cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-white rounded-xl shadow-lg transition-all cursor-pointer"
+                  className="h-9 px-4 text-xs font-medium bg-[#d99b43] hover:bg-[#e3a852] text-[#141415] rounded-lg transition-colors cursor-pointer"
                 >
-                  {editingVehicleId ? "Guardar Auto" : "Agregar Auto"}
+                  {editingVehicleId ? "Guardar auto" : "Agregar auto"}
                 </button>
               </div>
             </form>
@@ -725,152 +720,124 @@ export default function FuelTracker() {
         </div>
       )}
 
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {/* Consumption KPI */}
-        <div className="glass rounded-2xl p-4 flex flex-col justify-between border-white/5 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-3 text-sky-500/10 group-hover:scale-110 transition-transform">
-            <Fuel className="w-12 h-12" />
-          </div>
-          <span className="text-xs font-medium text-gray-400">Consumo Medio</span>
-          <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-2xl font-bold tracking-tight text-sky-400">
-              {metrics.avgConsumption > 0 ? metrics.avgConsumption.toFixed(2) : "---"}
+      {/* KPI Cards Grid (numbers only, uniform rhythm) */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] rounded-xl p-4 flex flex-col justify-between">
+          <span className="text-xs text-[#85858b]">Consumo medio</span>
+          <div className="mt-2 flex items-baseline gap-1 font-mono tabular">
+            <span className="text-xl font-medium text-[#d99b43]">
+              {metrics.avgConsumption > 0 ? metrics.avgConsumption.toFixed(2) : "—"}
             </span>
-            <span className="text-xs text-gray-500 font-semibold">{unit}</span>
+            <span className="text-xs text-[#85858b]">{unit}</span>
           </div>
-          <p className="text-[10px] text-gray-500 mt-1">Calculado sobre tanques llenos</p>
+          <p className="text-xs text-[#85858b] mt-1">Sobre tanques llenos</p>
         </div>
 
-        {/* Total Spent */}
-        <div className="glass rounded-2xl p-4 flex flex-col justify-between border-white/5 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-3 text-emerald-500/10 group-hover:scale-110 transition-transform">
-            <Coins className="w-12 h-12" />
-          </div>
-          <span className="text-xs font-medium text-gray-400">Gasto Acumulado</span>
-          <div className="mt-2">
-            <span className="text-2xl font-bold tracking-tight text-emerald-400">
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] rounded-xl p-4 flex flex-col justify-between">
+          <span className="text-xs text-[#85858b]">Gasto acumulado</span>
+          <div className="mt-2 font-mono tabular">
+            <span className="text-xl font-medium text-[#ededed]">
               ${metrics.totalCost.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </span>
           </div>
-          <p className="text-[10px] text-gray-500 mt-1">
-            {metrics.totalLiters.toFixed(1)} L cargados en total
+          <p className="text-xs font-mono text-[#85858b] mt-1 tabular">
+            {metrics.totalLiters.toFixed(1)} L cargados
           </p>
         </div>
 
-        {/* Total Distance */}
-        <div className="glass rounded-2xl p-4 flex flex-col justify-between border-white/5 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-3 text-purple-500/10 group-hover:scale-110 transition-transform">
-            <Gauge className="w-12 h-12" />
-          </div>
-          <span className="text-xs font-medium text-gray-400">Distancia Recorrida</span>
-          <div className="mt-2">
-            <span className="text-2xl font-bold tracking-tight text-purple-400">
-              {metrics.totalDistance > 0 ? `${metrics.totalDistance.toLocaleString("es-AR")} km` : "---"}
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] rounded-xl p-4 flex flex-col justify-between">
+          <span className="text-xs text-[#85858b]">Distancia</span>
+          <div className="mt-2 font-mono tabular">
+            <span className="text-xl font-medium text-[#ededed]">
+              {metrics.totalDistance > 0 ? `${metrics.totalDistance.toLocaleString("es-AR")} km` : "—"}
             </span>
           </div>
-          <p className="text-[10px] text-gray-500 mt-1">
-            Distancia total en el rango
-          </p>
+          <p className="text-xs text-[#85858b] mt-1">Total en el rango</p>
         </div>
 
-        {/* Cost per Kilometer */}
-        <div className="glass rounded-2xl p-4 flex flex-col justify-between border-white/5 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-3 text-indigo-500/10 group-hover:scale-110 transition-transform">
-            <TrendingUp className="w-12 h-12" />
-          </div>
-          <span className="text-xs font-medium text-gray-400">Costo por Kilómetro</span>
-          <div className="mt-2">
-            <span className="text-2xl font-bold tracking-tight text-indigo-400">
-              {metrics.avgCostPerKm > 0 ? `$${metrics.avgCostPerKm.toFixed(1)}` : "---"}
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] rounded-xl p-4 flex flex-col justify-between">
+          <span className="text-xs text-[#85858b]">Costo por km</span>
+          <div className="mt-2 flex items-baseline gap-1 font-mono tabular">
+            <span className="text-xl font-medium text-[#ededed]">
+              {metrics.avgCostPerKm > 0 ? `$${metrics.avgCostPerKm.toFixed(1)}` : "—"}
             </span>
-            <span className="text-xs text-gray-500 font-semibold"> / km</span>
+            <span className="text-xs text-[#85858b]">/km</span>
           </div>
-          <p className="text-[10px] text-gray-500 mt-1">Gasto total / distancia total</p>
+          <p className="text-xs text-[#85858b] mt-1">Gasto / distancia</p>
         </div>
 
-        {/* Average Price per Liter */}
-        <div className="glass rounded-2xl p-4 flex flex-col justify-between border-white/5 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-3 text-amber-500/10 group-hover:scale-110 transition-transform">
-            <Coins className="w-12 h-12" />
-          </div>
-          <span className="text-xs font-medium text-gray-400">Precio Medio Litro</span>
-          <div className="mt-2">
-            <span className="text-2xl font-bold tracking-tight text-amber-400">
-              {metrics.avgPricePerLiter > 0 ? `$${metrics.avgPricePerLiter.toFixed(1)}` : "---"}
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] rounded-xl p-4 flex flex-col justify-between">
+          <span className="text-xs text-[#85858b]">Precio medio</span>
+          <div className="mt-2 flex items-baseline gap-1 font-mono tabular">
+            <span className="text-xl font-medium text-[#ededed]">
+              {metrics.avgPricePerLiter > 0 ? `$${metrics.avgPricePerLiter.toFixed(1)}` : "—"}
             </span>
-            <span className="text-xs text-gray-500 font-semibold"> / L</span>
+            <span className="text-xs text-[#85858b]">/L</span>
           </div>
-          <p className="text-[10px] text-gray-500 mt-1">Promedio ponderado</p>
+          <p className="text-xs text-[#85858b] mt-1">Promedio ponderado</p>
         </div>
 
-        {/* Avg Distance between refills */}
-        <div className="glass rounded-2xl p-4 flex flex-col justify-between border-white/5 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-3 text-pink-500/10 group-hover:scale-110 transition-transform">
-            <Calendar className="w-12 h-12" />
-          </div>
-          <span className="text-xs font-medium text-gray-400">Frecuencia Carga</span>
-          <div className="mt-2">
-            <span className="text-2xl font-bold tracking-tight text-pink-400">
-              {metrics.avgDistanceBetween > 0 ? `${Math.round(metrics.avgDistanceBetween)} km` : "---"}
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] rounded-xl p-4 flex flex-col justify-between">
+          <span className="text-xs text-[#85858b]">Frecuencia</span>
+          <div className="mt-2 font-mono tabular">
+            <span className="text-xl font-medium text-[#ededed]">
+              {metrics.avgDistanceBetween > 0 ? `${Math.round(metrics.avgDistanceBetween)} km` : "—"}
             </span>
           </div>
-          <p className="text-[10px] text-gray-500 mt-1">Distancia media entre cargas</p>
+          <p className="text-xs text-[#85858b] mt-1">Media entre cargas</p>
         </div>
       </div>
 
       {/* Filters and Unit Toggles bar */}
-      <div className="glass rounded-3xl p-5 border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Date Filters */}
+      <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          <div className="flex items-center gap-2 text-sm text-gray-400 font-medium">
-            <Filter className="w-4 h-4 text-sky-400" />
-            <span>Filtrar Tramo:</span>
+          <div className="flex items-center gap-2 text-xs text-[#a1a1a6]">
+            <Filter className="w-4 h-4 text-[#85858b]" strokeWidth={1.5} />
+            <span>Filtrar tramo</span>
           </div>
           <div className="flex items-center gap-2">
-            <input 
-              type="date" 
+            <input
+              type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="bg-black/20 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-sky-500/50 transition-colors"
+              className="h-8 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-2.5 text-xs font-mono text-[#ededed] focus:outline-none focus:border-[#d99b43] transition-colors"
             />
-            <span className="text-gray-500 text-xs">a</span>
-            <input 
-              type="date" 
+            <span className="text-[#85858b] text-xs">a</span>
+            <input
+              type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="bg-black/20 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-sky-500/50 transition-colors"
+              className="h-8 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-2.5 text-xs font-mono text-[#ededed] focus:outline-none focus:border-[#d99b43] transition-colors"
             />
           </div>
           {(startDate || endDate) && (
-            <button 
+            <button
               onClick={resetFilters}
-              className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-200 bg-white/5 hover:bg-white/10 rounded-lg px-2 py-1 transition-all cursor-pointer"
+              className="flex items-center gap-1 h-8 text-xs text-[#a1a1a6] hover:text-[#ededed] bg-[#232325] rounded-lg px-2.5 transition-colors cursor-pointer"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.5} />
               <span>Limpiar</span>
             </button>
           )}
         </div>
 
-        {/* Unit Selector Toggle */}
-        <div className="flex items-center gap-2 bg-black/40 border border-white/5 p-1 rounded-xl w-full md:w-auto justify-center">
-          <button 
+        <div className="flex items-center gap-1 bg-[#141415] border border-[rgba(237,237,237,0.08)] p-1 rounded-lg w-full md:w-auto justify-center">
+          <button
             onClick={() => setUnit("L/100km")}
-            className={`px-4 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-              unit === "L/100km" 
-                ? "bg-sky-500/20 text-sky-400 border border-sky-500/30 shadow-sm"
-                : "text-gray-400 hover:text-gray-200"
+            className={`px-3 h-7 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer ${
+              unit === "L/100km"
+                ? "bg-[#232325] text-[#ededed]"
+                : "text-[#85858b] hover:text-[#ededed]"
             }`}
           >
             L/100km
           </button>
-          <button 
+          <button
             onClick={() => setUnit("km/L")}
-            className={`px-4 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-              unit === "km/L" 
-                ? "bg-sky-500/20 text-sky-400 border border-sky-500/30 shadow-sm"
-                : "text-gray-400 hover:text-gray-200"
+            className={`px-3 h-7 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer ${
+              unit === "km/L"
+                ? "bg-[#232325] text-[#ededed]"
+                : "text-[#85858b] hover:text-[#ededed]"
             }`}
           >
             km/L
@@ -879,25 +846,21 @@ export default function FuelTracker() {
       </div>
 
       {/* Top Grid: Compact Refill Form + Consumption Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Left: Compact Refill Form */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div className="lg:col-span-5 space-y-4">
-          <div ref={formRef} className="glass rounded-3xl p-5 border-white/5 relative overflow-hidden transition-all">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/5 rounded-full blur-3xl -z-10 pointer-events-none"></div>
-            
-            <div className="flex items-center justify-between mb-3">
+          <div ref={formRef} className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] rounded-xl p-5 space-y-4">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-sky-400" />
-                <h2 className="text-base font-bold text-gray-200">
-                  {editingRecordId ? "Editar Carga" : "Registrar Carga"}
+                <Fuel className="w-4 h-4 text-[#d99b43]" strokeWidth={1.5} />
+                <h2 className="text-base font-medium text-[#ededed]">
+                  {editingRecordId ? "Editar carga" : "Registrar carga"}
                 </h2>
               </div>
               {editingRecordId && (
                 <button
                   type="button"
                   onClick={handleCancelEdit}
-                  className="text-[11px] text-amber-400 hover:text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg transition-all cursor-pointer"
+                  className="text-xs text-[#d99b43] hover:underline cursor-pointer"
                 >
                   Cancelar
                 </button>
@@ -905,16 +868,15 @@ export default function FuelTracker() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3">
-              {/* Vehicle Selection in Form */}
               {vehicles.length > 0 && (
                 <div className="space-y-1">
-                  <label className="text-[11px] text-gray-400 font-medium flex items-center gap-1.5">
-                    <Car className="w-3.5 h-3.5 text-gray-500" /> Vehículo
+                  <label className="text-xs text-[#a1a1a6] flex items-center gap-1.5">
+                    <Car className="w-3.5 h-3.5 text-[#85858b]" strokeWidth={1.5} /> Vehículo
                   </label>
                   <select
                     value={formVehicleId}
                     onChange={(e) => setFormVehicleId(e.target.value)}
-                    className="w-full bg-[#18181b] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-sky-500/50 cursor-pointer"
+                    className="w-full h-9 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-3 text-xs text-[#ededed] focus:outline-none focus:border-[#d99b43] cursor-pointer"
                   >
                     {vehicles.map(v => (
                       <option key={v.id} value={v.id}>
@@ -926,29 +888,27 @@ export default function FuelTracker() {
               )}
 
               <div className="grid grid-cols-2 gap-3">
-                {/* Date */}
                 <div className="space-y-1">
-                  <label className="text-[11px] text-gray-400 font-medium flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-gray-500" /> Fecha
+                  <label className="text-xs text-[#a1a1a6] flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-[#85858b]" strokeWidth={1.5} /> Fecha
                   </label>
-                  <input 
+                  <input
                     type="date"
                     required
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full bg-black/35 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-sky-500/50"
+                    className="w-full h-9 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-3 text-xs font-mono text-[#ededed] focus:outline-none focus:border-[#d99b43]"
                   />
                 </div>
 
-                {/* Fuel Type */}
                 <div className="space-y-1">
-                  <label className="text-[11px] text-gray-400 font-medium flex items-center gap-1.5">
-                    <Fuel className="w-3.5 h-3.5 text-gray-500" /> Combustible
+                  <label className="text-xs text-[#a1a1a6] flex items-center gap-1.5">
+                    <Fuel className="w-3.5 h-3.5 text-[#85858b]" strokeWidth={1.5} /> Combustible
                   </label>
                   <select
                     value={fuelType}
                     onChange={(e) => setFuelType(e.target.value)}
-                    className="w-full bg-[#18181b] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-sky-500/50 cursor-pointer"
+                    className="w-full h-9 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-3 text-xs text-[#ededed] focus:outline-none focus:border-[#d99b43] cursor-pointer"
                   >
                     <option value="Nafta Súper">Nafta Súper</option>
                     <option value="Nafta Premium">Nafta Premium</option>
@@ -960,95 +920,76 @@ export default function FuelTracker() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                {/* Odometer (km) */}
+              <div className="grid grid-cols-3 gap-2">
                 <div className="space-y-1">
-                  <label className="text-[11px] text-gray-400 font-medium flex items-center gap-1">
-                    <Gauge className="w-3 h-3 text-gray-500" /> Km
-                  </label>
-                  <input 
+                  <label className="text-xs text-[#a1a1a6] block">Km</label>
+                  <input
                     type="number"
                     required
-                    placeholder="ej: 104500"
+                    placeholder="104500"
                     value={odometer}
                     onChange={(e) => setOdometer(e.target.value)}
-                    className="w-full bg-black/35 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-sky-500/50"
+                    className="w-full h-9 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-2.5 text-xs font-mono text-[#ededed] focus:outline-none focus:border-[#d99b43]"
                   />
                 </div>
 
-                {/* Liters */}
                 <div className="space-y-1">
-                  <label className="text-[11px] text-gray-400 font-medium flex items-center gap-1">
-                    Litros (L)
-                  </label>
-                  <input 
+                  <label className="text-xs text-[#a1a1a6] block">Litros</label>
+                  <input
                     type="number"
                     step="0.01"
                     required
-                    placeholder="ej: 42.5"
+                    placeholder="42.5"
                     value={liters}
                     onChange={(e) => setLiters(e.target.value)}
-                    className="w-full bg-black/35 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-sky-500/50"
+                    className="w-full h-9 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-2.5 text-xs font-mono text-[#ededed] focus:outline-none focus:border-[#d99b43]"
                   />
                 </div>
 
-                {/* Cost */}
                 <div className="space-y-1">
-                  <label className="text-[11px] text-gray-400 font-medium flex items-center gap-1">
-                    Costo ($)
-                  </label>
-                  <input 
+                  <label className="text-xs text-[#a1a1a6] block">Costo ($)</label>
+                  <input
                     type="number"
                     step="0.01"
                     required
-                    placeholder="ej: 45000"
+                    placeholder="45000"
                     value={cost}
                     onChange={(e) => setCost(e.target.value)}
-                    className="w-full bg-black/35 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-sky-500/50"
+                    className="w-full h-9 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-2.5 text-xs font-mono text-[#ededed] focus:outline-none focus:border-[#d99b43]"
                   />
                 </div>
               </div>
 
-              {/* Tank Full Toggle */}
-              <div className="flex items-center justify-between bg-black/25 border border-white/5 rounded-xl px-3 py-2">
+              <div className="flex items-center justify-between bg-[#141415] border border-[rgba(237,237,237,0.06)] rounded-lg px-3 py-2.5">
                 <div className="flex flex-col">
-                  <span className="text-xs font-semibold text-gray-200 flex items-center gap-1">
-                    ¿Tanque Lleno? 
-                    <span className="text-[10px] text-gray-500 font-normal">(Recomendado)</span>
-                  </span>
-                  <span className="text-[10px] text-gray-500">Mide consumos entre llenados</span>
+                  <span className="text-xs font-medium text-[#ededed]">Tanque lleno</span>
+                  <span className="text-xs text-[#85858b]">Mide el consumo entre llenados</span>
                 </div>
-                <input 
+                <input
                   type="checkbox"
                   checked={isFull}
                   onChange={(e) => setIsFull(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500 cursor-pointer"
+                  className="w-4 h-4 accent-[#d99b43] cursor-pointer"
                 />
               </div>
 
-              {/* Submit / Save Button */}
-              <button 
+              <button
                 type="submit"
                 disabled={loading}
-                className={`w-full text-white rounded-xl py-2.5 px-4 text-xs font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-1 cursor-pointer ${
-                  editingRecordId
-                    ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:shadow-amber-500/10"
-                    : "bg-gradient-to-r from-sky-500 to-indigo-500 hover:shadow-sky-500/10"
-                }`}
+                className="w-full h-10 bg-[#d99b43] hover:bg-[#e3a852] text-[#141415] rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
               >
-                {editingRecordId ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-                <span>{editingRecordId ? "Guardar Cambios" : "Agregar Carga"}</span>
+                {editingRecordId ? <Check className="w-4 h-4" strokeWidth={1.5} /> : <Plus className="w-4 h-4" strokeWidth={1.5} />}
+                <span>{editingRecordId ? "Guardar cambios" : "Agregar carga"}</span>
               </button>
             </form>
           </div>
 
-          {/* Explanation Banner */}
-          <div className="glass rounded-2xl p-4 border-white/5 bg-sky-950/10 flex gap-3 text-xs text-gray-400">
-            <Info className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
-            <div className="space-y-0.5 text-[11px]">
-              <span className="font-semibold text-gray-200 block">Métrica de consumo</span>
-              <p className="leading-normal">
-                El consumo se calcula al cargar con <strong className="text-sky-300">"Tanque Lleno"</strong> midiendo los km desde el llenado anterior del mismo vehículo.
+          <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] rounded-xl p-4 flex gap-3 text-xs text-[#a1a1a6]">
+            <Info className="w-4 h-4 text-[#85858b] shrink-0 mt-0.5" strokeWidth={1.5} />
+            <div className="space-y-0.5">
+              <span className="font-medium text-[#ededed] block">Cálculo de consumo</span>
+              <p className="leading-relaxed">
+                Se calcula cuando registrás tanque lleno midiendo los km recorridos desde el llenado anterior del mismo vehículo.
               </p>
             </div>
           </div>
@@ -1057,107 +998,102 @@ export default function FuelTracker() {
         {/* Right: Consumption Chart */}
         <div className="lg:col-span-7">
           {chartData.length > 0 ? (
-            <div className="glass rounded-3xl p-5 border-white/5 h-full flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-bold text-gray-200 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-sky-400" />
-                  Histórico de Consumo y Costo
+            <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] rounded-xl p-5 h-full flex flex-col justify-between space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-medium text-[#ededed]">
+                  Histórico de consumo y precio
                 </h3>
-                <span className="text-[10px] text-gray-500">Orden cronológico</span>
+                <span className="text-xs text-[#85858b]">Orden cronológico</span>
               </div>
-              
-              <div className="h-64 w-full text-xs mt-2">
+
+              <div className="h-72 w-full text-xs">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                    <XAxis dataKey="date" stroke="#9ca3af" />
-                    <YAxis 
-                      yAxisId="left" 
-                      stroke="#38bdf8" 
-                      domain={['auto', 'auto']}
-                      label={{ value: unit, angle: -90, position: 'insideLeft', fill: '#38bdf8', offset: 10 }}
-                    />
-                    <YAxis 
-                      yAxisId="right" 
-                      orientation="right" 
-                      stroke="#f59e0b"
-                      domain={['auto', 'auto']}
-                      label={{ value: '$/L', angle: 90, position: 'insideRight', fill: '#f59e0b', offset: 10 }}
-                    />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: "#18181b", borderColor: "rgba(255,255,255,0.1)", borderRadius: "12px", color: "#e5e7eb" }} 
-                      labelStyle={{ fontWeight: "bold" }}
-                    />
-                    <Legend verticalAlign="top" height={36} />
-                    <Line 
+                  <LineChart data={chartData} margin={{ top: 5, right: 5, left: -16, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(237,237,237,0.06)" />
+                    <XAxis dataKey="date" stroke="#85858b" tick={{ fill: "#85858b", fontSize: 11 }} />
+                    <YAxis
                       yAxisId="left"
-                      type="monotone" 
-                      dataKey="Consumo" 
-                      name={`Consumo (${unit})`} 
-                      stroke="#0284c7" 
-                      activeDot={{ r: 6 }} 
+                      stroke="#d99b43"
+                      domain={['auto', 'auto']}
+                      tick={{ fill: "#85858b", fontSize: 11 }}
+                      label={{ value: unit, angle: -90, position: 'insideLeft', fill: '#d99b43', offset: 12, fontSize: 11 }}
+                    />
+                    <YAxis
+                      yAxisId="right"
+                      orientation="right"
+                      stroke="#a1a1a6"
+                      domain={['auto', 'auto']}
+                      tick={{ fill: "#85858b", fontSize: 11 }}
+                      label={{ value: '$/L', angle: 90, position: 'insideRight', fill: '#a1a1a6', offset: 12, fontSize: 11 }}
+                    />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: "#19191b", borderColor: "rgba(237,237,237,0.12)", borderRadius: "8px", color: "#ededed", fontSize: "12px" }}
+                    />
+                    <Legend verticalAlign="top" height={32} />
+                    <Line
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey="Consumo"
+                      name={`Consumo (${unit})`}
+                      stroke="#d99b43"
+                      activeDot={{ r: 5 }}
                       strokeWidth={2}
                       connectNulls
                     />
-                    <Line 
+                    <Line
                       yAxisId="right"
-                      type="monotone" 
-                      dataKey="PrecioLitro" 
-                      name="Precio Litro ($/L)" 
-                      stroke="#d97706" 
-                      strokeWidth={2}
+                      type="monotone"
+                      dataKey="PrecioLitro"
+                      name="Precio por litro ($/L)"
+                      stroke="#a1a1a6"
+                      strokeWidth={1.5}
                     />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             </div>
           ) : (
-            <div className="glass rounded-3xl p-8 border-white/5 h-full flex flex-col items-center justify-center text-center text-gray-500 text-xs space-y-2">
-              <TrendingUp className="w-8 h-8 text-gray-600" />
-              <p>El gráfico se generará cuando registres tus cargas de combustible.</p>
+            <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] rounded-xl p-8 h-full flex flex-col items-center justify-center text-center text-[#85858b] text-sm space-y-2">
+              <TrendingUp className="w-5 h-5" strokeWidth={1.5} />
+              <p>El gráfico se genera al registrar cargas de combustible.</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* FULL WIDTH Historical Refills Table Card (col-span-12) */}
-      <div className="glass rounded-3xl border-white/5 overflow-hidden shadow-xl">
-        <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-black/20">
-          <h3 className="text-base font-bold text-gray-200 flex items-center gap-2">
-            <Fuel className="w-4 h-4 text-sky-400" />
-            Historial de Cargas
-          </h3>
-          <span className="text-xs text-gray-400 bg-white/5 rounded-full px-3 py-1 font-semibold">
-            {filteredRecords.length} cargas registradas
+      {/* Historical Refills Table */}
+      <div className="bg-[#19191b] rounded-xl border border-[rgba(237,237,237,0.08)] overflow-hidden">
+        <div className="px-5 py-4 border-b border-[rgba(237,237,237,0.08)] flex items-center justify-between">
+          <h3 className="text-base font-medium text-[#ededed]">Historial de cargas</h3>
+          <span className="text-xs font-mono text-[#85858b] tabular">
+            {filteredRecords.length} registros
           </span>
         </div>
 
         {loading && records.length === 0 ? (
-          <div className="py-12 text-center text-gray-500 text-sm">Cargando datos...</div>
+          <div className="py-12 text-center text-[#85858b] text-sm">Cargando datos...</div>
         ) : filteredRecords.length === 0 ? (
-          <div className="py-16 text-center text-gray-500 text-sm space-y-2">
-            <AlertCircle className="w-8 h-8 text-gray-600 mx-auto" />
+          <div className="py-16 text-center text-[#85858b] text-sm space-y-2">
+            <AlertCircle className="w-5 h-5 mx-auto" strokeWidth={1.5} />
             <p>No se encontraron cargas registradas.</p>
-            <p className="text-xs text-gray-600">Comienza agregando tu primera carga en el formulario superior.</p>
           </div>
         ) : (
-          /* FULL WIDTH & INCREASED HEIGHT max-h-[600px] */
           <div className="overflow-x-auto max-h-[600px]">
-            <table className="w-full text-left text-sm text-gray-300 border-separate border-spacing-0">
-              <thead className="text-xs text-gray-300 uppercase sticky top-0 z-20 shadow-md">
+            <table className="w-full text-left text-sm text-[#a1a1a6] border-separate border-spacing-0">
+              <thead className="text-xs text-[#85858b] sticky top-0 z-20">
                 <tr>
-                  <th className="px-4 py-3 bg-[#12141c] border-b border-white/10 font-semibold">Fecha</th>
-                  <th className="px-4 py-3 bg-[#12141c] border-b border-white/10 font-semibold">Vehículo / Auto</th>
-                  <th className="px-4 py-3 bg-[#12141c] border-b border-white/10 font-semibold text-right">Odo. (km)</th>
-                  <th className="px-4 py-3 bg-[#12141c] border-b border-white/10 font-semibold text-right">Litros (L)</th>
-                  <th className="px-4 py-3 bg-[#12141c] border-b border-white/10 font-semibold text-right">Costo Total</th>
-                  <th className="px-4 py-3 bg-[#12141c] border-b border-white/10 font-semibold text-right">$/Litro</th>
-                  <th className="px-4 py-3 bg-[#12141c] border-b border-white/10 font-semibold text-center">Combustible / Tanque</th>
-                  <th className="px-4 py-3 bg-[#12141c] border-b border-white/10 font-semibold text-right text-sky-400">Consumo</th>
-                  <th className="px-4 py-3 bg-[#12141c] border-b border-white/10 font-semibold text-center">Acciones</th>
+                  <th className="px-4 py-3 bg-[#141415] border-b border-[rgba(237,237,237,0.08)] font-medium">Fecha</th>
+                  <th className="px-4 py-3 bg-[#141415] border-b border-[rgba(237,237,237,0.08)] font-medium">Vehículo</th>
+                  <th className="px-4 py-3 bg-[#141415] border-b border-[rgba(237,237,237,0.08)] font-medium text-right">Odo. (km)</th>
+                  <th className="px-4 py-3 bg-[#141415] border-b border-[rgba(237,237,237,0.08)] font-medium text-right">Litros</th>
+                  <th className="px-4 py-3 bg-[#141415] border-b border-[rgba(237,237,237,0.08)] font-medium text-right">Costo total</th>
+                  <th className="px-4 py-3 bg-[#141415] border-b border-[rgba(237,237,237,0.08)] font-medium text-right">$/L</th>
+                  <th className="px-4 py-3 bg-[#141415] border-b border-[rgba(237,237,237,0.08)] font-medium text-center">Tipo</th>
+                  <th className="px-4 py-3 bg-[#141415] border-b border-[rgba(237,237,237,0.08)] font-medium text-right">Consumo</th>
+                  <th className="px-4 py-3 bg-[#141415] border-b border-[rgba(237,237,237,0.08)] font-medium text-center">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-[rgba(237,237,237,0.06)]">
                 {filteredRecords.map((rec) => {
                   const formattedDate = new Date(rec.date + "T12:00:00").toLocaleDateString("es-AR", {
                     day: "2-digit",
@@ -1167,13 +1103,13 @@ export default function FuelTracker() {
                   const isBeingEdited = editingRecordId === rec.id;
                   const hasNoVehicle = !rec.vehicleId;
                   return (
-                    <tr 
-                      key={rec.id} 
+                    <tr
+                      key={rec.id}
                       className={`transition-colors ${
-                        isBeingEdited ? "bg-amber-500/10 border-l-2 border-amber-400" : "hover:bg-white/5"
+                        isBeingEdited ? "bg-[#232325]" : "hover:bg-[#232325]/50"
                       }`}
                     >
-                      <td className="px-4 py-3 font-medium whitespace-nowrap text-xs text-gray-400">
+                      <td className="px-4 py-3 font-mono whitespace-nowrap text-xs text-[#85858b] tabular">
                         {formattedDate}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-xs">
@@ -1184,79 +1120,71 @@ export default function FuelTracker() {
                                 if (e.target.value) handleAssignSingleRecord(rec.id, e.target.value);
                               }}
                               defaultValue=""
-                              className="bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-semibold rounded px-2 py-0.5 focus:outline-none cursor-pointer"
+                              className="bg-[#232325] border border-[#d99b43]/40 text-[#d99b43] text-xs rounded px-2 py-1 focus:outline-none cursor-pointer"
                             >
-                              <option value="" disabled>⚠️ Asignar auto...</option>
+                              <option value="" disabled>Asignar auto</option>
                               {vehicles.map(v => (
-                                <option key={v.id} value={v.id} className="bg-[#18181b] text-gray-200">
+                                <option key={v.id} value={v.id}>
                                   {v.name}
                                 </option>
                               ))}
                             </select>
                           ) : (
-                            <span className="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-semibold">
-                              Sin asignar
-                            </span>
+                            <span className="text-xs text-[#d99b43]">Sin asignar</span>
                           )
                         ) : (
-                          <span className="text-sky-300/90 font-semibold">
+                          <span className="text-[#ededed] font-medium">
                             {getVehicleName(rec.vehicleId)}
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-right font-mono text-xs text-gray-200">
+                      <td className="px-4 py-3 text-right font-mono text-xs text-[#ededed] tabular">
                         {rec.odometer.toLocaleString("es-AR")}
                       </td>
-                      <td className="px-4 py-3 text-right font-mono text-xs text-gray-200">
+                      <td className="px-4 py-3 text-right font-mono text-xs text-[#a1a1a6] tabular">
                         {rec.liters.toFixed(2)}
                       </td>
-                      <td className="px-4 py-3 text-right font-mono text-xs text-emerald-400 font-semibold">
+                      <td className="px-4 py-3 text-right font-mono text-xs text-[#ededed] tabular">
                         ${rec.cost.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       </td>
-                      <td className="px-4 py-3 text-right font-mono text-xs text-amber-400/90">
+                      <td className="px-4 py-3 text-right font-mono text-xs text-[#85858b] tabular">
                         ${rec.pricePerLiter.toFixed(1)}
                       </td>
-                      <td className="px-4 py-3 text-center whitespace-nowrap">
-                        <span className="text-[10px] bg-white/5 border border-white/5 rounded px-2 py-0.5 text-gray-400 font-semibold mr-1.5">
-                          {rec.fuelType}
-                        </span>
-                        <span className={`text-[10px] rounded px-2 py-0.5 font-semibold ${
-                          rec.isFull 
-                            ? "bg-sky-500/10 border border-sky-500/20 text-sky-400" 
-                            : "bg-purple-500/10 border border-purple-500/20 text-purple-400"
-                        }`}>
+                      <td className="px-4 py-3 text-center whitespace-nowrap text-xs">
+                        <span className="text-[#a1a1a6] mr-2">{rec.fuelType}</span>
+                        <span className={rec.isFull ? "text-[#d99b43] font-mono" : "text-[#85858b] font-mono"}>
                           {rec.isFull ? "Lleno" : "Parcial"}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right font-bold text-sky-400 text-xs whitespace-nowrap">
+                      <td className="px-4 py-3 text-right font-mono text-xs whitespace-nowrap tabular">
                         {rec.consumption ? (
                           <div className="flex flex-col items-end">
-                            <span>{rec.consumption.toFixed(2)} <span className="text-[9px] font-normal text-gray-500">{unit}</span></span>
+                            <span className="text-[#d99b43] font-medium">{rec.consumption.toFixed(2)} <span className="text-[#85858b]">{unit}</span></span>
                             {rec.distance && (
-                              <span className="text-[9px] font-normal text-gray-500">
-                                en {rec.distance} km
+                              <span className="text-[#85858b]">
+                                {rec.distance} km
                               </span>
                             )}
                           </div>
                         ) : (
-                          <span className="text-gray-500 text-xs font-normal">---</span>
+                          <span className="text-[#85858b]">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-1.5">
+                        <div className="flex items-center justify-center gap-1">
                           <button
                             onClick={() => handleStartEdit(rec)}
-                            className="p-1.5 text-gray-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-all cursor-pointer"
+                            className="p-1.5 text-[#85858b] hover:text-[#ededed] hover:bg-[#232325] rounded-md transition-colors cursor-pointer"
                             title="Editar registro"
                           >
-                            <Pencil className="w-3.5 h-3.5" />
+                            <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
                           </button>
                           <button
                             onClick={() => handleDelete(rec.id)}
-                            className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer"
+                            className="p-1.5 text-[#85858b] hover:text-[#e5484d] hover:bg-[#232325] rounded-md transition-colors cursor-pointer"
                             title="Eliminar registro"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
                           </button>
                         </div>
                       </td>

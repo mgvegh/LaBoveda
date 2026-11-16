@@ -1211,14 +1211,14 @@ export default function TutorTracker() {
                 id="btn-save-class"
                 type="submit"
                 disabled={formSaving}
-                className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold text-sm hover:from-emerald-400 hover:to-teal-400 transition-all disabled:opacity-60 shadow-lg shadow-emerald-900/30"
+                className="flex items-center gap-2 h-10 px-5 bg-[#d99b43] hover:bg-[#e3a852] text-[#141415] rounded-lg font-medium text-sm transition-colors disabled:opacity-60 cursor-pointer"
               >
                 {formSaving
-                  ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  : <Check className="w-4 h-4" />}
+                  ? <span className="w-4 h-4 border-2 border-[#141415]/30 border-t-[#141415] rounded-full animate-spin" />
+                  : <Check className="w-4 h-4" strokeWidth={1.5} />}
                 {editingId
-                  ? "Actualizar Clase"
-                  : formRepeat > 1 ? `Guardar ${formRepeat} Clases` : "Guardar Clase"}
+                  ? "Actualizar clase"
+                  : formRepeat > 1 ? `Guardar ${formRepeat} clases` : "Guardar clase"}
               </button>
             </div>
           </div>
@@ -1283,55 +1283,54 @@ export default function TutorTracker() {
 
       {/* ── Settings modal ──────────────────────────────────── */}
       {showSettings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="glass-panel rounded-2xl p-8 w-full max-w-md space-y-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75">
+          <div className="bg-[#19191b] border border-[rgba(237,237,237,0.12)] rounded-2xl p-6 w-full max-w-md space-y-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-500/20 rounded-xl">
-                  <Building2 className="w-5 h-5 text-emerald-400" />
+                <div className="w-9 h-9 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg flex items-center justify-center">
+                  <Building2 className="w-4 h-4 text-[#d99b43]" strokeWidth={1.5} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-100">Tarifas CET</h3>
-                  <p className="text-xs text-gray-500">Centro de Estudios Turing — valor por hora</p>
+                  <h3 className="font-medium text-sm text-[#ededed]">Tarifas CET</h3>
+                  <p className="text-xs text-[#85858b]">Centro de Estudios Turing · valor por hora</p>
                 </div>
               </div>
-              <button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-white transition-colors">
-                <X className="w-5 h-5" />
+              <button onClick={() => setShowSettings(false)} className="text-[#85858b] hover:text-[#ededed] transition-colors cursor-pointer">
+                <X className="w-4 h-4" strokeWidth={1.5} />
               </button>
             </div>
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-gray-400 mb-1.5 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-blue-400" /> Valor hora Presencial (ARS)
+              <div className="space-y-1.5">
+                <label className="text-xs text-[#a1a1a6] flex items-center gap-2">
+                  <Users className="w-3.5 h-3.5 text-[#85858b]" strokeWidth={1.5} /> Valor hora presencial (ARS)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#85858b] text-sm font-mono">$</span>
                   <input id="settings-cet-presencial" type="number" min="0" value={settingsPresencial}
                     onChange={e => setSettingsPresencial(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-7 pr-4 py-3 text-gray-100 text-sm focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all" placeholder="0" />
+                    className="w-full h-10 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg pl-7 pr-3 text-[#ededed] font-mono text-sm focus:outline-none focus:border-[#d99b43] transition-colors" placeholder="0" />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-1.5 flex items-center gap-2">
-                  <Monitor className="w-4 h-4 text-purple-400" /> Valor hora Virtual (ARS)
+              <div className="space-y-1.5">
+                <label className="text-xs text-[#a1a1a6] flex items-center gap-2">
+                  <Monitor className="w-3.5 h-3.5 text-[#85858b]" strokeWidth={1.5} /> Valor hora virtual (ARS)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#85858b] text-sm font-mono">$</span>
                   <input id="settings-cet-virtual" type="number" min="0" value={settingsVirtual}
                     onChange={e => setSettingsVirtual(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-7 pr-4 py-3 text-gray-100 text-sm focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all" placeholder="0" />
+                    className="w-full h-10 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg pl-7 pr-3 text-[#ededed] font-mono text-sm focus:outline-none focus:border-[#d99b43] transition-colors" placeholder="0" />
                 </div>
               </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-2 pt-1">
               <button onClick={() => setShowSettings(false)}
-                className="flex-1 px-4 py-2.5 rounded-xl border text-gray-400 hover:text-white hover:border-white/20 transition-all text-sm"
-                style={{ borderColor: "var(--border)" }}>
+                className="flex-1 h-9 px-4 rounded-lg border border-[rgba(237,237,237,0.08)] bg-[#232325] text-[#a1a1a6] hover:text-[#ededed] transition-colors text-xs font-medium cursor-pointer">
                 Cancelar
               </button>
               <button id="btn-save-settings" onClick={handleSaveSettings} disabled={savingSettings}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold text-sm hover:from-emerald-400 hover:to-teal-400 transition-all disabled:opacity-60">
-                {savingSettings ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="w-4 h-4" />}
+                className="flex-1 h-9 flex items-center justify-center gap-2 px-4 bg-[#d99b43] hover:bg-[#e3a852] text-[#141415] rounded-lg font-medium text-xs transition-colors disabled:opacity-60 cursor-pointer">
+                {savingSettings ? <span className="w-3.5 h-3.5 border-2 border-[#141415]/30 border-t-[#141415] rounded-full animate-spin" /> : <Save className="w-3.5 h-3.5" strokeWidth={1.5} />}
                 Guardar
               </button>
             </div>
@@ -1346,25 +1345,25 @@ export default function TutorTracker() {
         <button
           id="btn-print-report"
           onClick={openReportPreview}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm hover:from-blue-500 hover:to-indigo-500 transition-all shadow-lg shadow-blue-900/30 hover:scale-105 active:scale-95"
+          className="flex items-center gap-2 h-9 px-4 bg-[#232325] hover:bg-[#2c2c2f] border border-[rgba(237,237,237,0.08)] text-[#ededed] rounded-lg font-medium text-xs transition-colors cursor-pointer"
         >
-          <Printer className="w-4 h-4" /> Informe CET
+          <Printer className="w-4 h-4 text-[#d99b43]" strokeWidth={1.5} /> Informe CET
         </button>
 
-        <div className="flex items-center gap-1 glass-panel rounded-xl p-1">
+        <div className="flex items-center gap-1 bg-[#19191b] border border-[rgba(237,237,237,0.08)] rounded-lg p-1">
           <button
             id="btn-view-calendar"
             onClick={() => setActiveView("calendar")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${activeView === "calendar" ? "bg-emerald-500/20 text-emerald-400" : "text-gray-400 hover:text-gray-200"}`}
+            className={`flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-medium transition-colors cursor-pointer ${activeView === "calendar" ? "bg-[#232325] text-[#ededed]" : "text-[#85858b] hover:text-[#ededed]"}`}
           >
-            <CalendarDays className="w-4 h-4" /> Calendario
+            <CalendarDays className="w-3.5 h-3.5" strokeWidth={1.5} /> Calendario
           </button>
           <button
             id="btn-view-list"
             onClick={() => setActiveView("list")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${activeView === "list" ? "bg-emerald-500/20 text-emerald-400" : "text-gray-400 hover:text-gray-200"}`}
+            className={`flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-medium transition-colors cursor-pointer ${activeView === "list" ? "bg-[#232325] text-[#ededed]" : "text-[#85858b] hover:text-[#ededed]"}`}
           >
-            <LayoutGrid className="w-4 h-4" /> Lista
+            <LayoutGrid className="w-3.5 h-3.5" strokeWidth={1.5} /> Lista
           </button>
         </div>
       </div>
@@ -1372,27 +1371,27 @@ export default function TutorTracker() {
       {/* ═══════════════════════════════════════════════════════
           4. MONTH NAVIGATOR + STATS
       ═══════════════════════════════════════════════════════ */}
-      <div className="glass-panel rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-4">
-        <div className="flex items-center justify-center md:justify-start gap-4 w-full md:w-auto">
-          <button id="btn-prev-month" onClick={prevMonth} className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all">
-            <ChevronLeft className="w-5 h-5 md:w-4 md:h-4" />
+      <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-4">
+        <div className="flex items-center justify-center md:justify-start gap-3 w-full md:w-auto">
+          <button id="btn-prev-month" onClick={prevMonth} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#232325] hover:bg-[#2c2c2f] text-[#a1a1a6] hover:text-[#ededed] transition-colors cursor-pointer">
+            <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
           </button>
-          <span className="text-gray-100 font-bold capitalize text-lg md:text-lg min-w-[160px] text-center tracking-wide">
+          <span className="text-[#ededed] font-medium capitalize text-base min-w-[150px] text-center">
             {getMonthName(selectedMonth.month, selectedMonth.year)}
           </span>
-          <button id="btn-next-month" onClick={nextMonth} className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all">
-            <ChevronRight className="w-5 h-5 md:w-4 md:h-4" />
+          <button id="btn-next-month" onClick={nextMonth} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#232325] hover:bg-[#2c2c2f] text-[#a1a1a6] hover:text-[#ededed] transition-colors cursor-pointer">
+            <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
           </button>
         </div>
-        
-        <div className="w-full md:w-auto grid grid-cols-2 md:flex items-center text-sm md:gap-4 md:divide-x md:divide-white/10">
-          <div className="text-center py-2 md:py-0 px-2 border-b border-r border-white/10 md:border-none">
-            <p className="text-gray-500 text-[10px] md:text-xs uppercase tracking-wide truncate">Clases</p>
-            <p className="text-gray-100 font-bold text-base md:text-lg">{monthClasses.length}</p>
+
+        <div className="w-full md:w-auto grid grid-cols-2 md:flex items-center text-sm md:gap-4 md:divide-x md:divide-[rgba(237,237,237,0.08)] font-mono tabular">
+          <div className="text-center py-2 md:py-0 px-2 border-b border-r border-[rgba(237,237,237,0.08)] md:border-none">
+            <p className="text-[#85858b] font-sans text-xs truncate">Clases</p>
+            <p className="text-[#ededed] font-medium text-base">{monthClasses.length}</p>
           </div>
-          <div className="text-center py-2 md:py-0 px-2 border-b border-white/10 md:border-none md:border-l">
-            <p className="text-gray-500 text-[10px] md:text-xs uppercase tracking-wide truncate">Total</p>
-            <p className="text-gray-100 font-bold text-base md:text-lg truncate">{formatARS(totalMonth)}</p>
+          <div className="text-center py-2 md:py-0 px-2 border-b border-[rgba(237,237,237,0.08)] md:border-none md:border-l">
+            <p className="text-[#85858b] font-sans text-xs truncate">Total</p>
+            <p className="text-[#ededed] font-medium text-base truncate">{formatARS(totalMonth)}</p>
           </div>
           <div className="text-center py-2 md:py-0 px-2 border-r border-white/10 md:border-none">
             <p className="text-gray-500 text-[10px] md:text-xs uppercase tracking-wide truncate">CET</p>
@@ -1539,42 +1538,42 @@ export default function TutorTracker() {
 
               const renderClassCard = (cls: TutorClass) => (
                 <div key={cls.id}
-                  className={`glass-panel rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group transition-all ${editingId === cls.id ? "border-emerald-500/40 ring-1 ring-emerald-500/20" : "hover:border-white/15"}`}>
+                  className={`bg-[#19191b] border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors ${editingId === cls.id ? "border-[#d99b43]" : "border-[rgba(237,237,237,0.08)] hover:border-[rgba(237,237,237,0.14)]"}`}>
                   <div className="flex items-start gap-3 min-w-0">
-                    <div className={`mt-1.5 w-2.5 h-2.5 rounded-full flex-shrink-0 ${cls.type === "CET" ? "bg-emerald-400" : "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]"}`} />
+                    <div className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${cls.type === "CET" ? "bg-[#4cc38a]" : "bg-[#d99b43]"}`} />
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-gray-100">{cls.studentName}</span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${cls.type === "CET" ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"}`}>{cls.type}</span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${cls.modality === "presencial" ? "bg-blue-500/15 text-blue-400" : "bg-purple-500/15 text-purple-400"}`}>
+                        <span className="font-medium text-[#ededed]">{cls.studentName}</span>
+                        <span className="text-xs font-mono px-2 py-0.5 rounded bg-[#232325] text-[#a1a1a6]">{cls.type}</span>
+                        <span className="text-xs px-2 py-0.5 rounded bg-[#232325] text-[#85858b]">
                           {cls.modality === "presencial" ? "Presencial" : "Virtual"}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-300 mt-1 font-medium">{cls.subject}</p>
-                      <div className="flex items-center gap-2 text-xs text-gray-400 mt-1.5 flex-wrap">
-                        <span className="flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5" /> {formatDateDisplay(cls.dateTime)}</span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {formatTimeDisplay(cls.dateTime)} → {addMinutesToTime(cls.dateTime.slice(11, 16), cls.duration ?? 60)}</span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1"><Timer className="w-3.5 h-3.5" /> {formatDuration(cls.duration ?? 60)}</span>
+                      <p className="text-sm text-[#a1a1a6] mt-1">{cls.subject}</p>
+                      <div className="flex items-center gap-2 text-xs font-mono text-[#85858b] mt-1.5 flex-wrap tabular">
+                        <span className="flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5" strokeWidth={1.5} /> {formatDateDisplay(cls.dateTime)}</span>
+                        <span>·</span>
+                        <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" strokeWidth={1.5} /> {formatTimeDisplay(cls.dateTime)} → {addMinutesToTime(cls.dateTime.slice(11, 16), cls.duration ?? 60)}</span>
+                        <span>·</span>
+                        <span className="flex items-center gap-1"><Timer className="w-3.5 h-3.5" strokeWidth={1.5} /> {formatDuration(cls.duration ?? 60)}</span>
                       </div>
-                      {cls.notes && <p className="text-xs text-gray-500 mt-2 italic bg-white/5 p-2 rounded-lg border border-white/5">{cls.notes}</p>}
+                      {cls.notes && <p className="text-xs text-[#85858b] mt-2 bg-[#141415] p-2 rounded-lg border border-[rgba(237,237,237,0.06)]">{cls.notes}</p>}
                     </div>
                   </div>
-                  <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 pt-3 sm:pt-0 border-t border-white/5 sm:border-t-0 mt-2 sm:mt-0">
-                    <span className="text-gray-100 font-bold text-lg bg-white/5 px-3 py-1.5 rounded-xl border border-white/10">{formatARS(cls.amount)}</span>
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 pt-3 sm:pt-0 border-t border-[rgba(237,237,237,0.06)] sm:border-t-0 mt-2 sm:mt-0">
+                    <span className="text-[#ededed] font-mono font-medium text-base tabular bg-[#141415] px-3 py-1.5 rounded-lg border border-[rgba(237,237,237,0.08)]">{formatARS(cls.amount)}</span>
+                    <div className="flex items-center gap-1.5">
                       <button onClick={() => openEditForm(cls)}
-                        className="p-2.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 border border-blue-500/20 hover:border-blue-500/40 transition-all flex items-center gap-2 cursor-pointer" title="Editar clase">
-                        <Pencil className="w-4 h-4" /> <span className="text-sm font-medium sm:hidden">Editar</span>
+                        className="p-2 rounded-lg bg-[#232325] hover:bg-[#2c2c2f] text-[#a1a1a6] hover:text-[#ededed] border border-[rgba(237,237,237,0.08)] transition-colors flex items-center gap-2 cursor-pointer" title="Editar clase">
+                        <Pencil className="w-4 h-4" strokeWidth={1.5} /> <span className="text-xs font-medium sm:hidden">Editar</span>
                       </button>
                       <button onClick={() => {
                         if (window.confirm(`¿Eliminar la clase de ${cls.studentName} (${formatDateDisplay(cls.dateTime)})?`)) {
                           handleDelete(cls.id);
                         }
                       }}
-                        className="p-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 hover:border-red-500/40 transition-all flex items-center gap-2 cursor-pointer" title="Eliminar clase">
-                        <Trash2 className="w-4 h-4" /> <span className="text-sm font-medium sm:hidden">Eliminar</span>
+                        className="p-2 rounded-lg bg-[#e5484d]/10 hover:bg-[#e5484d]/20 text-[#e5484d] border border-[#e5484d]/20 transition-colors flex items-center gap-2 cursor-pointer" title="Eliminar clase">
+                        <Trash2 className="w-4 h-4" strokeWidth={1.5} /> <span className="text-xs font-medium sm:hidden">Eliminar</span>
                       </button>
                     </div>
                   </div>
@@ -1585,16 +1584,16 @@ export default function TutorTracker() {
                 <>
                   {upcomingClasses.length > 0 && (
                     <div className="space-y-3">
-                      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest pl-2 mb-4 flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-emerald-400" /> Próximas Clases
+                      <h3 className="text-xs font-medium text-[#85858b] pl-1 mb-3 flex items-center gap-2">
+                        <Clock className="w-3.5 h-3.5 text-[#d99b43]" strokeWidth={1.5} /> Próximas clases
                       </h3>
                       {upcomingClasses.map(renderClassCard)}
                     </div>
                   )}
                   {pastClasses.length > 0 && (
-                    <div className="space-y-3 pt-6 mt-6 border-t border-white/5">
-                      <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest pl-2 mb-4 flex items-center gap-2">
-                        <Check className="w-4 h-4" /> Clases Pasadas
+                    <div className="space-y-3 pt-6 mt-6 border-t border-[rgba(237,237,237,0.08)]">
+                      <h3 className="text-xs font-medium text-[#85858b] pl-1 mb-3 flex items-center gap-2">
+                        <Check className="w-3.5 h-3.5" strokeWidth={1.5} /> Clases pasadas
                       </h3>
                       <div className="opacity-75 hover:opacity-100 transition-opacity">
                         {pastClasses.map(renderClassCard)}
@@ -1610,35 +1609,35 @@ export default function TutorTracker() {
 
       {/* ── Report Preview Modal ──────────────────────────────────── */}
       {showReportPreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="glass-panel rounded-2xl w-full max-w-4xl h-[90vh] flex flex-col shadow-2xl border border-white/10 overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-white/10 bg-black/40">
-              <h3 className="font-bold text-gray-100 flex items-center gap-2">
-                <Printer className="w-5 h-5 text-blue-400" /> Vista Previa del Informe
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
+          <div className="bg-[#19191b] rounded-2xl w-full max-w-4xl h-[90vh] flex flex-col border border-[rgba(237,237,237,0.12)] overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-[rgba(237,237,237,0.08)] bg-[#141415]">
+              <h3 className="font-medium text-sm text-[#ededed] flex items-center gap-2">
+                <Printer className="w-4 h-4 text-[#d99b43]" strokeWidth={1.5} /> Vista previa del informe
               </h3>
-              <button onClick={() => setShowReportPreview(false)} className="text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 p-1.5 rounded-lg">
-                <X className="w-5 h-5" />
+              <button onClick={() => setShowReportPreview(false)} className="text-[#85858b] hover:text-[#ededed] transition-colors bg-[#232325] p-1.5 rounded-lg cursor-pointer">
+                <X className="w-4 h-4" strokeWidth={1.5} />
               </button>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-white print-preview-container" style={{ color: "black" }}>
               <div dangerouslySetInnerHTML={{ __html: reportHTML }} />
             </div>
-            
-            <div className="p-4 border-t border-white/10 bg-black/40 flex flex-wrap gap-3 justify-end">
+
+            <div className="p-4 border-t border-[rgba(237,237,237,0.08)] bg-[#141415] flex flex-wrap gap-2 justify-end">
               <button
                 onClick={() => handleDownloadOrShareImage("download")}
                 disabled={isSharing}
-                className="flex-1 md:flex-none items-center justify-center gap-2 px-5 py-3 rounded-xl border border-white/20 text-gray-200 hover:bg-white/10 transition-all font-medium disabled:opacity-50 flex"
+                className="flex-1 md:flex-none items-center justify-center gap-2 h-10 px-4 rounded-lg border border-[rgba(237,237,237,0.12)] bg-[#232325] hover:bg-[#2c2c2f] text-[#ededed] transition-colors text-xs font-medium disabled:opacity-50 flex cursor-pointer"
               >
-                {isSharing ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Printer className="w-4 h-4" />} Descargar Imagen
+                {isSharing ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Printer className="w-4 h-4" strokeWidth={1.5} />} Descargar imagen
               </button>
               <button
                 onClick={() => handleDownloadOrShareImage("share")}
                 disabled={isSharing}
-                className="flex-1 md:flex-none items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-bold hover:from-emerald-400 hover:to-teal-400 transition-all disabled:opacity-50 shadow-lg shadow-emerald-900/30 flex"
+                className="flex-1 md:flex-none items-center justify-center gap-2 h-10 px-5 bg-[#d99b43] hover:bg-[#e3a852] text-[#141415] rounded-lg text-xs font-medium transition-colors disabled:opacity-50 flex cursor-pointer"
               >
-                {isSharing ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Share2 className="w-4 h-4" />} Compartir
+                {isSharing ? <span className="w-4 h-4 border-2 border-[#141415]/30 border-t-[#141415] rounded-full animate-spin" /> : <Share2 className="w-4 h-4" strokeWidth={1.5} />} Compartir
               </button>
             </div>
           </div>

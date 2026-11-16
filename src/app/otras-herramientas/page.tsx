@@ -1,60 +1,78 @@
 import Link from "next/link";
-import { ArrowRight, TrendingUp, Fuel } from "lucide-react";
+import { ArrowUpRight, TrendingUp, Fuel } from "lucide-react";
+
+const tools = [
+  {
+    code: "01",
+    href: "/otras-herramientas/cripto",
+    icon: TrendingUp,
+    title: "Estrategias cripto",
+    description: "Bitácora interactiva para MS BTC y Anti-Vitalik. Controlá tus balas y tomá decisiones con regla fija.",
+    cta: "Gestionar balas",
+  },
+  {
+    code: "02",
+    href: "/otras-herramientas/combustible",
+    icon: Fuel,
+    title: "Consumo de combustible",
+    description: "Registrá tus cargas, medí el consumo promedio por tramo y seguí el rendimiento por vehículo.",
+    cta: "Analizar consumo",
+  },
+];
 
 export default function OtrasHerramientas() {
   return (
-    <div className="max-w-6xl mx-auto space-y-8 py-4">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">
-          Otras Herramientas
+    <div className="max-w-[1200px] mx-auto py-8 space-y-8">
+      <header className="space-y-2">
+        <h1 className="text-2xl sm:text-3xl font-medium tracking-[-0.02em] text-[#ededed]">
+          Otras herramientas
         </h1>
-        <p style={{ color: "var(--fg-muted)" }}>
-          Herramientas complementarias para el día a día.
+        <p className="text-sm text-[#a1a1a6]">
+          Utilidades complementarias para registro operativo y seguimiento diario.
         </p>
-      </div>
+      </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <Link
-          href="/otras-herramientas/cripto"
-          className="group glass-panel rounded-2xl p-7 flex flex-col gap-5 hover:-translate-y-1 transition-all duration-300 hover:border-orange-500/40"
-        >
-          <div className="h-0.5 w-10 rounded-full bg-gradient-to-r from-orange-500 to-purple-500 opacity-70 group-hover:w-16 group-hover:opacity-100 transition-all duration-300" />
-          <div className="flex items-start gap-4">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-orange-500/20 to-purple-500/20 text-orange-400 shrink-0 group-hover:scale-110 transition-transform duration-300">
-              <TrendingUp className="w-6 h-6" />
-            </div>
-            <h2 className="text-lg font-semibold tracking-tight pt-1" style={{ color: "var(--fg)" }}>
-              Estrategias Cripto
-            </h2>
-          </div>
-          <p className="text-sm leading-relaxed flex-1" style={{ color: "var(--fg-muted)" }}>
-            Bitácora interactiva para MS BTC y Anti-Vitalik. Controlá tus balas y tomá decisiones matemáticas sin emociones.
-          </p>
-          <div className="flex items-center text-sm font-semibold text-orange-400 group-hover:text-amber-300 transition-colors">
-            Gestionar Balas <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </Link>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {tools.map((tool) => {
+          const Icon = tool.icon;
+          return (
+            <Link
+              key={tool.href}
+              href={tool.href}
+              className="group bg-[#19191b] hover:bg-[#1e1e21] border border-[rgba(237,237,237,0.08)] hover:border-[rgba(237,237,237,0.14)] rounded-xl p-6 flex flex-col justify-between gap-6 transition-colors duration-150"
+            >
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-8 h-8 rounded-lg bg-[#232325] border border-[rgba(237,237,237,0.08)] flex items-center justify-center">
+                    <Icon className="w-4 h-4 text-[#a1a1a6]" strokeWidth={1.5} />
+                  </div>
+                  <span className="text-xs font-mono text-[#85858b] tabular">
+                    {tool.code}
+                  </span>
+                </div>
 
-        <Link
-          href="/otras-herramientas/combustible"
-          className="group glass-panel rounded-2xl p-7 flex flex-col gap-5 hover:-translate-y-1 transition-all duration-300 hover:border-sky-500/40"
-        >
-          <div className="h-0.5 w-10 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 opacity-70 group-hover:w-16 group-hover:opacity-100 transition-all duration-300" />
-          <div className="flex items-start gap-4">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-sky-500/20 to-indigo-500/20 text-sky-400 shrink-0 group-hover:scale-110 transition-transform duration-300">
-              <Fuel className="w-6 h-6" />
-            </div>
-            <h2 className="text-lg font-semibold tracking-tight pt-1" style={{ color: "var(--fg)" }}>
-              Consumo de Combustible
-            </h2>
-          </div>
-          <p className="text-sm leading-relaxed flex-1" style={{ color: "var(--fg-muted)" }}>
-            Registrá tus cargas, medí el consumo promedio por tramo y analizá el rendimiento del combustible de tu auto.
-          </p>
-          <div className="flex items-center text-sm font-semibold text-sky-400 group-hover:text-sky-300 transition-colors">
-            Analizar Consumo <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </Link>
+                <div className="space-y-1.5">
+                  <h2 className="text-base font-medium text-[#ededed]">
+                    {tool.title}
+                  </h2>
+                  <p className="text-sm text-[#a1a1a6] leading-relaxed">
+                    {tool.description}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t border-[rgba(237,237,237,0.06)]">
+                <span className="text-sm font-medium text-[#ededed] group-hover:text-[#d99b43] transition-colors duration-150">
+                  {tool.cta}
+                </span>
+                <ArrowUpRight
+                  className="w-4 h-4 text-[#85858b] group-hover:text-[#d99b43] transition-colors duration-150"
+                  strokeWidth={1.5}
+                />
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

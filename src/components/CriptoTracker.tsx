@@ -129,84 +129,162 @@ export default function CriptoTracker() {
 
   return (
     <div className="space-y-6">
-      <div className="w-full mb-6">
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 p-2 bg-white/5 rounded-2xl w-full sm:w-fit shadow-inner">
-          <button onClick={() => setActiveStrategy("MS_BTC")} className={clsx("px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap w-full sm:w-auto text-center", !isAV ? "bg-orange-500/20 text-orange-400 shadow-sm" : "text-gray-400 hover:text-white")}>Estrategia MS BTC (Long)</button>
-          <button onClick={() => setActiveStrategy("AV_ETH")} className={clsx("px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap w-full sm:w-auto text-center", isAV ? "bg-purple-500/20 text-purple-400 shadow-sm" : "text-gray-400 hover:text-white")}>Estrategia Anti-Vitalik (Short)</button>
+      <div className="w-full">
+        <div className="inline-flex flex-col sm:flex-row gap-1 p-1 bg-[#19191b] border border-[rgba(237,237,237,0.08)] rounded-xl w-full sm:w-fit">
+          <button
+            onClick={() => setActiveStrategy("MS_BTC")}
+            className={clsx(
+              "px-4 h-9 rounded-lg text-sm font-medium transition-colors duration-150 whitespace-nowrap w-full sm:w-auto text-center cursor-pointer",
+              !isAV ? "bg-[#232325] text-[#ededed] border border-[rgba(237,237,237,0.12)]" : "text-[#85858b] hover:text-[#ededed] border border-transparent"
+            )}
+          >
+            Estrategia MS BTC (Long)
+          </button>
+          <button
+            onClick={() => setActiveStrategy("AV_ETH")}
+            className={clsx(
+              "px-4 h-9 rounded-lg text-sm font-medium transition-colors duration-150 whitespace-nowrap w-full sm:w-auto text-center cursor-pointer",
+              isAV ? "bg-[#232325] text-[#ededed] border border-[rgba(237,237,237,0.12)]" : "text-[#85858b] hover:text-[#ededed] border border-transparent"
+            )}
+          >
+            Estrategia Anti-Vitalik (Short)
+          </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className={clsx("glass-panel p-6 rounded-2xl md:col-span-2 shadow-lg", isAV ? "border-purple-500/10 shadow-purple-500/5" : "border-orange-500/10 shadow-orange-500/5")}>
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2"><Crosshair className={clsx("w-5 h-5", isAV ? "text-purple-400" : "text-orange-400")} />Parámetros ({isAV ? "Anti-Vitalik" : "MS BTC"})</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className={clsx("glass p-4 rounded-xl text-center", isAV ? "border-purple-500/10" : "border-orange-500/10")}>
-              <div className="text-sm text-gray-400 mb-1">Monto Total</div>
-              <input type="number" value={baseInvestment} onChange={e => setBaseInvestment(Number(e.target.value))} className={clsx("w-full bg-transparent text-center text-2xl font-bold text-white focus:outline-none focus:border-b transition-colors", isAV ? "focus:border-purple-500" : "focus:border-orange-500")} />
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] p-6 rounded-xl md:col-span-2 space-y-4">
+          <h2 className="text-base font-medium text-[#ededed] flex items-center gap-2">
+            <Crosshair className="w-4 h-4 text-[#d99b43]" strokeWidth={1.5} />
+            Parámetros ({isAV ? "Anti-Vitalik" : "MS BTC"})
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-[#232325] border border-[rgba(237,237,237,0.06)] p-4 rounded-lg">
+              <div className="text-xs text-[#85858b] mb-1">Monto total</div>
+              <input
+                type="number"
+                value={baseInvestment}
+                onChange={e => setBaseInvestment(Number(e.target.value))}
+                className="w-full bg-transparent text-xl font-mono font-medium text-[#ededed] tabular focus:outline-none focus:text-[#d99b43] transition-colors"
+              />
             </div>
-            <div className={clsx("glass p-4 rounded-xl text-center", isAV ? "border-purple-500/10" : "border-orange-500/10")}>
-              <div className="text-sm text-gray-400 mb-1">1 Bala =</div>
-              <div className={clsx("text-2xl font-bold", isAV ? "text-purple-400" : "text-orange-400")}>${bulletSize.toFixed(2)}</div>
+            <div className="bg-[#232325] border border-[rgba(237,237,237,0.06)] p-4 rounded-lg">
+              <div className="text-xs text-[#85858b] mb-1">1 bala</div>
+              <div className="text-xl font-mono font-medium text-[#d99b43] tabular">${bulletSize.toFixed(2)}</div>
             </div>
-            <div className={clsx("glass p-4 rounded-xl text-center", isAV ? "border-purple-500/10" : "border-orange-500/10")}>
-              <div className="text-sm text-gray-400 mb-1">Balas Restantes</div>
-              <div className={clsx("text-2xl font-bold", availableBullets <= 5 ? "text-red-400" : "text-white")}>{availableBullets} / 30</div>
+            <div className="bg-[#232325] border border-[rgba(237,237,237,0.06)] p-4 rounded-lg">
+              <div className="text-xs text-[#85858b] mb-1">Balas restantes</div>
+              <div className={clsx("text-xl font-mono font-medium tabular", availableBullets <= 5 ? "text-[#e5484d]" : "text-[#ededed]")}>
+                {availableBullets} / 30
+              </div>
             </div>
-            <div className={clsx("glass p-4 rounded-xl text-center", isAV ? "border-purple-500/10" : "border-orange-500/10")}>
-              <div className="text-sm text-gray-400 mb-1">Inv. Actual</div>
-              <div className="text-2xl font-bold text-gray-200">${(usedBullets * bulletSize).toFixed(2)}</div>
+            <div className="bg-[#232325] border border-[rgba(237,237,237,0.06)] p-4 rounded-lg">
+              <div className="text-xs text-[#85858b] mb-1">Inv. actual</div>
+              <div className="text-xl font-mono font-medium text-[#ededed] tabular">${(usedBullets * bulletSize).toFixed(2)}</div>
             </div>
           </div>
         </div>
-        <div className="glass-panel p-6 rounded-2xl flex flex-col justify-center border-emerald-500/10 relative overflow-hidden">
-          <h3 className="text-lg font-medium text-gray-300 mb-3">Cerrar Operación Actual</h3>
-          <input type="number" placeholder="Profit Final ($)" value={operationProfitInput} onChange={e => setOperationProfitInput(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 mb-3" />
-          <div className="flex flex-col gap-2">
-            <button onClick={handleCloseOperation} className="w-full flex items-center justify-center gap-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 py-2.5 rounded-lg transition-colors font-medium border border-emerald-500/30"><RotateCcw className="w-4 h-4" />Guardar Profit y Resetear</button>
-            <button onClick={handleLiquidation} className="w-full flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 py-2.5 rounded-lg transition-colors text-sm font-medium border border-red-500/20"><AlertTriangle className="w-4 h-4" />Operación Liquidada</button>
+
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] p-6 rounded-xl flex flex-col justify-between space-y-4">
+          <h3 className="text-base font-medium text-[#ededed]">Cerrar operación actual</h3>
+          <div className="space-y-2.5">
+            <input
+              type="number"
+              placeholder="Profit final ($)"
+              value={operationProfitInput}
+              onChange={e => setOperationProfitInput(e.target.value)}
+              className="w-full h-10 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-3 text-sm font-mono text-[#ededed] placeholder:text-[#85858b] focus:outline-none focus:border-[#d99b43] transition-colors"
+            />
+            <button
+              onClick={handleCloseOperation}
+              className="w-full h-9 flex items-center justify-center gap-2 bg-[#232325] hover:bg-[#2c2c2f] text-[#4cc38a] border border-[rgba(237,237,237,0.08)] rounded-lg transition-colors text-xs font-medium cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.5} />
+              Guardar profit y resetear
+            </button>
+            <button
+              onClick={handleLiquidation}
+              className="w-full h-9 flex items-center justify-center gap-2 bg-[#e5484d]/10 hover:bg-[#e5484d]/20 text-[#e5484d] border border-[#e5484d]/20 rounded-lg transition-colors text-xs font-medium cursor-pointer"
+            >
+              <AlertTriangle className="w-3.5 h-3.5" strokeWidth={1.5} />
+              Operación liquidada
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="glass p-6 rounded-2xl relative overflow-hidden">
-        <div className={clsx("absolute top-0 left-0 w-1 h-full", isAV ? "bg-purple-500" : "bg-orange-500")} />
-        <h2 className="text-xl font-semibold mb-6">Ejecutor de Reglas ({isAV ? "ETH SHORT" : "BTC LONG"})</h2>
-        <form className="flex flex-col md:flex-row gap-6 items-center" onSubmit={e => { e.preventDefault(); if (pnlInput !== "" && suggestion.bullets > 0 && availableBullets >= suggestion.bullets) handleFireBullets(); }}>
-          <div className="w-full md:w-1/3">
-            <label className="block text-sm text-gray-400 mb-2">PNL Actual de la Posición (%)</label>
+      <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] p-6 rounded-xl space-y-4">
+        <h2 className="text-base font-medium text-[#ededed]">
+          Ejecutor de reglas ({isAV ? "ETH Short" : "BTC Long"})
+        </h2>
+        <form
+          className="flex flex-col md:flex-row gap-4 items-stretch md:items-end"
+          onSubmit={e => {
+            e.preventDefault();
+            if (pnlInput !== "" && suggestion.bullets > 0 && availableBullets >= suggestion.bullets) handleFireBullets();
+          }}
+        >
+          <div className="w-full md:w-1/3 space-y-1.5">
+            <label className="block text-xs text-[#a1a1a6]">PNL actual de la posición (%)</label>
             <div className="relative">
-              <input type="number" step="0.01" placeholder={isAV ? "0.00" : "-5.5"} value={pnlInput} onChange={e => setPnlInput(e.target.value)} className={clsx("w-full bg-black/40 border border-white/10 rounded-xl pl-4 pr-10 py-4 text-xl text-white focus:outline-none transition-colors", isAV ? "focus:border-purple-500" : "focus:border-orange-500")} />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">%</span>
+              <input
+                type="number"
+                step="0.01"
+                placeholder={isAV ? "0.00" : "-5.5"}
+                value={pnlInput}
+                onChange={e => setPnlInput(e.target.value)}
+                className="w-full h-11 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg pl-3.5 pr-9 text-base font-mono text-[#ededed] focus:outline-none focus:border-[#d99b43] transition-colors"
+              />
+              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm font-mono text-[#85858b]">%</span>
             </div>
           </div>
-          <div className="w-full md:w-2/3 p-4 rounded-xl border border-white/5 bg-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+
+          <div className="w-full md:w-2/3 p-3.5 rounded-lg border border-[rgba(237,237,237,0.08)] bg-[#141415] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <div className="text-sm text-gray-400 mb-1">Acción Sugerida:</div>
-              {pnlInput === "" ? <div className="text-lg text-gray-500">Ingresa el PNL actual...</div> : (
-                <div className={clsx("text-lg sm:text-xl font-bold flex items-center gap-2", suggestion.color)}>
-                  {pnl > 15 ? <CheckCircle2 className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
-                  {suggestion.msg}
+              <div className="text-xs text-[#85858b] mb-0.5">Acción sugerida</div>
+              {pnlInput === "" ? (
+                <div className="text-sm text-[#85858b]">Ingresá el PNL actual</div>
+              ) : (
+                <div className="text-sm font-medium text-[#ededed] flex items-center gap-2">
+                  {pnl > 15 ? (
+                    <CheckCircle2 className="w-4 h-4 text-[#4cc38a] shrink-0" strokeWidth={1.5} />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 text-[#d99b43] shrink-0" strokeWidth={1.5} />
+                  )}
+                  <span>{suggestion.msg}</span>
                 </div>
               )}
             </div>
-            <button type="submit" disabled={pnlInput === "" || suggestion.bullets === 0 || availableBullets < suggestion.bullets} className={clsx("whitespace-nowrap disabled:bg-gray-800 disabled:text-gray-500 text-white px-6 py-3 rounded-xl font-semibold transition-colors disabled:cursor-not-allowed flex items-center gap-2 shadow-lg", isAV ? "bg-purple-600 hover:bg-purple-500 shadow-purple-500/20" : "bg-orange-600 hover:bg-orange-500 shadow-orange-500/20")}>
-              <Save className="w-4 h-4" />Ejecutar y Guardar
+            <button
+              type="submit"
+              disabled={pnlInput === "" || suggestion.bullets === 0 || availableBullets < suggestion.bullets}
+              className="h-9 whitespace-nowrap bg-[#d99b43] hover:bg-[#e3a852] disabled:bg-[#232325] disabled:text-[#85858b] text-[#141415] px-4 rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
+            >
+              <Save className="w-4 h-4" strokeWidth={1.5} />
+              Ejecutar y guardar
             </button>
           </div>
         </form>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="glass-panel p-6 rounded-2xl">
-          <h2 className={clsx("text-lg font-semibold mb-4", isAV ? "text-purple-400" : "text-orange-400")}>Balas Posición Actual</h2>
-          {logs.length === 0 ? <p className="text-gray-500 text-sm">No se han disparado balas en esta operación.</p> : (
-            <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] p-6 rounded-xl space-y-4">
+          <h2 className="text-base font-medium text-[#ededed]">Balas posición actual</h2>
+          {logs.length === 0 ? (
+            <p className="text-sm text-[#85858b]">No se han disparado balas en esta operación.</p>
+          ) : (
+            <div className="space-y-2">
               {logs.map(log => (
-                <div key={log.id} className="bg-black/40 border border-white/5 p-3 rounded-lg flex justify-between items-center">
-                  <div><div className="text-sm text-white font-medium">{log.type}</div><div className="text-xs text-gray-500">{log.date}</div></div>
-                  <div className="text-right">
-                    <div className={clsx("font-bold", log.pnl > 0 ? "text-emerald-400" : log.pnl < 0 ? "text-red-400" : "text-gray-400")}>{log.pnl > 0 ? "+" : ""}{log.pnl}%</div>
-                    <div className={clsx("text-xs mr-1", isAV ? "text-purple-400" : "text-orange-400")}>{log.bulletsUsed} balas</div>
+                <div key={log.id} className="bg-[#141415] border border-[rgba(237,237,237,0.06)] p-3 rounded-lg flex justify-between items-center">
+                  <div>
+                    <div className="text-sm text-[#ededed] font-medium">{log.type}</div>
+                    <div className="text-xs font-mono text-[#85858b]">{log.date}</div>
+                  </div>
+                  <div className="text-right font-mono tabular">
+                    <div className={clsx("text-sm font-medium", log.pnl > 0 ? "text-[#4cc38a]" : log.pnl < 0 ? "text-[#e5484d]" : "text-[#a1a1a6]")}>
+                      {log.pnl > 0 ? "+" : ""}{log.pnl}%
+                    </div>
+                    <div className="text-xs text-[#d99b43]">{log.bulletsUsed} balas</div>
                   </div>
                 </div>
               ))}
@@ -214,64 +292,72 @@ export default function CriptoTracker() {
           )}
         </div>
 
-        <div className="glass-panel p-6 rounded-2xl">
-          <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-4 border-b border-white/10 pb-4 gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-white mb-2">Historial de Operaciones</h2>
-              <div className="text-sm">
-                <span className="text-gray-400">Rendimiento Histórico: </span>
-                <span className={clsx("font-bold", totalProfCripto >= 0 ? "text-emerald-400" : "text-red-400")}>
-                  {totalProfCripto >= 0 ? "+" : "-"}${Math.abs(totalProfCripto).toFixed(2)} ({globalRoiCripto > 0 ? "+" : ""}{globalRoiCripto.toFixed(1)}%)
-                </span>
-              </div>
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] p-6 rounded-xl space-y-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline border-b border-[rgba(237,237,237,0.08)] pb-3 gap-2">
+            <h2 className="text-base font-medium text-[#ededed]">Historial de operaciones</h2>
+            <div className="text-xs font-mono tabular">
+              <span className="text-[#85858b]">Acumulado: </span>
+              <span className={clsx("font-medium", totalProfCripto >= 0 ? "text-[#4cc38a]" : "text-[#e5484d]")}>
+                {totalProfCripto >= 0 ? "+" : "-"}${Math.abs(totalProfCripto).toFixed(2)} ({globalRoiCripto > 0 ? "+" : ""}{globalRoiCripto.toFixed(1)}%)
+              </span>
             </div>
           </div>
-          {sameStrategyOpsForCalc.length === 0 ? <p className="text-gray-500 text-sm">Aún no hay operaciones cerradas para esta estrategia.</p> : (
-            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+
+          {sameStrategyOpsForCalc.length === 0 ? (
+            <p className="text-sm text-[#85858b]">Aún no hay operaciones cerradas para esta estrategia.</p>
+          ) : (
+            <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
               {sameStrategyOpsForCalc.map(op => {
                 const isExpanded = expandedOpId === op.id;
                 const roi = (op.profit / (op.invested || 1)) * 100;
-                const isOpAV = op.strategy === "AV_ETH";
                 return (
-                  <div key={op.id} className="bg-black/40 border border-white/5 rounded-lg overflow-hidden">
-                    <div className="w-full flex items-center p-3 hover:bg-white/5 transition-colors">
-                      <div onClick={() => toggleOp(op.id)} className="flex-1 flex justify-between items-center cursor-pointer pr-4">
+                  <div key={op.id} className="bg-[#141415] border border-[rgba(237,237,237,0.06)] rounded-lg overflow-hidden">
+                    <div className="w-full flex items-center p-3 hover:bg-[#232325]/50 transition-colors">
+                      <div onClick={() => toggleOp(op.id)} className="flex-1 flex justify-between items-center cursor-pointer pr-3">
                         <div className="flex flex-col items-start text-left">
-                          <span className={clsx("font-bold text-lg", isOpAV ? "text-purple-400" : "text-orange-400")}>{op.name}</span>
-                          <div className="text-xs text-gray-400 mt-1">{op.date}</div>
+                          <span className="font-mono font-medium text-sm text-[#ededed]">{op.name}</span>
+                          <div className="text-xs font-mono text-[#85858b] mt-0.5">{op.date}</div>
                         </div>
-                        <div className="flex flex-col items-end">
-                          <div className={clsx("font-bold text-base", op.profit >= 0 ? "text-emerald-400" : "text-red-400")}>{op.profit >= 0 ? "+" : "-"}${Math.abs(op.profit).toFixed(2)}</div>
-                          <div className="text-xs text-gray-500">ROI: {roi > 0 ? "+" : ""}{roi.toFixed(1)}%</div>
+                        <div className="flex flex-col items-end font-mono tabular">
+                          <div className={clsx("font-medium text-sm", op.profit >= 0 ? "text-[#4cc38a]" : "text-[#e5484d]")}>
+                            {op.profit >= 0 ? "+" : "-"}${Math.abs(op.profit).toFixed(2)}
+                          </div>
+                          <div className="text-xs text-[#85858b]">ROI {roi > 0 ? "+" : ""}{roi.toFixed(1)}%</div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 pl-4 border-l border-white/10 shrink-0">
+                      <div className="flex items-center gap-1.5 pl-3 border-l border-[rgba(237,237,237,0.08)] shrink-0">
                         {confirmDeleteId === op.id ? (
-                          <div className="flex items-center gap-1 bg-red-500/10 p-1 rounded">
-                            <button onClick={() => { setPastOperations(prev => prev.filter(o => o.id !== op.id)); setConfirmDeleteId(null); }} className="text-white text-xs font-bold px-2 py-1 bg-red-600 rounded hover:bg-red-500">BORRAR</button>
-                            <button onClick={() => setConfirmDeleteId(null)} className="text-gray-300 text-xs px-2 py-1 hover:text-white">x</button>
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => { setPastOperations(prev => prev.filter(o => o.id !== op.id)); setConfirmDeleteId(null); }} className="text-[#ededed] text-xs font-medium px-2 py-1 bg-[#e5484d] rounded cursor-pointer">Borrar</button>
+                            <button onClick={() => setConfirmDeleteId(null)} className="text-[#85858b] text-xs px-1.5 py-1 hover:text-[#ededed] cursor-pointer">No</button>
                           </div>
                         ) : (
-                          <button type="button" onClick={() => setConfirmDeleteId(op.id)} className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"><Trash2 className="w-4 h-4" /></button>
+                          <button type="button" onClick={() => setConfirmDeleteId(op.id)} className="p-1.5 text-[#85858b] hover:text-[#e5484d] rounded transition-colors cursor-pointer"><Trash2 className="w-4 h-4" strokeWidth={1.5} /></button>
                         )}
-                        <button onClick={() => toggleOp(op.id)} className="p-1 text-gray-400 hover:text-white transition-colors">
-                          {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                        <button onClick={() => toggleOp(op.id)} className="p-1 text-[#85858b] hover:text-[#ededed] transition-colors cursor-pointer">
+                          {isExpanded ? <ChevronUp className="w-4 h-4" strokeWidth={1.5} /> : <ChevronDown className="w-4 h-4" strokeWidth={1.5} />}
                         </button>
                       </div>
                     </div>
                     {isExpanded && (
-                      <div className="p-3 bg-black/60 border-t border-white/5 space-y-2">
-                        <div className="flex justify-between items-center mb-3">
-                          <div className="text-xs text-gray-400 uppercase tracking-wide">Registro de Compras:</div>
-                          <div className={clsx("text-xs opacity-60", isOpAV ? "text-purple-200" : "text-orange-200")}>Capital Usado: ~${op.invested?.toFixed(2)}</div>
+                      <div className="p-3 bg-[#0f0f10] border-t border-[rgba(237,237,237,0.06)] space-y-2">
+                        <div className="flex justify-between items-center text-xs text-[#85858b]">
+                          <span>Registro de compras</span>
+                          <span className="font-mono tabular">Capital usado: ${op.invested?.toFixed(2)}</span>
                         </div>
-                        {op.logs.length === 0 ? <div className="text-xs text-gray-500">Sin compras registradas.</div> : op.logs.map(log => (
-                          <div key={log.id} className="flex justify-between items-center text-xs border-b border-white/5 pb-2 pt-2 first:pt-0 last:border-0 last:pb-0">
-                            <div className="text-gray-400">{log.date}</div>
-                            <div className={clsx("font-medium", log.pnl > 0 ? "text-emerald-400" : log.pnl < 0 ? "text-red-400" : "text-gray-400")}>PNL: {log.pnl > 0 ? "+" : ""}{log.pnl}%</div>
-                            <div className={clsx("font-semibold px-2 py-0.5 rounded", isOpAV ? "text-purple-300 bg-purple-500/10" : "text-orange-300 bg-orange-500/10")}>{log.bulletsUsed} balas</div>
-                          </div>
-                        ))}
+                        {op.logs.length === 0 ? (
+                          <div className="text-xs text-[#85858b]">Sin compras registradas.</div>
+                        ) : (
+                          op.logs.map(log => (
+                            <div key={log.id} className="flex justify-between items-center text-xs font-mono border-b border-[rgba(237,237,237,0.06)] py-1.5 last:border-0 tabular">
+                              <div className="text-[#85858b]">{log.date}</div>
+                              <div className={clsx(log.pnl > 0 ? "text-[#4cc38a]" : log.pnl < 0 ? "text-[#e5484d]" : "text-[#a1a1a6]")}>
+                                PNL {log.pnl > 0 ? "+" : ""}{log.pnl}%
+                              </div>
+                              <div className="text-[#d99b43]">{log.bulletsUsed} balas</div>
+                            </div>
+                          ))
+                        )}
                       </div>
                     )}
                   </div>

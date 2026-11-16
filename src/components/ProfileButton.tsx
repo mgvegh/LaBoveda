@@ -364,34 +364,30 @@ export default function ProfileButton() {
   return (
     <>
       <div className="relative" ref={dropdownRef}>
-        <button 
-          onClick={toggleDropdown} 
-          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 text-sm font-medium rounded-xl transition-all text-gray-300 hover:text-white hover:bg-white/5 border border-white/10 active:scale-95 cursor-pointer"
-          title={`Sesión iniciada como: ${user.email}`}
+        <button
+          onClick={toggleDropdown}
+          className="flex items-center gap-2 h-9 px-2.5 text-sm font-medium rounded-lg transition-colors duration-150 text-[#a1a1a6] hover:text-[#ededed] hover:bg-[#19191b] border border-[rgba(237,237,237,0.08)] cursor-pointer"
+          title={`Sesión iniciada como ${user.email}`}
         >
-          <div className="w-6 h-6 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 font-bold text-xs uppercase shrink-0">
+          <div className="w-5 h-5 rounded-md bg-[#232325] border border-[rgba(237,237,237,0.1)] flex items-center justify-center text-[#d99b43] font-mono text-xs uppercase shrink-0">
             {user.email ? user.email.charAt(0) : <User className="w-3.5 h-3.5" />}
           </div>
           <span className="hidden md:inline font-mono text-xs max-w-[120px] truncate">{user.email?.split('@')[0]}</span>
-          <ChevronDown className={clsx("w-3.5 h-3.5 opacity-60 transition-transform duration-200", isOpen && "rotate-180")} />
+          <ChevronDown className={clsx("w-3.5 h-3.5 text-[#85858b] transition-transform duration-150", isOpen && "rotate-180")} strokeWidth={1.5} />
         </button>
 
         {isOpen && (
           <div
             data-profile-dropdown
-            className="absolute right-0 mt-2 w-[calc(100vw-24px)] max-w-[340px] sm:w-80 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden z-50 text-left flex flex-col max-h-[85vh] overflow-y-auto border"
-            style={{ 
-              background: "var(--dropdown-bg, #090a0f)", 
-              borderColor: "var(--dropdown-border, rgba(255,255,255,0.12))" 
-            }}
+            className="absolute right-0 mt-2 w-[calc(100vw-24px)] max-w-[340px] sm:w-80 rounded-xl bg-[#19191b] border border-[rgba(237,237,237,0.12)] overflow-hidden z-50 text-left flex flex-col max-h-[85vh] overflow-y-auto"
           >
-            <div className="p-4 border-b" style={{ borderColor: "var(--border)", background: "var(--glass-bg)" }}>
-              <p className="text-[10px] text-gray-400 font-bold tracking-wider uppercase">Bóveda Privada</p>
-              <p className="text-sm font-bold text-gray-200 truncate mt-0.5" title={user.email ?? ""}>{user.email}</p>
-              <div className="flex items-center justify-between mt-2">
+            <div className="p-4 border-b border-[rgba(237,237,237,0.08)] bg-[#141415]">
+              <p className="text-xs text-[#85858b]">Cuenta</p>
+              <p className="text-sm font-medium text-[#ededed] truncate mt-0.5" title={user.email ?? ""}>{user.email}</p>
+              <div className="flex items-center justify-between mt-2.5">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                  <span className="text-[11px] text-emerald-400 font-medium">Sincronizado con Firebase</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#4cc38a]" />
+                  <span className="text-xs text-[#a1a1a6]">Sincronizado</span>
                 </div>
                 <button
                   type="button"
@@ -401,65 +397,65 @@ export default function ProfileButton() {
                     setCopiedUid(true);
                     setTimeout(() => setCopiedUid(false), 2000);
                   }}
-                  className="text-[10px] text-gray-400 hover:text-white flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
-                  title="Copiar UID para Gemini Spark / MCP"
+                  className="text-xs text-[#a1a1a6] hover:text-[#ededed] flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#232325] border border-[rgba(237,237,237,0.08)] transition-colors duration-150 cursor-pointer"
+                  title="Copiar UID para MCP"
                 >
-                  {copiedUid ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                  <span>{copiedUid ? "Copiado!" : "Copiar UID"}</span>
+                  {copiedUid ? <Check className="w-3 h-3 text-[#4cc38a]" strokeWidth={1.5} /> : <Copy className="w-3 h-3" strokeWidth={1.5} />}
+                  <span>{copiedUid ? "Copiado" : "Copiar UID"}</span>
                 </button>
               </div>
             </div>
-            
-            <div className="p-4 flex-1">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Rendimiento Global</h3>
-                <button onClick={fetchGlobalStats} disabled={isLoading} className="text-gray-500 hover:text-white transition-colors cursor-pointer" title="Actualizar cotizaciones">
-                  <RefreshCw className={clsx("w-3.5 h-3.5", isLoading && "animate-spin")} />
+
+            <div className="p-4 flex-1 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-medium text-[#a1a1a6]">Resumen de portafolios</h3>
+                <button onClick={fetchGlobalStats} disabled={isLoading} className="text-[#85858b] hover:text-[#ededed] transition-colors cursor-pointer" title="Actualizar cotizaciones">
+                  <RefreshCw className={clsx("w-3.5 h-3.5", isLoading && "animate-spin")} strokeWidth={1.5} />
                 </button>
               </div>
               {isLoading && !hasLoaded ? (
-                <div className="py-6 flex justify-center"><RefreshCw className="w-5 h-5 text-orange-500 animate-spin" /></div>
+                <div className="py-6 flex justify-center"><RefreshCw className="w-4 h-4 text-[#d99b43] animate-spin" /></div>
               ) : (
-                <div className="space-y-2.5">
-                  <div className="p-2.5 rounded-xl bg-blue-500/5 border border-blue-500/10">
-                    <div className="text-[11px] text-blue-400 font-semibold mb-0.5">Portfolio CEDEARs (ARS)</div>
-                    <div className="flex justify-between items-end">
-                      <div className="text-base font-bold text-gray-200">${cedearsStats.current.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</div>
+                <div className="space-y-2">
+                  <div className="p-3 rounded-lg bg-[#232325] border border-[rgba(237,237,237,0.08)]">
+                    <div className="text-xs text-[#a1a1a6] mb-1">Portfolio CEDEARs (ARS)</div>
+                    <div className="flex justify-between items-baseline">
+                      <div className="text-sm font-mono font-medium text-[#ededed] tabular">${cedearsStats.current.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</div>
                       {cedearsStats.invested > 0 && (
-                        <div className={clsx("text-[11px] font-bold", cedearsStats.current >= cedearsStats.invested ? "text-emerald-400" : "text-red-400")}>
+                        <div className={clsx("text-xs font-mono tabular", cedearsStats.current >= cedearsStats.invested ? "text-[#4cc38a]" : "text-[#e5484d]")}>
                           {cedearsStats.current >= cedearsStats.invested ? "+" : ""}{(((cedearsStats.current - cedearsStats.invested) / cedearsStats.invested) * 100).toFixed(2)}%
                         </div>
                       )}
                     </div>
-                    <div className="text-[10px] text-gray-500 mt-0.5">Inv: ${cedearsStats.invested.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</div>
+                    <div className="text-xs font-mono text-[#85858b] mt-0.5 tabular">Inv: ${cedearsStats.invested.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</div>
                   </div>
-                  
-                  <div className="p-2.5 rounded-xl bg-teal-500/5 border border-teal-500/10">
-                    <div className="text-[11px] text-teal-400 font-semibold mb-0.5">Portfolio Cripto (USD)</div>
-                    <div className="flex justify-between items-end">
-                      <div className="text-base font-bold text-gray-200">${criptoSpotStats.current.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+
+                  <div className="p-3 rounded-lg bg-[#232325] border border-[rgba(237,237,237,0.08)]">
+                    <div className="text-xs text-[#a1a1a6] mb-1">Portfolio Cripto (USD)</div>
+                    <div className="flex justify-between items-baseline">
+                      <div className="text-sm font-mono font-medium text-[#ededed] tabular">${criptoSpotStats.current.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                       {criptoSpotStats.invested > 0 && (
-                        <div className={clsx("text-[11px] font-bold", criptoSpotStats.current >= criptoSpotStats.invested ? "text-emerald-400" : "text-red-400")}>
+                        <div className={clsx("text-xs font-mono tabular", criptoSpotStats.current >= criptoSpotStats.invested ? "text-[#4cc38a]" : "text-[#e5484d]")}>
                           {criptoSpotStats.current >= criptoSpotStats.invested ? "+" : ""}{(((criptoSpotStats.current - criptoSpotStats.invested) / criptoSpotStats.invested) * 100).toFixed(2)}%
                         </div>
                       )}
                     </div>
-                    <div className="text-[10px] text-gray-500 mt-0.5">Inv: ${criptoSpotStats.invested.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    <div className="text-xs font-mono text-[#85858b] mt-0.5 tabular">Inv: ${criptoSpotStats.invested.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                   </div>
-                  
-                  <div className="p-2.5 rounded-xl bg-orange-500/5 border border-orange-500/10">
-                    <div className="text-[11px] text-orange-400 font-semibold mb-0.5">Estrategias Cripto (USD)</div>
-                    <div className="flex justify-between items-end">
-                      <div className="text-sm font-bold text-gray-200">Ganancia Neta</div>
-                      <div className={clsx("text-sm font-bold", strategiesStats.profit >= 0 ? "text-emerald-400" : "text-red-400")}>
+
+                  <div className="p-3 rounded-lg bg-[#232325] border border-[rgba(237,237,237,0.08)]">
+                    <div className="text-xs text-[#a1a1a6] mb-1">Estrategias Cripto (USD)</div>
+                    <div className="flex justify-between items-baseline">
+                      <div className="text-xs text-[#85858b]">Ganancia neta</div>
+                      <div className={clsx("text-sm font-mono font-medium tabular", strategiesStats.profit >= 0 ? "text-[#4cc38a]" : "text-[#e5484d]")}>
                         {strategiesStats.profit >= 0 ? "+" : "-"}${Math.abs(strategiesStats.profit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                     </div>
                     {strategiesStats.invested > 0 && (
-                      <div className="flex justify-between mt-0.5">
-                        <span className="text-[10px] text-gray-500">Histórico: ${strategiesStats.invested.toFixed(2)}</span>
-                        <span className={clsx("text-[10px] font-bold", strategiesStats.profit >= 0 ? "text-emerald-400" : "text-red-400")}>
-                          ROI: {strategiesStats.profit >= 0 ? "+" : ""}{((strategiesStats.profit / strategiesStats.invested) * 100).toFixed(1)}%
+                      <div className="flex justify-between mt-0.5 text-xs font-mono tabular">
+                        <span className="text-[#85858b]">Histórico: ${strategiesStats.invested.toFixed(2)}</span>
+                        <span className={clsx(strategiesStats.profit >= 0 ? "text-[#4cc38a]" : "text-[#e5484d]")}>
+                          ROI {strategiesStats.profit >= 0 ? "+" : ""}{((strategiesStats.profit / strategiesStats.invested) * 100).toFixed(1)}%
                         </span>
                       </div>
                     )}
@@ -467,24 +463,24 @@ export default function ProfileButton() {
                 </div>
               )}
             </div>
-            
-            <div className="p-3.5 border-t space-y-2.5" style={{ borderColor: "var(--border)", background: "var(--glass-bg)" }}>
-              <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Copia de Seguridad y Migración</h4>
+
+            <div className="p-3 border-t border-[rgba(237,237,237,0.08)] bg-[#141415] space-y-2">
+              <h4 className="text-xs font-medium text-[#85858b]">Respaldo y migración</h4>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={handleExportData}
                   disabled={isLoading}
-                  className="flex items-center justify-center gap-1.5 px-2.5 py-2 text-xs font-bold rounded-xl text-teal-400 hover:text-teal-300 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/15 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                  className="flex items-center justify-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-lg text-[#ededed] bg-[#232325] hover:bg-[#2a2a2d] border border-[rgba(237,237,237,0.08)] transition-colors duration-150 disabled:opacity-50 cursor-pointer"
                 >
-                  <Download className="w-3.5 h-3.5" /> Exportar JSON
+                  <Download className="w-3.5 h-3.5 text-[#85858b]" strokeWidth={1.5} /> Exportar JSON
                 </button>
                 <label
                   className={clsx(
-                    "flex items-center justify-center gap-1.5 px-2.5 py-2 text-xs font-bold rounded-xl text-violet-400 hover:text-violet-300 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/15 transition-all active:scale-95 cursor-pointer text-center",
+                    "flex items-center justify-center gap-1.5 h-8 px-2.5 text-xs font-medium rounded-lg text-[#ededed] bg-[#232325] hover:bg-[#2a2a2d] border border-[rgba(237,237,237,0.08)] transition-colors duration-150 cursor-pointer text-center",
                     isLoading && "pointer-events-none opacity-50"
                   )}
                 >
-                  <Upload className="w-3.5 h-3.5" /> Importar JSON
+                  <Upload className="w-3.5 h-3.5 text-[#85858b]" strokeWidth={1.5} /> Importar JSON
                   <input
                     type="file"
                     onChange={handleImportData}
@@ -494,21 +490,21 @@ export default function ProfileButton() {
               </div>
             </div>
 
-            <div className="p-2 border-t space-y-1" style={{ borderColor: "var(--border)", background: "rgba(0,0,0,0.15)" }}>
-              <Link 
+            <div className="p-2 border-t border-[rgba(237,237,237,0.08)] bg-[#0f0f10] space-y-1">
+              <Link
                 href="/privacidad"
                 onClick={() => setIsOpen(false)}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 h-8 px-3 text-xs font-medium rounded-lg text-[#a1a1a6] hover:text-[#ededed] hover:bg-[#19191b] transition-colors cursor-pointer"
               >
-                <Lock className="w-3.5 h-3.5" /> Seguridad y Privacidad
+                <Lock className="w-3.5 h-3.5" strokeWidth={1.5} /> Seguridad y privacidad
               </Link>
               {isAdmin && (
-                <Link href="/admin" onClick={() => setIsOpen(false)} className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors">
-                  <ShieldCheck className="w-3.5 h-3.5" /> Panel Admin
+                <Link href="/admin" onClick={() => setIsOpen(false)} className="w-full flex items-center justify-center gap-2 h-8 px-3 text-xs font-medium rounded-lg text-[#d99b43] hover:bg-[#19191b] transition-colors">
+                  <ShieldCheck className="w-3.5 h-3.5" strokeWidth={1.5} /> Panel admin
                 </Link>
               )}
-              <button onClick={signOut} className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors cursor-pointer">
-                <LogOut className="w-3.5 h-3.5" /> Cambiar Usuario / Cerrar Sesión
+              <button onClick={signOut} className="w-full flex items-center justify-center gap-2 h-8 px-3 text-xs font-medium rounded-lg text-[#e5484d] hover:bg-[#e5484d]/10 transition-colors cursor-pointer">
+                <LogOut className="w-3.5 h-3.5" strokeWidth={1.5} /> Cerrar sesión
               </button>
             </div>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import { Plus, TrendingUp, TrendingDown, RefreshCw, Trash2, PieChart, DollarSign, Calculator, Sparkles } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, RefreshCw, Trash2, PieChart, DollarSign, Calculator } from "lucide-react";
 import { PieChart as RePieChart, Pie, Cell, ResponsiveContainer, Tooltip as ReTooltip } from "recharts";
 import clsx from "clsx";
 import { useAuth } from "@/components/AuthProvider";
@@ -9,7 +9,7 @@ import { collection, addDoc, getDocs, deleteDoc, doc } from "firebase/firestore"
 
 type Purchase = { id: string; ticker: string; quantity: number; purchasePrice: number; date: string; };
 type TickerData = { price: number; previousClose: number; currency: string; };
-const COLORS = ['#14b8a6', '#0ea5e9', '#8b5cf6', '#d946ef', '#f43f5e', '#f59e0b', '#10b981'];
+const COLORS = ['#d99b43', '#a1a1a6', '#71717a', '#52525b', '#3f3f46', '#d4d4d8', '#27272a'];
 const getDaysSince = (d: string) => { const diff = Math.abs(new Date().getTime() - new Date(d).getTime()); return Math.ceil(diff / 86400000) || 1; };
 
 export default function CriptoPortfolioTracker() {
@@ -205,86 +205,90 @@ export default function CriptoPortfolioTracker() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="glass-panel p-6 rounded-2xl md:col-span-1 border-teal-500/20 shadow-lg shadow-teal-500/5">
-          <div className="text-sm text-gray-400 mb-1">Valor Total (USD)</div>
-          <div className="text-3xl font-bold text-white mb-2">${globalStats.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-          <div className={clsx("flex items-center gap-2 text-sm font-medium", globalStats.pnl >= 0 ? "text-emerald-400" : "text-red-400")}>
-            {globalStats.pnl >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] p-6 rounded-xl md:col-span-1 space-y-2">
+          <div className="text-xs text-[#85858b]">Valor total (USD)</div>
+          <div className="text-3xl font-mono font-medium text-[#ededed] tabular">
+            ${globalStats.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div className={clsx("flex items-center gap-1.5 text-xs font-mono tabular", globalStats.pnl >= 0 ? "text-[#4cc38a]" : "text-[#e5484d]")}>
+            {globalStats.pnl >= 0 ? <TrendingUp className="w-3.5 h-3.5" strokeWidth={1.5} /> : <TrendingDown className="w-3.5 h-3.5" strokeWidth={1.5} />}
             ${Math.abs(globalStats.pnl).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({globalStats.pnlPercent.toFixed(2)}%)
           </div>
-          <div className={clsx("mt-2 text-xs font-semibold px-2 py-1 rounded inline-block", globalStats.tna >= 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400")}>
-            TNA: {globalStats.tna > 0 ? "+" : ""}{globalStats.tna.toFixed(2)}%
+          <div className={clsx("text-xs font-mono tabular", globalStats.tna >= 0 ? "text-[#4cc38a]" : "text-[#e5484d]")}>
+            TNA {globalStats.tna > 0 ? "+" : ""}{globalStats.tna.toFixed(2)}%
           </div>
         </div>
-        <div className="glass p-6 rounded-2xl md:col-span-1 flex flex-col justify-center border-teal-500/10">
-          <div className="text-sm text-gray-400 mb-1">Capital Invertido (USD)</div>
-          <div className="text-2xl font-bold text-gray-200">${globalStats.totalInvested.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] p-6 rounded-xl md:col-span-1 flex flex-col justify-center space-y-1">
+          <div className="text-xs text-[#85858b]">Capital invertido (USD)</div>
+          <div className="text-2xl font-mono font-medium text-[#ededed] tabular">
+            ${globalStats.totalInvested.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
         </div>
-        <div className="glass p-6 rounded-2xl md:col-span-2 hidden sm:flex items-center justify-center relative overflow-hidden h-32 border-teal-500/10">
+
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] p-6 rounded-xl md:col-span-2 hidden sm:flex items-center justify-center h-36">
           {positions.length > 0 ? (
             <div className="w-full h-full flex flex-row items-center gap-6">
               <div className="h-full w-1/3">
                 <ResponsiveContainer width="100%" height="100%">
                   <RePieChart>
-                    <Pie data={positions} dataKey="currentValue" innerRadius={20} outerRadius={40} paddingAngle={2}>
+                    <Pie data={positions} dataKey="currentValue" innerRadius={24} outerRadius={44} paddingAngle={2}>
                       {positions.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} stroke="rgba(0,0,0,0)" />)}
                     </Pie>
                     <ReTooltip formatter={(v: unknown) => `$${Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
                   </RePieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="w-2/3 flex flex-wrap gap-2 overflow-y-auto max-h-full custom-scrollbar">
+              <div className="w-2/3 flex flex-wrap gap-2 overflow-y-auto max-h-full">
                 {positions.map((p, i) => (
-                  <div key={p.ticker} className="flex items-center gap-1.5 text-xs text-gray-300 bg-white/5 px-2 py-1 rounded">
+                  <div key={p.ticker} className="flex items-center gap-1.5 text-xs font-mono text-[#a1a1a6] bg-[#232325] px-2 py-1 rounded-md">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                     {p.ticker.replace('-USD', '')}
                   </div>
                 ))}
               </div>
             </div>
-          ) : <div className="text-gray-500 flex items-center gap-2"><PieChart className="w-5 h-5" />Sin datos</div>}
+          ) : (
+            <div className="text-sm text-[#85858b] flex items-center gap-2">
+              <PieChart className="w-4 h-4" strokeWidth={1.5} />
+              Sin datos
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className={clsx(
-          "glass-panel p-6 rounded-2xl md:col-span-1 h-fit transition-all duration-300",
-          operationType === "compra" ? "border-teal-500/10" : "border-rose-500/10"
-        )}>
-          <h2 className={clsx(
-            "text-lg font-semibold mb-4 transition-colors duration-300 flex items-center gap-2",
-            operationType === "compra" ? "text-teal-400" : "text-rose-400"
-          )}>
-            {operationType === "compra" ? <Plus className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />} Registrar Operación Manual
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] p-6 rounded-xl md:col-span-1 h-fit space-y-4">
+          <h2 className="text-base font-medium text-[#ededed] flex items-center gap-2">
+            {operationType === "compra" ? <Plus className="w-4 h-4 text-[#d99b43]" strokeWidth={1.5} /> : <TrendingDown className="w-4 h-4 text-[#e5484d]" strokeWidth={1.5} />}
+            Registrar operación manual
           </h2>
           <form onSubmit={handleAddPurchase} className="space-y-4">
-            <div>
-              <label className="block text-xs text-gray-400 mb-1 tracking-wide uppercase">Tipo</label>
+            <div className="space-y-1.5">
+              <label className="block text-xs text-[#a1a1a6]">Tipo</label>
               <select
                 value={operationType}
                 onChange={e => setOperationType(e.target.value as "compra" | "venta")}
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-teal-500 transition-colors cursor-pointer"
+                className="w-full h-10 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-3 text-sm text-[#ededed] focus:outline-none focus:border-[#d99b43] transition-colors cursor-pointer"
               >
-                <option value="compra" className="bg-[#09090b]">Compra (Spot)</option>
-                <option value="venta" className="bg-[#09090b]">Venta (Spot)</option>
+                <option value="compra">Compra (Spot)</option>
+                <option value="venta">Venta (Spot)</option>
               </select>
             </div>
 
             {operationType === "compra" && (
-              <div>
-                <label className="block text-xs text-gray-400 mb-1 tracking-wide uppercase">Modo de Carga</label>
-                <div className="grid grid-cols-2 gap-1.5 p-1 bg-black/40 border border-white/10 rounded-lg">
+              <div className="space-y-1.5">
+                <label className="block text-xs text-[#a1a1a6]">Modo de carga</label>
+                <div className="grid grid-cols-2 gap-1 p-1 bg-[#141415] border border-[rgba(237,237,237,0.08)] rounded-lg">
                   <button
                     type="button"
                     onClick={() => setCurrencyMode("USD")}
                     className={clsx(
-                      "py-1.5 px-3 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5",
-                      currencyMode === "USD"
-                        ? "bg-teal-500/20 text-teal-300 border border-teal-500/30"
-                        : "text-gray-400 hover:text-gray-200"
+                      "h-8 px-2 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5 cursor-pointer",
+                      currencyMode === "USD" ? "bg-[#232325] text-[#ededed]" : "text-[#85858b] hover:text-[#ededed]"
                     )}
                   >
-                    <DollarSign className="w-3.5 h-3.5" /> En USD
+                    <DollarSign className="w-3.5 h-3.5" strokeWidth={1.5} /> En USD
                   </button>
                   <button
                     type="button"
@@ -293,38 +297,36 @@ export default function CriptoPortfolioTracker() {
                       if (!liveCriptoRate) fetchLiveCriptoRate();
                     }}
                     className={clsx(
-                      "py-1.5 px-3 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5",
-                      currencyMode === "ARS"
-                        ? "bg-teal-500/20 text-teal-300 border border-teal-500/30"
-                        : "text-gray-400 hover:text-gray-200"
+                      "h-8 px-2 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5 cursor-pointer",
+                      currencyMode === "ARS" ? "bg-[#232325] text-[#ededed]" : "text-[#85858b] hover:text-[#ededed]"
                     )}
                   >
-                    <Calculator className="w-3.5 h-3.5" /> En Pesos (ARS)
+                    <Calculator className="w-3.5 h-3.5" strokeWidth={1.5} /> En ARS
                   </button>
                 </div>
               </div>
             )}
 
-            <div>
-              <label className="block text-xs text-gray-400 mb-1 tracking-wide uppercase">Criptomoneda (ej. BTC, ETH)</label>
-              <input type="text" required placeholder="BTC" value={tickerInput} onChange={e => setTickerInput(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-teal-500 uppercase transition-colors" />
+            <div className="space-y-1.5">
+              <label className="block text-xs text-[#a1a1a6]">Criptomoneda (ej. BTC, ETH)</label>
+              <input type="text" required placeholder="BTC" value={tickerInput} onChange={e => setTickerInput(e.target.value)} className="w-full h-10 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-3 text-sm text-[#ededed] focus:outline-none focus:border-[#d99b43] uppercase transition-colors" />
             </div>
 
             {currencyMode === "ARS" && operationType === "compra" ? (
-              <div className="space-y-3 bg-teal-500/5 p-3.5 rounded-xl border border-teal-500/15">
-                <div>
-                  <label className="block text-xs text-gray-300 mb-1 font-medium">Gastado en Pesos (ARS)</label>
+              <div className="space-y-3 bg-[#141415] p-3.5 rounded-lg border border-[rgba(237,237,237,0.08)]">
+                <div className="space-y-1">
+                  <label className="block text-xs text-[#a1a1a6]">Gastado en pesos (ARS)</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-gray-400 text-sm font-mono">$</span>
-                    <input 
-                      type="number" 
-                      step="any" 
-                      required 
-                      min="1" 
-                      placeholder="Ej. 318700" 
-                      value={arsSpentInput} 
-                      onChange={e => setArsSpentInput(e.target.value)} 
-                      className="w-full bg-black/50 border border-white/10 rounded-lg pl-7 pr-3 py-2 text-white focus:outline-none focus:border-teal-500 font-mono transition-colors text-sm" 
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#85858b] text-sm font-mono">$</span>
+                    <input
+                      type="number"
+                      step="any"
+                      required
+                      min="1"
+                      placeholder="318700"
+                      value={arsSpentInput}
+                      onChange={e => setArsSpentInput(e.target.value)}
+                      className="w-full h-9 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg pl-7 pr-3 text-[#ededed] focus:outline-none focus:border-[#d99b43] font-mono transition-colors text-sm"
                     />
                   </div>
                 </div>
@@ -332,7 +334,7 @@ export default function CriptoPortfolioTracker() {
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="text-[11px] text-gray-400">Dólar Cripto (ARS)</label>
+                      <label className="text-xs text-[#85858b]">Dólar cripto</label>
                       {liveCriptoRate && (
                         <button
                           type="button"
@@ -340,74 +342,73 @@ export default function CriptoPortfolioTracker() {
                             setArsRateInput(liveCriptoRate.toString());
                             setUsdtReceivedInput("");
                           }}
-                          className="text-[10px] text-teal-400 hover:underline flex items-center gap-0.5"
-                          title="Usar cotización actual del mercado"
+                          className="text-xs font-mono text-[#d99b43] hover:underline cursor-pointer"
+                          title="Usar cotización actual"
                         >
-                          <Sparkles className="w-2.5 h-2.5" /> ${liveCriptoRate.toFixed(0)}
+                          ${liveCriptoRate.toFixed(0)}
                         </button>
                       )}
                     </div>
-                    <input 
-                      type="number" 
-                      step="any" 
-                      placeholder="Ej. 1593.5" 
-                      value={arsRateInput} 
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="1593.5"
+                      value={arsRateInput}
                       onChange={e => {
                         setArsRateInput(e.target.value);
                         setUsdtReceivedInput("");
-                      }} 
-                      className="w-full bg-black/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-teal-500 font-mono text-xs" 
+                      }}
+                      className="w-full h-8 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-2.5 text-[#ededed] focus:outline-none focus:border-[#d99b43] font-mono text-xs"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-gray-400 mb-1">o USDT recibidos</label>
-                    <input 
-                      type="number" 
-                      step="any" 
-                      placeholder="Ej. 200" 
-                      value={usdtReceivedInput} 
+                    <label className="block text-xs text-[#85858b] mb-1">o USDT recibidos</label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="200"
+                      value={usdtReceivedInput}
                       onChange={e => {
                         setUsdtReceivedInput(e.target.value);
                         if (arsSpent > 0 && parseFloat(e.target.value) > 0) {
                           setArsRateInput((arsSpent / parseFloat(e.target.value)).toFixed(2));
                         }
-                      }} 
-                      className="w-full bg-black/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-teal-500 font-mono text-xs" 
+                      }}
+                      className="w-full h-8 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-2.5 text-[#ededed] focus:outline-none focus:border-[#d99b43] font-mono text-xs"
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs text-gray-300 mb-1 font-medium">Cantidad de Cripto comprada</label>
-                  <input 
-                    type="number" 
-                    required 
-                    step="0.00000001" 
-                    min="0.00000001" 
-                    placeholder="Ej. 0.00263935" 
-                    value={qtyInput} 
-                    onChange={e => setQtyInput(e.target.value)} 
-                    className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-teal-500 font-mono text-sm" 
+                <div className="space-y-1">
+                  <label className="block text-xs text-[#a1a1a6]">Cantidad comprada</label>
+                  <input
+                    type="number"
+                    required
+                    step="0.00000001"
+                    min="0.00000001"
+                    placeholder="0.00263935"
+                    value={qtyInput}
+                    onChange={e => setQtyInput(e.target.value)}
+                    className="w-full h-9 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-3 text-[#ededed] focus:outline-none focus:border-[#d99b43] font-mono text-sm"
                   />
                 </div>
 
-                {/* Previsualización en vivo */}
                 {effectiveUsd > 0 && (
-                  <div className="pt-2 border-t border-teal-500/20 text-xs space-y-1">
-                    <div className="flex justify-between text-gray-400">
-                      <span>Inversión calculada:</span>
-                      <span className="font-semibold text-white font-mono">${effectiveUsd.toFixed(2)} USD</span>
+                  <div className="pt-2 border-t border-[rgba(237,237,237,0.08)] text-xs font-mono space-y-1 tabular">
+                    <div className="flex justify-between text-[#85858b]">
+                      <span>Inversión</span>
+                      <span className="text-[#ededed]">${effectiveUsd.toFixed(2)} USD</span>
                     </div>
                     {implicitRate > 0 && (
-                      <div className="flex justify-between text-gray-400">
-                        <span>Tasa efectiva:</span>
-                        <span className="text-teal-400 font-mono">${implicitRate.toFixed(2)} ARS/USD</span>
+                      <div className="flex justify-between text-[#85858b]">
+                        <span>Tasa efectiva</span>
+                        <span className="text-[#a1a1a6]">${implicitRate.toFixed(2)} ARS/USD</span>
                       </div>
                     )}
                     {calculatedUnitPriceUsd > 0 && (
-                      <div className="flex justify-between text-gray-300 font-medium">
-                        <span>Precio de compra:</span>
-                        <span className="text-teal-300 font-mono font-bold">${calculatedUnitPriceUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD/u</span>
+                      <div className="flex justify-between text-[#85858b]">
+                        <span>Precio</span>
+                        <span className="text-[#d99b43]">${calculatedUnitPriceUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD</span>
                       </div>
                     )}
                   </div>
@@ -415,90 +416,104 @@ export default function CriptoPortfolioTracker() {
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1 tracking-wide uppercase">Cantidad</label>
-                  <input type="number" required step="0.00000001" min="0.00000001" placeholder="0.05" value={qtyInput} onChange={e => setQtyInput(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-teal-500 transition-colors" />
+                <div className="space-y-1.5">
+                  <label className="block text-xs text-[#a1a1a6]">Cantidad</label>
+                  <input type="number" required step="0.00000001" min="0.00000001" placeholder="0.05" value={qtyInput} onChange={e => setQtyInput(e.target.value)} className="w-full h-10 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-3 text-sm font-mono text-[#ededed] focus:outline-none focus:border-[#d99b43] transition-colors" />
                 </div>
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1 tracking-wide uppercase">Precio (USD/u)</label>
-                  <input type="number" step="0.01" required min="0" placeholder="65000" value={priceInput} onChange={e => setPriceInput(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-teal-500 transition-colors" />
+                <div className="space-y-1.5">
+                  <label className="block text-xs text-[#a1a1a6]">Precio (USD)</label>
+                  <input type="number" step="0.01" required min="0" placeholder="65000" value={priceInput} onChange={e => setPriceInput(e.target.value)} className="w-full h-10 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-3 text-sm font-mono text-[#ededed] focus:outline-none focus:border-[#d99b43] transition-colors" />
                 </div>
               </div>
             )}
-            <div>
-              <label className="block text-xs text-gray-400 mb-1 tracking-wide uppercase">Fecha</label>
-              <input type="date" required value={dateInput} onChange={e => setDateInput(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-teal-500 transition-colors" />
+
+            <div className="space-y-1.5">
+              <label className="block text-xs text-[#a1a1a6]">Fecha</label>
+              <input type="date" required value={dateInput} onChange={e => setDateInput(e.target.value)} className="w-full h-10 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-3 text-sm font-mono text-[#ededed] focus:outline-none focus:border-[#d99b43] transition-colors" />
             </div>
-            <button 
-              type="submit" 
+
+            <button
+              type="submit"
               className={clsx(
-                "w-full text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors mt-2 shadow-lg active:scale-95",
-                operationType === "compra" 
-                  ? "bg-teal-600 hover:bg-teal-500 shadow-teal-500/20" 
-                  : "bg-rose-600 hover:bg-rose-500 shadow-rose-500/20"
+                "w-full h-10 font-medium text-sm rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer",
+                operationType === "compra"
+                  ? "bg-[#d99b43] hover:bg-[#e3a852] text-[#141415]"
+                  : "bg-[#e5484d] hover:bg-[#eb5e63] text-[#ededed]"
               )}
             >
-              {operationType === "compra" ? <Plus className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-              {operationType === "compra" ? "Registrar Compra" : "Registrar Venta"}
+              {operationType === "compra" ? <Plus className="w-4 h-4" strokeWidth={1.5} /> : <TrendingDown className="w-4 h-4" strokeWidth={1.5} />}
+              {operationType === "compra" ? "Registrar compra" : "Registrar venta"}
             </button>
           </form>
         </div>
 
-        <div className="glass-panel p-6 rounded-2xl md:col-span-2 border-teal-500/10">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-100">Billetera Spot</h2>
-            <button onClick={refreshMarketData} disabled={isLoading} className="p-2 text-teal-400 hover:text-teal-300 bg-teal-500/10 hover:bg-teal-500/20 rounded-lg transition-colors flex items-center gap-2 text-sm disabled:opacity-50">
-              <RefreshCw className={clsx("w-4 h-4", isLoading && "animate-spin")} />
-              <span className="hidden sm:inline">Actualizar Precios</span>
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] p-6 rounded-xl md:col-span-2 space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-medium text-[#ededed]">Billetera Spot</h2>
+            <button onClick={refreshMarketData} disabled={isLoading} className="h-9 px-3 text-[#a1a1a6] hover:text-[#ededed] bg-[#232325] hover:bg-[#2c2c2f] border border-[rgba(237,237,237,0.08)] rounded-lg transition-colors flex items-center gap-2 text-xs font-medium disabled:opacity-50 cursor-pointer">
+              <RefreshCw className={clsx("w-3.5 h-3.5", isLoading && "animate-spin")} strokeWidth={1.5} />
+              <span className="hidden sm:inline">Actualizar precios</span>
             </button>
           </div>
+
           {positions.length === 0 ? (
-            <div className="text-center py-10 text-gray-500">No hay activos registrados. Añade tu primera compra.</div>
+            <div className="text-center py-10 text-sm text-[#85858b]">No hay activos registrados.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-white/10 text-gray-400 text-xs uppercase tracking-wider">
+                  <tr className="border-b border-[rgba(237,237,237,0.08)] text-[#85858b] text-xs">
                     <th className="pb-3 px-2 font-medium">Activo</th>
-                    <th className="pb-3 px-2 font-medium text-right">Cant.</th>
-                    <th className="pb-3 px-2 font-medium text-right hidden lg:table-cell">Precio Prom.</th>
-                    <th className="pb-3 px-2 font-medium text-right">Precio Actual</th>
-                    <th className="pb-3 px-2 font-medium text-right">Resultados (TNA)</th>
+                    <th className="pb-3 px-2 font-medium text-right">Cantidad</th>
+                    <th className="pb-3 px-2 font-medium text-right hidden lg:table-cell">Precio prom.</th>
+                    <th className="pb-3 px-2 font-medium text-right">Precio actual</th>
+                    <th className="pb-3 px-2 font-medium text-right">Resultado</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-[rgba(237,237,237,0.06)]">
                   {positions.map(p => (
-                    <tr key={p.ticker} className="hover:bg-white/5 transition-colors">
-                      <td className="py-3 px-2"><div className="font-bold text-gray-200">{p.ticker.replace('-USD', '')}</div></td>
-                      <td className="py-3 px-2 text-right text-gray-300 font-medium">{p.totalQty.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</td>
-                      <td className="py-3 px-2 text-right text-gray-400 hidden lg:table-cell">${p.avgPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                      <td className="py-3 px-2 text-right">{p.hasData ? <span className="font-medium text-teal-100">${p.currentPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> : <span className="text-gray-500 text-xs">Cargando...</span>}</td>
-                      <td className="py-3 px-2 text-right">{p.hasData && (<div className={clsx("flex flex-col items-end", p.pnlValue >= 0 ? "text-emerald-400" : "text-red-400")}><span className="font-semibold text-sm">{p.pnlValue > 0 ? "+" : ""}{p.pnlPercent.toFixed(2)}%</span><span className="text-xs opacity-70">${Math.abs(p.pnlValue).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>)}</td>
+                    <tr key={p.ticker} className="hover:bg-[#232325]/50 transition-colors">
+                      <td className="py-3 px-2 font-medium text-sm text-[#ededed]">{p.ticker.replace('-USD', '')}</td>
+                      <td className="py-3 px-2 text-right font-mono text-sm text-[#a1a1a6] tabular">{p.totalQty.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</td>
+                      <td className="py-3 px-2 text-right font-mono text-sm text-[#85858b] hidden lg:table-cell tabular">${p.avgPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      <td className="py-3 px-2 text-right font-mono text-sm tabular">
+                        {p.hasData ? <span className="text-[#ededed]">${p.currentPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> : <span className="text-[#85858b] text-xs">Cargando...</span>}
+                      </td>
+                      <td className="py-3 px-2 text-right font-mono tabular">
+                        {p.hasData && (
+                          <div className={clsx("flex flex-col items-end", p.pnlValue >= 0 ? "text-[#4cc38a]" : "text-[#e5484d]")}>
+                            <span className="text-sm font-medium">{p.pnlValue > 0 ? "+" : ""}{p.pnlPercent.toFixed(2)}%</span>
+                            <span className="text-xs opacity-80">${Math.abs(p.pnlValue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          </div>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           )}
+
           {purchases.length > 0 && (
-            <div className="mt-8 pt-6 border-t border-white/10">
-              <h3 className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider">Historial de Operaciones</h3>
-              <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
-                {[...purchases].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(p => {
+            <div className="pt-6 border-t border-[rgba(237,237,237,0.08)] space-y-3">
+              <h3 className="text-xs font-medium text-[#85858b]">Historial de operaciones</h3>
+              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                {[...purchases].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(p => {
                   const cleanTicker = p.ticker.replace('-USD', '');
                   return (
-                    <div key={p.id} className="grid grid-cols-12 gap-1 items-center text-[10px] sm:text-xs bg-black/20 p-2 sm:p-3 rounded-xl border border-white/5 hover:bg-white/5 transition-colors group">
-                      <div className="col-span-3 text-gray-400 truncate">{new Date(p.date).toLocaleDateString('es-AR')}</div>
-                      <span className={clsx("col-span-2 font-bold truncate transition-colors", p.quantity > 0 ? "text-teal-300" : "text-rose-300")}>{cleanTicker}</span>
-                      <div className={clsx("col-span-3 text-center font-mono font-bold truncate", p.quantity > 0 ? "text-emerald-400" : "text-rose-400")}>
+                    <div key={p.id} className="grid grid-cols-12 gap-2 items-center text-xs bg-[#141415] px-3 py-2.5 rounded-lg border border-[rgba(237,237,237,0.06)] hover:bg-[#232325]/50 transition-colors">
+                      <div className="col-span-3 font-mono text-[#85858b] truncate tabular">{new Date(p.date).toLocaleDateString('es-AR')}</div>
+                      <span className="col-span-2 font-medium text-[#ededed] truncate">{cleanTicker}</span>
+                      <div className={clsx("col-span-3 text-right font-mono tabular truncate", p.quantity > 0 ? "text-[#4cc38a]" : "text-[#e5484d]")}>
                         {p.quantity > 0 ? "+" : ""}{p.quantity.toLocaleString(undefined, { maximumFractionDigits: 6 })}
                       </div>
-                      <div className="col-span-3 text-right text-gray-400 truncate">
-                        <span>${p.purchasePrice.toLocaleString()}</span>
-                        <span className="text-[9px] ml-1 opacity-70 font-semibold font-mono">USD</span>
+                      <div className="col-span-3 text-right font-mono text-[#a1a1a6] truncate tabular">
+                        ${p.purchasePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                       <div className="col-span-1 flex justify-end items-center">
-                        <button onClick={() => removePurchase(p.id)} className="text-gray-500 hover:text-red-400 transition-colors p-1" title="Eliminar registro"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => removePurchase(p.id)} className="text-[#85858b] hover:text-[#e5484d] transition-colors p-1 cursor-pointer" title="Eliminar registro">
+                          <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                        </button>
                       </div>
                     </div>
                   );

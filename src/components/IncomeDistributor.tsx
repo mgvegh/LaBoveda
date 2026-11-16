@@ -768,64 +768,64 @@ export default function IncomeDistributor() {
       </div>
 
       {/* 1. INPUT DE INGRESO */}
-      <div className="glass-panel p-6 rounded-2xl border-violet-500/20 shadow-lg shadow-violet-500/5">
+      <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] p-6 rounded-xl">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
-            <h2 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
-              <Landmark className="w-5 h-5 text-violet-400" />
+            <h2 className="text-lg font-medium text-[#ededed] mb-1 flex items-center gap-2">
+              <Landmark className="w-4 h-4 text-[#d99b43]" strokeWidth={1.5} />
               Ingreso de {getMonthName(selectedMonth.month, selectedMonth.year)}
             </h2>
-            <p className="text-sm text-gray-400">¿Cuánta plata entra para este mes?</p>
+            <p className="text-sm text-[#a1a1a6]">Monto disponible para planificar el mes</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleManualSave}
               disabled={saveStatus === "saving"}
               className={clsx(
-                "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer h-fit",
-                saveStatus === "saved" 
-                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" 
+                "flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-medium transition-colors cursor-pointer",
+                saveStatus === "saved"
+                  ? "bg-[#4cc38a]/15 text-[#4cc38a] border border-[#4cc38a]/30"
                   : saveStatus === "error"
-                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                  : "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white border border-violet-400/30"
+                  ? "bg-[#d99b43]/15 text-[#d99b43] border border-[#d99b43]/30"
+                  : "bg-[#d99b43] hover:bg-[#e3a852] text-[#141415]"
               )}
             >
               {saveStatus === "saving" ? (
                 <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" strokeWidth={1.5} />
                   <span>Guardando...</span>
                 </>
               ) : saveStatus === "saved" ? (
                 <>
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>¡Guardado en Firebase!</span>
+                  <Check className="w-3.5 h-3.5" strokeWidth={1.5} />
+                  <span>Guardado</span>
                 </>
               ) : saveStatus === "error" ? (
                 <>
-                  <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Guardado localmente</span>
+                  <AlertCircle className="w-3.5 h-3.5" strokeWidth={1.5} />
+                  <span>Guardado local</span>
                 </>
               ) : (
                 <>
-                  <Save className="w-3.5 h-3.5" />
-                  <span>Guardar Cambios</span>
+                  <Save className="w-3.5 h-3.5" strokeWidth={1.5} />
+                  <span>Guardar cambios</span>
                 </>
               )}
             </button>
 
-            <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl px-3 py-2 h-fit">
-              <span className="text-xs text-gray-400 uppercase tracking-wide">Valor USD</span>
-              <div className="flex items-center gap-1">
-                <span className="text-gray-500 font-bold">$</span>
-                <input 
-                  type="number" 
-                  value={usdRate || ""} 
+            <div className="flex items-center gap-2 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-3 h-9">
+              <span className="text-xs text-[#85858b]">USD</span>
+              <div className="flex items-center gap-1 font-mono tabular">
+                <span className="text-[#85858b] text-xs">$</span>
+                <input
+                  type="number"
+                  value={usdRate || ""}
                   onChange={(e) => setUsdRate(Number(e.target.value))}
-                  className="w-16 bg-transparent text-white font-bold focus:outline-none"
+                  className="w-16 bg-transparent text-sm text-[#ededed] font-mono focus:outline-none"
                 />
               </div>
-              <button onClick={fetchUsdRate} className={`text-gray-500 hover:text-violet-400 transition-colors ml-1 ${isFetchingRate ? "animate-spin text-violet-400" : ""}`} title="Actualizar Ualá">
-                <RefreshCw className="w-3.5 h-3.5" />
+              <button onClick={fetchUsdRate} className={`text-[#85858b] hover:text-[#ededed] transition-colors ${isFetchingRate ? "animate-spin text-[#d99b43]" : ""}`} title="Actualizar cotización">
+                <RefreshCw className="w-3.5 h-3.5" strokeWidth={1.5} />
               </button>
             </div>
           </div>
@@ -833,13 +833,13 @@ export default function IncomeDistributor() {
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="relative max-w-md flex-1">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-gray-500">$</span>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-mono text-[#85858b]">$</span>
             <input
               type="number"
-              placeholder="Ej: 2.500.000"
+              placeholder="2500000"
               value={totalIncome}
               onChange={e => handleIncomeChange(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-2xl pl-10 pr-4 py-4 text-3xl font-bold text-white focus:outline-none focus:border-violet-500 transition-colors shadow-inner"
+              className="w-full bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-xl pl-10 pr-4 py-3.5 text-2xl sm:text-3xl font-mono font-medium text-[#ededed] tabular focus:outline-none focus:border-[#d99b43] transition-colors"
             />
           </div>
 
@@ -850,70 +850,69 @@ export default function IncomeDistributor() {
               setCalcMonth(selectedMonth);
               setIsSalaryClassesModalOpen(true);
             }}
-            className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600/20 to-teal-600/20 hover:from-emerald-600/30 hover:to-teal-600/30 text-emerald-300 border border-emerald-500/30 font-bold text-xs shadow-lg shadow-emerald-500/5 active:scale-95 transition-all cursor-pointer shrink-0"
-            title="Calcular ingreso sumando Clases y Sueldo"
+            className="flex items-center justify-center gap-2 h-11 px-4 rounded-xl bg-[#232325] hover:bg-[#2c2c2f] text-[#ededed] border border-[rgba(237,237,237,0.08)] font-medium text-xs transition-colors cursor-pointer shrink-0"
+            title="Calcular ingreso sumando clases y sueldo"
           >
-            <Sparkles className="w-4 h-4 text-emerald-400" />
+            <Calculator className="w-4 h-4 text-[#d99b43]" strokeWidth={1.5} />
             <span>Autocompletar</span>
           </button>
         </div>
 
         {usdRate > 0 && income > 0 && (
-          <p className="text-sm text-gray-500 mt-3 flex items-center gap-2">
-            <ArrowRightLeft className="w-4 h-4" />
-            Equivale a <strong>USD {(income / usdRate).toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong>
+          <p className="text-xs font-mono text-[#85858b] mt-3 flex items-center gap-2 tabular">
+            <ArrowRightLeft className="w-3.5 h-3.5" strokeWidth={1.5} />
+            <span>Equivale a USD {(income / usdRate).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
           </p>
         )}
 
         {/* Panel de Saldo Restante y Progreso de Pagos */}
         {income > 0 && result && (
-          <div className="mt-5 pt-5 border-t border-white/10 space-y-3">
+          <div className="mt-5 pt-5 border-t border-[rgba(237,237,237,0.08)] space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="bg-black/30 border border-white/10 rounded-2xl p-3.5">
-                <span className="text-[11px] text-gray-400 uppercase font-semibold block mb-1">Ingreso Planificado</span>
-                <div className="text-xl font-mono font-bold text-white">
+              <div className="bg-[#141415] border border-[rgba(237,237,237,0.06)] rounded-xl p-4">
+                <span className="text-xs text-[#85858b] block mb-1">Ingreso planificado</span>
+                <div className="text-xl font-mono font-medium text-[#ededed] tabular">
                   ${income.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </div>
-                <div className="text-[11px] text-gray-500 mt-0.5">Base para el mes</div>
+                <div className="text-xs text-[#85858b] mt-0.5">Base para el mes</div>
               </div>
 
-              <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-3.5">
+              <div className="bg-[#141415] border border-[rgba(237,237,237,0.06)] rounded-xl p-4">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] text-red-300 uppercase font-semibold">Salidas Pagadas</span>
-                  <span className="text-[10px] text-red-400 font-bold bg-red-500/20 px-2 py-0.5 rounded-full">
-                    {activeCompletedIds.length} tildada{activeCompletedIds.length === 1 ? '' : 's'}
+                  <span className="text-xs text-[#85858b]">Salidas pagadas</span>
+                  <span className="text-xs font-mono text-[#85858b] tabular">
+                    {activeCompletedIds.length} pagada{activeCompletedIds.length === 1 ? '' : 's'}
                   </span>
                 </div>
-                <div className="text-xl font-mono font-bold text-red-400">
+                <div className="text-xl font-mono font-medium text-[#e5484d] tabular">
                   -${result.totalPaidARS.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
-                <div className="text-[11px] text-red-400/80 mt-0.5">
-                  {((result.totalPaidARS / (income || 1)) * 100).toFixed(1)}% ya abonado
+                <div className="text-xs font-mono text-[#85858b] mt-0.5 tabular">
+                  {((result.totalPaidARS / (income || 1)) * 100).toFixed(1)}% abonado
                 </div>
               </div>
 
-              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-3.5 shadow-lg shadow-emerald-500/5">
-                <span className="text-[11px] text-emerald-300 uppercase font-semibold block mb-1">Saldo Restante en Mano</span>
-                <div className="text-2xl font-mono font-black text-emerald-400">
+              <div className="bg-[#141415] border border-[rgba(237,237,237,0.06)] rounded-xl p-4">
+                <span className="text-xs text-[#85858b] block mb-1">Saldo restante en mano</span>
+                <div className="text-xl font-mono font-medium text-[#4cc38a] tabular">
                   ${result.remainingIncome.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
                 {usdRate > 0 && (
-                  <div className="text-[11px] text-emerald-400/80 font-medium mt-0.5">
-                    ≈ USD {(result.remainingIncome / usdRate).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
+                  <div className="text-xs font-mono text-[#85858b] mt-0.5 tabular">
+                    USD {(result.remainingIncome / usdRate).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Barra de progreso visual */}
-            <div className="bg-black/40 border border-white/5 rounded-xl p-2.5 flex items-center gap-3">
-              <div className="flex-1 bg-white/5 h-2 rounded-full overflow-hidden">
-                <div 
-                  className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500"
+            <div className="bg-[#141415] border border-[rgba(237,237,237,0.06)] rounded-lg p-2.5 flex items-center gap-3">
+              <div className="flex-1 bg-[#232325] h-1.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-[#d99b43] h-full rounded-full transition-[width] duration-300"
                   style={{ width: `${Math.min(100, Math.max(0, (result.totalPaidARS / (income || 1)) * 100))}%` }}
                 />
               </div>
-              <span className="text-xs font-mono font-bold text-gray-300 shrink-0">
+              <span className="text-xs font-mono text-[#a1a1a6] shrink-0 tabular">
                 {Math.round((result.totalPaidARS / (income || 1)) * 100)}% pagado
               </span>
             </div>
@@ -923,22 +922,19 @@ export default function IncomeDistributor() {
 
       {/* Modal Autocompletar Sueldo + Clases */}
       {isSalaryClassesModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div
-            className="bg-zinc-950 border border-emerald-500/30 rounded-3xl p-6 max-w-md w-full shadow-2xl shadow-black space-y-5"
-            style={{ boxShadow: "0 25px 60px rgba(0,0,0,0.8), 0 0 35px rgba(16, 185, 129, 0.15)" }}
-          >
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div className="flex items-center gap-2 text-emerald-400">
-                <Sparkles className="w-5 h-5" />
-                <h3 className="text-base font-bold text-white">Calcular Ingreso (Clases + Sueldo)</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75">
+          <div className="bg-[#19191b] border border-[rgba(237,237,237,0.12)] rounded-2xl p-6 max-w-md w-full space-y-5">
+            <div className="flex items-center justify-between border-b border-[rgba(237,237,237,0.08)] pb-3">
+              <div className="flex items-center gap-2">
+                <Calculator className="w-4 h-4 text-[#d99b43]" strokeWidth={1.5} />
+                <h3 className="text-base font-medium text-[#ededed]">Calcular ingreso (clases y sueldo)</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsSalaryClassesModalOpen(false)}
-                className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                className="text-[#85858b] hover:text-[#ededed] p-1 rounded-md hover:bg-[#232325] transition-colors cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" strokeWidth={1.5} />
               </button>
             </div>
 
@@ -1036,16 +1032,16 @@ export default function IncomeDistributor() {
               <button
                 type="button"
                 onClick={() => setIsSalaryClassesModalOpen(false)}
-                className="flex-1 py-2.5 rounded-xl border border-white/10 text-gray-300 hover:text-white text-xs font-bold transition-colors cursor-pointer"
+                className="flex-1 h-9 rounded-lg border border-[rgba(237,237,237,0.08)] bg-[#232325] text-[#a1a1a6] hover:text-[#ededed] text-xs font-medium transition-colors cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={handleApplySalaryClasses}
-                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 transition-all active:scale-95 cursor-pointer"
+                className="flex-1 h-9 rounded-lg bg-[#d99b43] hover:bg-[#e3a852] text-[#141415] text-xs font-medium transition-colors cursor-pointer"
               >
-                Aplicar como Ingreso
+                Aplicar como ingreso
               </button>
             </div>
           </div>
@@ -1054,18 +1050,19 @@ export default function IncomeDistributor() {
 
       {/* 2. HOJA DE RUTA (SALIDAS) */}
       {result && (income > 0 || result.isNeededMode) && (
-        <div className="space-y-6 w-full">
-          <div className="glass-panel overflow-hidden rounded-2xl border-emerald-500/20">
-              <div className="bg-emerald-500/10 px-6 py-4 border-b border-emerald-500/10 flex justify-between items-center gap-2 flex-wrap">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="font-bold text-emerald-400 flex items-center gap-2">
-                    <ListChecks className="w-5 h-5" /> {result.isNeededMode ? "Salidas Fijas (Ingreso Necesario)" : "Salidas Programadas"}
+        <div className="space-y-4 w-full">
+          <div className="bg-[#19191b] overflow-hidden rounded-xl border border-[rgba(237,237,237,0.08)]">
+              <div className="bg-[#141415] px-5 py-4 border-b border-[rgba(237,237,237,0.08)] flex justify-between items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h3 className="text-base font-medium text-[#ededed] flex items-center gap-2">
+                    <ListChecks className="w-4 h-4 text-[#d99b43]" strokeWidth={1.5} />
+                    {result.isNeededMode ? "Salidas fijas (ingreso necesario)" : "Salidas programadas"}
                   </h3>
-                  <span className="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-medium capitalize">
+                  <span className="text-xs font-mono text-[#85858b] capitalize">
                     {getMonthName(selectedMonth.month, selectedMonth.year)}
                   </span>
                 </div>
-                <span className="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded-full font-mono uppercase">Resumen en Pesos</span>
+                <span className="text-xs font-mono text-[#85858b]">Resumen en pesos</span>
               </div>
               
               <div className="divide-y divide-white/5">
@@ -1158,30 +1155,30 @@ export default function IncomeDistributor() {
               </div>
 
               {/* Total Summary Row */}
-              <div className="p-6 bg-black/40 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="p-5 bg-[#141415] border-t border-[rgba(237,237,237,0.08)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <span className="text-gray-400 font-bold uppercase text-xs tracking-widest block">
-                    {result.isNeededMode ? "Total Necesario" : "Total Salidas Planificadas"}
+                  <span className="text-[#85858b] text-xs block">
+                    {result.isNeededMode ? "Total necesario" : "Total salidas planificadas"}
                   </span>
                   {!result.isNeededMode && (
-                    <div className="flex items-center gap-3 text-xs mt-1.5">
-                      <span className="text-emerald-400">
-                        Pagado: <strong>${result.totalPaidARS.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</strong>
+                    <div className="flex items-center gap-3 text-xs font-mono mt-1.5 tabular">
+                      <span className="text-[#4cc38a]">
+                        Pagado: ${result.totalPaidARS.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
                       </span>
-                      <span className="text-gray-600">•</span>
-                      <span className="text-amber-400">
-                        Pendiente: <strong>${Math.max(0, (result.totalExpensesARS + result.allocations.reduce((a,c) => a + c.amountARS, 0)) - result.totalPaidARS).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</strong>
+                      <span className="text-[#85858b]">·</span>
+                      <span className="text-[#d99b43]">
+                        Pendiente: ${Math.max(0, (result.totalExpensesARS + result.allocations.reduce((a,c) => a + c.amountARS, 0)) - result.totalPaidARS).toLocaleString('es-AR', { maximumFractionDigits: 0 })}
                       </span>
                     </div>
                   )}
                 </div>
-                <div className="text-left sm:text-right">
-                  <span className="text-2xl font-black text-white block">
+                <div className="text-left sm:text-right font-mono tabular">
+                  <span className="text-xl font-medium text-[#ededed] block">
                     ${(result.isNeededMode ? result.totalNeededARS : result.totalExpensesARS + result.allocations.reduce((a,c) => a + c.amountARS, 0)).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                   {!result.isNeededMode && (
-                    <span className="text-xs text-emerald-400/90 font-medium block mt-0.5">
-                      Saldo restante disponible: ${result.remainingIncome.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                    <span className="text-xs text-[#4cc38a] block mt-0.5">
+                      Saldo disponible: ${result.remainingIncome.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
                     </span>
                   )}
                 </div>
@@ -1190,85 +1187,80 @@ export default function IncomeDistributor() {
 
             {/* Sobras / Déficit / Distribuido */}
             {!result.isNeededMode && result.unallocated > 100 ? (
-              <div className="glass-panel p-6 rounded-2xl border-amber-500/20 bg-amber-500/5 animate-pulse">
+              <div className="bg-[#19191b] p-5 rounded-xl border border-[#d99b43]/30">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
-                    <div className="p-3 bg-amber-500/20 rounded-xl text-amber-400 shrink-0"><TrendingUp className="w-6 h-6" /></div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-amber-400">¡Te sobra plata!</h4>
-                      <p className="text-xs text-amber-500/70">
-                        Tenés <strong>${result.unallocated.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> sin asignar
-                        {usdRate > 0 && (
-                          <> (equivale a <strong>USD {(result.unallocated / usdRate).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}</strong>)</>
-                        )}.
+                    <div className="w-9 h-9 bg-[#232325] rounded-lg flex items-center justify-center text-[#d99b43] shrink-0">
+                      <TrendingUp className="w-4 h-4" strokeWidth={1.5} />
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <h4 className="text-sm font-medium text-[#ededed]">Saldo sin asignar</h4>
+                      <p className="text-xs text-[#a1a1a6] font-mono tabular">
+                        Tenés ${result.unallocated.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} disponibles
+                        {usdRate > 0 && ` (USD ${(result.unallocated / usdRate).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 1 })})`}.
                       </p>
-                      
-                      <div className="mt-4 flex flex-wrap items-center gap-2">
-                        <select value={absorbCategory} onChange={e => setAbsorbCategory(e.target.value)} className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-2 py-1 text-amber-400 text-xs focus:outline-none max-w-full cursor-pointer">
-                          <option value="">Sumar a una salida...</option>
+
+                      <div className="pt-2 flex flex-wrap items-center gap-2">
+                        <select value={absorbCategory} onChange={e => setAbsorbCategory(e.target.value)} className="h-8 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-2.5 text-[#ededed] text-xs focus:outline-none max-w-full cursor-pointer">
+                          <option value="">Sumar a una salida</option>
                           {activeCategories.filter(c => c.type !== "percentage").map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
-                        <button onClick={handleAbsorbRemainder} disabled={!absorbCategory} className="bg-amber-500 disabled:opacity-50 hover:bg-amber-400 text-black px-3 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer">
-                          Asignar Resto
+                        <button onClick={handleAbsorbRemainder} disabled={!absorbCategory} className="h-8 bg-[#d99b43] disabled:opacity-50 hover:bg-[#e3a852] text-[#141415] px-3 rounded-lg text-xs font-medium transition-colors cursor-pointer">
+                          Asignar resto
                         </button>
                       </div>
                     </div>
                   </div>
-                  <div className="text-2xl font-black text-amber-400 self-end sm:self-center shrink-0 font-mono">
+                  <div className="text-xl font-medium text-[#d99b43] self-end sm:self-center shrink-0 font-mono tabular">
                     +${result.unallocated.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </div>
               </div>
             ) : !result.isNeededMode && result.unallocated < -100 ? (
-              <div className="glass-panel p-6 rounded-2xl border-red-500/30 bg-red-500/10 animate-pulse">
+              <div className="bg-[#19191b] p-5 rounded-xl border border-[#e5484d]/30">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
-                    <div className="p-3 bg-red-500/20 rounded-xl text-red-400 shrink-0">
-                      <AlertCircle className="w-6 h-6" />
+                    <div className="w-9 h-9 bg-[#e5484d]/15 rounded-lg flex items-center justify-center text-[#e5484d] shrink-0">
+                      <AlertCircle className="w-4 h-4" strokeWidth={1.5} />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-red-400 text-base">¡Te falta plata!</h4>
-                      <p className="text-xs text-red-300/90 mt-0.5">
-                        Te faltan <strong>${Math.abs(result.unallocated).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> para cubrir las salidas de este mes
-                        {usdRate > 0 && (
-                          <> (equivale a <strong>USD {(Math.abs(result.unallocated) / usdRate).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}</strong>)</>
-                        )}.
-                      </p>
-                      <p className="text-[11px] text-red-400/70 mt-1">
-                        Tu ingreso es de <strong>${income.toLocaleString('es-AR')}</strong> pero el total de salidas necesarias suma <strong>${(income + Math.abs(result.unallocated)).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>.
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <h4 className="font-medium text-[#e5484d] text-sm">Déficit mensual</h4>
+                      <p className="text-xs text-[#a1a1a6] font-mono tabular">
+                        Faltan ${Math.abs(result.unallocated).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} para cubrir las salidas
+                        {usdRate > 0 && ` (USD ${(Math.abs(result.unallocated) / usdRate).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 1 })})`}.
                       </p>
                     </div>
                   </div>
-                  <div className="text-2xl font-black text-red-400 self-end sm:self-center shrink-0 font-mono">
+                  <div className="text-xl font-medium text-[#e5484d] self-end sm:self-center shrink-0 font-mono tabular">
                     -${Math.abs(result.unallocated).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </div>
               </div>
             ) : !result.isNeededMode && (
-              <div className="glass-panel p-4 rounded-xl border-white/5 text-center text-xs text-emerald-400/80 bg-emerald-500/5">
-                ✓ Ingreso 100% distribuido de forma exacta. ¡Buen trabajo!
+              <div className="bg-[#19191b] p-3.5 rounded-xl border border-[rgba(237,237,237,0.08)] text-center text-xs text-[#4cc38a]">
+                Ingreso 100% distribuido
               </div>
             )}
         </div>
       )}
 
-      {/* 3. GESTIÓN DE SALIDAS (SIEMPRE VISIBLE) */}
-      <div className="pt-10 border-t border-white/10">
-        <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
+      {/* 3. GESTIÓN DE SALIDAS */}
+      <div className="pt-8 border-t border-[rgba(237,237,237,0.08)]">
+        <div className="flex items-center justify-between gap-4 mb-5 flex-wrap">
           <div className="flex items-center gap-2.5 flex-wrap">
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
-              <Coins className="w-5 h-5 text-amber-400" />
-              Configurar Salidas
+            <h3 className="text-lg font-medium text-[#ededed] flex items-center gap-2">
+              <Coins className="w-4 h-4 text-[#d99b43]" strokeWidth={1.5} />
+              Configurar salidas
             </h3>
-            <span className="text-xs bg-amber-500/10 text-amber-300 border border-amber-500/20 px-2.5 py-0.5 rounded-full font-medium capitalize">
+            <span className="text-xs font-mono text-[#85858b] capitalize">
               {getMonthName(selectedMonth.month, selectedMonth.year)}
             </span>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
             {otherConfiguredMonths.length > 0 && (
-              <div className="flex items-center gap-1.5 bg-black/40 border border-white/10 px-2.5 py-1.5 rounded-xl text-xs">
-                <span className="text-gray-400">Copiar de:</span>
+              <div className="flex items-center gap-1.5 bg-[#19191b] border border-[rgba(237,237,237,0.08)] px-2.5 h-8 rounded-lg text-xs">
+                <span className="text-[#85858b]">Copiar de</span>
                 <select
                   onChange={e => {
                     if (e.target.value) {
@@ -1280,13 +1272,13 @@ export default function IncomeDistributor() {
                     }
                   }}
                   defaultValue=""
-                  className="bg-transparent text-violet-300 font-semibold focus:outline-none cursor-pointer"
+                  className="bg-transparent text-[#d99b43] font-medium focus:outline-none cursor-pointer"
                 >
-                  <option value="" disabled className="bg-[#09090b]">Seleccionar mes...</option>
+                  <option value="" disabled>Seleccionar mes</option>
                   {otherConfiguredMonths.map(k => {
                     const [y, m] = k.split("-");
                     return (
-                      <option key={k} value={k} className="bg-[#09090b] capitalize">
+                      <option key={k} value={k} className="capitalize">
                         {getMonthName(parseInt(m) - 1, parseInt(y))}
                       </option>
                     );
@@ -1298,40 +1290,40 @@ export default function IncomeDistributor() {
               onClick={handleManualSave}
               disabled={saveStatus === "saving"}
               className={clsx(
-                "flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer",
-                saveStatus === "saved" 
-                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" 
+                "flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium transition-colors cursor-pointer",
+                saveStatus === "saved"
+                  ? "bg-[#4cc38a]/15 text-[#4cc38a] border border-[#4cc38a]/30"
                   : saveStatus === "error"
-                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                  : "bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10"
+                  ? "bg-[#d99b43]/15 text-[#d99b43] border border-[#d99b43]/30"
+                  : "bg-[#232325] hover:bg-[#2c2c2f] text-[#ededed] border border-[rgba(237,237,237,0.08)]"
               )}
             >
               {saveStatus === "saving" ? (
                 <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" strokeWidth={1.5} />
                   <span>Guardando...</span>
                 </>
               ) : saveStatus === "saved" ? (
                 <>
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>¡Guardado!</span>
+                  <Check className="w-3.5 h-3.5" strokeWidth={1.5} />
+                  <span>Guardado</span>
                 </>
               ) : saveStatus === "error" ? (
                 <>
-                  <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                  <AlertCircle className="w-3.5 h-3.5" strokeWidth={1.5} />
                   <span>Guardado local</span>
                 </>
               ) : (
                 <>
-                  <Save className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Guardar Salidas</span>
+                  <Save className="w-3.5 h-3.5 text-[#d99b43]" strokeWidth={1.5} />
+                  <span>Guardar salidas</span>
                 </>
               )}
             </button>
           </div>
         </div>
-        
-        <div className="glass-panel p-6 rounded-2xl border-white/5 w-full">
+
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] p-5 rounded-xl w-full">
           <div className="space-y-3 mb-6">
             {activeExpenses.length === 0 && activeCategories.length === 0 && (
               <p className="text-gray-500 text-xs py-4 text-center">No hay salidas configuradas para este mes.</p>
@@ -1598,11 +1590,11 @@ export default function IncomeDistributor() {
                   }));
                   setNewCatName("");
                   setNewCatValue("");
-                }} 
-                className="bg-violet-600/20 hover:bg-violet-600 text-violet-400 hover:text-white rounded-lg flex items-center justify-center transition-all p-2 w-8 h-8 shrink-0 cursor-pointer"
+                }}
+                className="bg-[#232325] hover:bg-[#d99b43] text-[#d99b43] hover:text-[#141415] rounded-lg flex items-center justify-center transition-colors w-8 h-8 shrink-0 cursor-pointer"
                 title="Añadir salida"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-4 h-4" strokeWidth={1.5} />
               </button>
             </div>
           </div>
@@ -1610,50 +1602,50 @@ export default function IncomeDistributor() {
       </div>
 
       {/* 4. DEUDAS A MI FAVOR */}
-      <div className="pt-10 border-t border-white/10">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <div className="pt-8 border-t border-[rgba(237,237,237,0.08)]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
           <div>
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
-              <Users className="w-5 h-5 text-indigo-400" />
-              Deudas a mi Favor
+            <h3 className="text-lg font-medium text-[#ededed] flex items-center gap-2">
+              <Users className="w-4 h-4 text-[#d99b43]" strokeWidth={1.5} />
+              Deudas a mi favor
             </h3>
-            <p className="text-sm text-gray-400">Registrá la plata que te debe alguien y controlá los cobros.</p>
+            <p className="text-sm text-[#a1a1a6]">Registrá los montos pendientes de cobro.</p>
           </div>
           {debtTotals.totalARS > 0 && (
-            <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl px-4 py-2 flex flex-col items-end">
-              <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">Total Pendiente de Cobro</span>
-              <div className="text-lg font-black text-white">
-                ${debtTotals.totalARS.toLocaleString('es-AR', { maximumFractionDigits: 0 })} <span className="text-xs font-bold text-gray-400">ARS</span>
+            <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] rounded-xl px-4 py-2.5 flex flex-col items-end font-mono tabular">
+              <span className="text-xs text-[#85858b]">Total pendiente</span>
+              <div className="text-lg font-medium text-[#ededed]">
+                ${debtTotals.totalARS.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS
               </div>
               {usdRate > 0 && (
-                <div className="text-[11px] text-gray-400 mt-0.5">
-                  o USD {debtTotals.totalUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <div className="text-xs text-[#85858b] mt-0.5">
+                  USD {debtTotals.totalUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
               )}
             </div>
           )}
         </div>
 
-        <div className="glass-panel p-6 rounded-2xl border-white/5 w-full space-y-4">
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] p-5 rounded-xl w-full space-y-4">
           {/* Filtro por deudor */}
           {uniqueDebtors.length > 0 && (
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-black/20 p-3 rounded-xl border border-white/5">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-[#141415] p-3 rounded-lg border border-[rgba(237,237,237,0.06)]">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400 font-semibold uppercase">Filtrar por Deudor:</span>
+                <span className="text-xs text-[#85858b]">Filtrar por deudor</span>
                 <select
                   value={debtorFilter}
                   onChange={e => setDebtorFilter(e.target.value)}
-                  className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none cursor-pointer"
+                  className="h-8 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-2.5 text-[#ededed] text-xs focus:outline-none cursor-pointer"
                 >
-                  <option value="" className="bg-[#09090b]">Todos los deudores</option>
+                  <option value="">Todos los deudores</option>
                   {uniqueDebtors.map(name => (
-                    <option key={name} value={name} className="bg-[#09090b]">{name}</option>
+                    <option key={name} value={name}>{name}</option>
                   ))}
                 </select>
               </div>
               {debtorFilter && (
-                <div className="text-xs text-indigo-300 font-medium sm:ml-auto">
-                  Suma pendiente de {debtorFilter}: <strong>${filteredDebtTotals.totalARS.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS</strong>
+                <div className="text-xs font-mono text-[#d99b43] sm:ml-auto tabular">
+                  Pendiente de {debtorFilter}: ${filteredDebtTotals.totalARS.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS
                   {usdRate > 0 && ` / USD ${filteredDebtTotals.totalUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 </div>
               )}

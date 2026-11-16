@@ -20,8 +20,12 @@ export default function ContactModal({ isOpen, onClose }: { isOpen: boolean; onC
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) { setError("Debes iniciar sesión para enviar una solicitud."); return; }
-    setIsSending(true); setError(null);
+    if (!user) {
+      setError("Iniciá sesión para enviar una solicitud.");
+      return;
+    }
+    setIsSending(true);
+    setError(null);
     try {
       await addDoc(collection(db, "user_requests"), {
         user_id: user.uid,
@@ -32,10 +36,13 @@ export default function ContactModal({ isOpen, onClose }: { isOpen: boolean; onC
       });
       setSuccess(true);
       setMessage("");
-      setTimeout(() => { setSuccess(false); onClose(); }, 3000);
+      setTimeout(() => {
+        setSuccess(false);
+        onClose();
+      }, 2500);
     } catch (err) {
       console.error(err);
-      setError("Hubo un problema al enviar tu solicitud. Intenta nuevamente.");
+      setError("No se pudo enviar la solicitud. Intentá nuevamente.");
     } finally {
       setIsSending(false);
     }
@@ -43,44 +50,101 @@ export default function ContactModal({ isOpen, onClose }: { isOpen: boolean; onC
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose} />
-      <div className="relative w-full max-w-lg glass-panel p-8 rounded-3xl border-orange-500/20 shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-orange-500/10 rounded-full blur-[80px] pointer-events-none" />
-        <div className="flex items-center justify-between mb-6 relative z-10">
-          <h2 className="text-2xl font-bold text-white flex items-center gap-3"><MessageSquare className="w-6 h-6 text-orange-400" />Centro de Solicitudes</h2>
-          <button onClick={onClose} className="p-2 text-gray-500 hover:text-white transition-colors"><X className="w-6 h-6" /></button>
+      <div className="absolute inset-0 bg-black/75" onClick={onClose} />
+      <div className="relative w-full max-w-lg bg-[#19191b] border border-[rgba(237,237,237,0.12)] p-6 rounded-2xl space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-medium text-[#ededed] flex items-center gap-2.5">
+            <MessageSquare className="w-4 h-4 text-[#d99b43]" strokeWidth={1.5} />
+            Centro de solicitudes
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar"
+            className="p-1.5 rounded-lg text-[#85858b] hover:text-[#ededed] hover:bg-[#232325] transition-colors duration-150 cursor-pointer"
+          >
+            <X className="w-4 h-4" strokeWidth={1.5} />
+          </button>
         </div>
+
         {success ? (
-          <div className="py-12 text-center animate-in fade-in zoom-in duration-500">
-            <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-500/20"><Send className="w-10 h-10 text-emerald-400" /></div>
-            <h3 className="text-xl font-bold text-white mb-2">¡Solicitud Enviada!</h3>
-            <p className="text-gray-400">Tu mensaje ha sido entregado a la administración. Gracias por ayudarnos a mejorar.</p>
+          <div className="py-10 text-center space-y-3">
+            <div className="w-12 h-12 bg-[#4cc38a]/15 rounded-xl flex items-center justify-center mx-auto border border-[#4cc38a]/25">
+              <Send className="w-5 h-5 text-[#4cc38a]" strokeWidth={1.5} />
+            </div>
+            <h3 className="text-base font-medium text-[#ededed]">Solicitud enviada</h3>
+            <p className="text-sm text-[#a1a1a6]">
+              Tu mensaje quedó registrado para revisión.
+            </p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
-            {error && <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">{error}</div>}
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 ml-1">¿Qué deseas reportar?</label>
-              <div className="grid grid-cols-3 gap-3">
-                {(["bug", "solicitud", "otros"] as RequestType[]).map(t => (
-                  <button key={t} type="button" onClick={() => setType(t)} className={clsx("flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all",
-                    type === t && t === "bug" ? "bg-red-500/10 border-red-500/40 text-red-400 rotate-1" :
-                    type === t && t === "solicitud" ? "bg-blue-500/10 border-blue-500/40 text-blue-400 -rotate-1" :
-                    type === t ? "bg-orange-500/10 border-orange-500/40 text-orange-400" :
-                    "bg-white/5 border-white/5 text-gray-400 hover:border-white/10"
-                  )}>
-                    {t === "bug" ? <AlertTriangle className="w-5 h-5" /> : t === "solicitud" ? <Lightbulb className="w-5 h-5" /> : <MessageSquare className="w-5 h-5" />}
-                    <span className="text-[10px] font-bold uppercase">{t === "solicitud" ? "Mejora" : t}</span>
-                  </button>
-                ))}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="p-3 bg-[#e5484d]/10 border border-[#e5484d]/25 rounded-lg text-[#e5484d] text-sm">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-[#a1a1a6]">
+                Tipo de mensaje
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {(["bug", "solicitud", "otros"] as RequestType[]).map((t) => {
+                  const active = type === t;
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setType(t)}
+                      className={clsx(
+                        "flex flex-col items-center gap-1.5 p-3 rounded-lg border text-xs font-medium transition-colors duration-150 cursor-pointer",
+                        active
+                          ? "bg-[#232325] border-[#d99b43]/50 text-[#ededed]"
+                          : "bg-[#141415] border-[rgba(237,237,237,0.08)] text-[#85858b] hover:text-[#ededed]"
+                      )}
+                    >
+                      {t === "bug" ? (
+                        <AlertTriangle className={clsx("w-4 h-4", active ? "text-[#e5484d]" : "text-[#85858b]")} strokeWidth={1.5} />
+                      ) : t === "solicitud" ? (
+                        <Lightbulb className={clsx("w-4 h-4", active ? "text-[#d99b43]" : "text-[#85858b]")} strokeWidth={1.5} />
+                      ) : (
+                        <MessageSquare className={clsx("w-4 h-4", active ? "text-[#ededed]" : "text-[#85858b]")} strokeWidth={1.5} />
+                      )}
+                      <span>{t === "bug" ? "Error" : t === "solicitud" ? "Mejora" : "Otros"}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 ml-1">Tu Mensaje</label>
-              <textarea required value={message} onChange={e => setMessage(e.target.value)} rows={4} placeholder="Escribe aquí los detalles del error o la función que te gustaría añadir..." className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white placeholder:text-gray-600 focus:outline-none focus:border-orange-500/50 transition-all resize-none" />
+
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-[#a1a1a6]">
+                Detalle
+              </label>
+              <textarea
+                required
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                rows={4}
+                placeholder="Describí el error o la mejora que necesitás"
+                className="w-full bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg p-3 text-sm text-[#ededed] placeholder:text-[#85858b] focus:outline-none focus:border-[#d99b43] transition-colors duration-150 resize-none"
+              />
             </div>
-            <button type="submit" disabled={isSending} className="w-full flex items-center justify-center gap-3 bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 rounded-2xl transition-all shadow-xl shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed group active:scale-[0.98]">
-              {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : (<>Enviar Solicitud<Send className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" /></>)}
+
+            <button
+              type="submit"
+              disabled={isSending}
+              className="w-full h-10 flex items-center justify-center gap-2 bg-[#d99b43] hover:bg-[#e3a852] text-[#141415] text-sm font-medium rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {isSending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <span>Enviar solicitud</span>
+                  <Send className="w-4 h-4" strokeWidth={1.5} />
+                </>
+              )}
             </button>
           </form>
         )}

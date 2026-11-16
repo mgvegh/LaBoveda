@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* ─── Design Tokens ──────────────────────────────────────────────────────── */
+/* ─── Design Tokens (Graphite + Brass Accent) ────────────────────────────── */
 
 @theme inline {
   --color-background: var(--bg);
@@ -8,77 +8,86 @@
   --color-card: var(--card-bg);
   --color-card-foreground: var(--fg);
   --color-border: var(--border);
-  --color-primary: #3b82f6;
-  --color-primary-foreground: #ffffff;
-  --color-success: #10b981;
-  --color-danger: #ef4444;
-  --color-warning: #f59e0b;
+  --color-primary: #d99b43;
+  --color-primary-foreground: #141415;
+  --color-success: #4cc38a;
+  --color-danger: #e5484d;
+  --color-warning: #d99b43;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-/* ─── Dark Mode ──────────────────────────────────────────────────────────── */
-
 :root {
   color-scheme: dark;
 
-  --bg:           #080d1a;
-  --bg-gradient:  radial-gradient(ellipse 80% 50% at 50% -10%, rgba(56,75,155,0.25) 0%, transparent 70%),
-                  radial-gradient(ellipse 60% 40% at 80% 80%, rgba(16,100,90,0.12) 0%, transparent 60%);
-  --fg:           #f1f5ff;
-  --fg-muted:     #8b99bb;
-  --fg-subtle:    #4a5578;
+  --surface-deep: #0f0f10;
+  --bg:           #141415;
+  --card-bg:      #19191b;
+  --raised-bg:    #232325;
 
-  --card-bg:      rgba(15, 22, 45, 0.65);
-  --card-border:  rgba(99, 120, 200, 0.15);
-  --card-shadow:  0 4px 24px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255,255,255,0.04) inset;
+  --fg:           #ededed;
+  --fg-secondary: #a1a1a6;
+  --fg-muted:     #85858b;
+  --fg-subtle:    #85858b;
 
-  --border:       rgba(255, 255, 255, 0.08);
-  --border-strong:rgba(255, 255, 255, 0.14);
+  --accent:       #d99b43;
+  --accent-hover: #e3a852;
+  --accent-fg:    #141415;
 
-  --glass-bg:     rgba(12, 18, 38, 0.55);
-  --glass-border: rgba(120, 140, 220, 0.14);
+  --positive:     #4cc38a;
+  --negative:     #e5484d;
 
-  --navbar-bg:    rgba(8, 13, 26, 0.85);
-  --navbar-border:rgba(99, 120, 200, 0.12);
+  --border:        rgba(237, 237, 237, 0.08);
+  --border-strong: rgba(237, 237, 237, 0.14);
 
-  --dropdown-bg:  #0f1628;
-  --dropdown-border: rgba(99, 120, 200, 0.18);
+  --glass-bg:      #19191b;
+  --glass-border:  rgba(237, 237, 237, 0.08);
+  --card-border:   rgba(237, 237, 237, 0.08);
+  --card-shadow:   none;
+
+  --navbar-bg:     #0f0f10;
+  --navbar-border: rgba(237, 237, 237, 0.08);
+
+  --dropdown-bg:     #19191b;
+  --dropdown-border: rgba(237, 237, 237, 0.12);
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* ─── Native form element dark overrides ────────────────────────────────── */
-/* Forces OS-native select dropdowns to render dark on Windows/Linux */
 select option {
-  background-color: #0f1628;
-  color: #f1f5ff;
+  background-color: #19191b;
+  color: #ededed;
 }
 
 /* ─── Base ───────────────────────────────────────────────────────────────── */
-
 body {
   background-color: var(--bg);
   color: var(--fg);
   font-family: var(--font-sans);
-  background-image: var(--bg-gradient);
-  background-attachment: fixed;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ─── Utility classes ────────────────────────────────────────────────────── */
-
 @utility glass {
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
 }
 
 @utility glass-panel {
   background: var(--card-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--card-border);
-  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border);
+}
+
+@utility surface-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+}
+
+@utility surface-raised {
+  background: var(--raised-bg);
+  border: 1px solid var(--border);
 }
 
 @utility text-muted {
@@ -86,7 +95,11 @@ body {
 }
 
 @utility text-subtle {
-  color: var(--fg-subtle);
+  color: var(--fg-muted);
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
 }
 
 /* ─── Hide number spin buttons and scrollbars ─────────────────────────────── */
@@ -107,11 +120,11 @@ input[type=number] {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(237, 237, 237, 0.14);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(237, 237, 237, 0.24);
 }
 ::-webkit-scrollbar-button {
   display: none !important;

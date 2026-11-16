@@ -41,7 +41,7 @@ type ImportResult = {
   errors: number;
 };
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
+const COLORS = ['#d99b43', '#a1a1a6', '#71717a', '#52525b', '#3f3f46', '#d4d4d8', '#27272a'];
 
 // Removed getDaysSince
 
@@ -456,85 +456,72 @@ export default function CedearsTracker() {
 
   return (
     <div className="space-y-6">
-      {/* ROW 1: Premium Stats Grid (3 cards) */}
+      {/* ROW 1: Stats Grid (3 cards) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Valor Total ARS */}
-        <div className="glass-panel p-6 rounded-2xl border-blue-500/20 shadow-lg shadow-blue-500/5 relative overflow-hidden group hover:border-blue-500/30 transition-all">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-xl group-hover:bg-blue-500/10 transition-all pointer-events-none" />
-          <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1">Valor Total (ARS)</div>
-          <div className="text-2xl font-black text-white mb-2">
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] p-6 rounded-xl space-y-2">
+          <div className="text-xs text-[#85858b]">Valor total (ARS)</div>
+          <div className="text-2xl sm:text-3xl font-mono font-medium text-[#ededed] tabular">
             ${globalStats.totalValue.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
           </div>
-          <div className={clsx("flex items-center gap-1.5 text-xs font-semibold", globalStats.pnl >= 0 ? "text-emerald-400" : "text-red-400")}>
-            {globalStats.pnl >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+          <div className={clsx("flex items-center gap-1.5 text-xs font-mono tabular", globalStats.pnl >= 0 ? "text-[#4cc38a]" : "text-[#e5484d]")}>
+            {globalStats.pnl >= 0 ? <TrendingUp className="w-3.5 h-3.5" strokeWidth={1.5} /> : <TrendingDown className="w-3.5 h-3.5" strokeWidth={1.5} />}
             <span>${Math.abs(globalStats.pnl).toLocaleString('es-AR', { maximumFractionDigits: 0 })} ({globalStats.pnlPercent.toFixed(2)}%)</span>
           </div>
         </div>
 
-        {/* Capital Invertido ARS */}
-        <div className="glass-panel p-6 rounded-2xl border-white/5 relative overflow-hidden group hover:border-white/10 transition-all">
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Capital Invertido (ARS)</div>
-          <div className="text-2xl font-bold text-gray-200 mb-1">
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] p-6 rounded-xl space-y-2">
+          <div className="text-xs text-[#85858b]">Capital invertido (ARS)</div>
+          <div className="text-2xl sm:text-3xl font-mono font-medium text-[#ededed] tabular">
             ${globalStats.totalInvested.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
           </div>
-          <div className="text-[10px] text-gray-500 font-medium">Historial acumulado en pesos</div>
+          <div className="text-xs text-[#85858b]">Historial acumulado en pesos</div>
         </div>
 
-        {/* Tenencia Total USD (Sin rendimiento, solo actual) */}
-        <div className="glass-panel p-6 rounded-2xl border-emerald-500/20 shadow-lg shadow-emerald-500/5 relative overflow-hidden group hover:border-emerald-500/30 transition-all">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition-all pointer-events-none" />
-          <div className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-1">Tenencia Total (USD)</div>
-          <div className="text-2xl font-black text-white mb-2">
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] p-6 rounded-xl space-y-2">
+          <div className="text-xs text-[#85858b]">Tenencia total (USD)</div>
+          <div className="text-2xl sm:text-3xl font-mono font-medium text-[#ededed] tabular">
             ${globalStats.totalValueUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
-          <div className="text-[10px] text-gray-500 font-medium flex items-center gap-1">
-            <span>TC Ualá:</span>
-            <span className="font-bold text-blue-400">${usdUala} ARS</span>
+          <div className="text-xs text-[#85858b] font-mono tabular flex items-center gap-1.5">
+            <span>TC Ualá</span>
+            <span className="text-[#d99b43]">${usdUala} ARS</span>
           </div>
         </div>
       </div>
 
-      {/* ROW 2: Horizontal "Registrar Operación Manual" Form */}
-      <div className={clsx(
-        "glass-panel p-6 rounded-2xl transition-all duration-300",
-        operationType === "compra" ? "border-blue-500/10" : "border-rose-500/10"
-      )}>
-        <h2 className={clsx(
-          "text-lg font-bold mb-4 flex items-center gap-2 transition-colors duration-300",
-          operationType === "compra" ? "text-blue-400" : "text-rose-400"
-        )}>
-          {operationType === "compra" ? <Plus className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />} Registrar Operación Manual
+      {/* ROW 2: Registrar Operación Manual */}
+      <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] p-6 rounded-xl space-y-4">
+        <h2 className="text-base font-medium text-[#ededed] flex items-center gap-2">
+          {operationType === "compra" ? <Plus className="w-4 h-4 text-[#d99b43]" strokeWidth={1.5} /> : <TrendingDown className="w-4 h-4 text-[#e5484d]" strokeWidth={1.5} />}
+          Registrar operación manual
         </h2>
-        <form onSubmit={handleAddPurchase} className="flex flex-wrap lg:flex-nowrap items-end gap-4 w-full">
-          {/* Tipo de Operación */}
-          <div className="w-full sm:w-auto flex-1 min-w-[120px]">
-            <label className="block text-xs font-semibold text-gray-400 mb-1.5 tracking-wide uppercase">Tipo</label>
+        <form onSubmit={handleAddPurchase} className="flex flex-wrap lg:flex-nowrap items-end gap-3 w-full">
+          <div className="w-full sm:w-auto flex-1 min-w-[120px] space-y-1.5">
+            <label className="block text-xs text-[#a1a1a6]">Tipo</label>
             <select
               value={operationType}
               onChange={e => setOperationType(e.target.value as "compra" | "venta")}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors cursor-pointer"
+              className="w-full h-10 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-3 text-sm text-[#ededed] focus:outline-none focus:border-[#d99b43] transition-colors cursor-pointer"
             >
-              <option value="compra" className="bg-[#09090b]">Compra</option>
-              <option value="venta" className="bg-[#09090b]">Venta</option>
+              <option value="compra">Compra</option>
+              <option value="venta">Venta</option>
             </select>
           </div>
 
-          {/* Ticker */}
-          <div className="w-full sm:w-auto flex-1 min-w-[120px]">
-            <label className="block text-xs font-semibold text-gray-400 mb-1.5 tracking-wide uppercase">Ticker</label>
+          <div className="w-full sm:w-auto flex-1 min-w-[120px] space-y-1.5">
+            <label className="block text-xs text-[#a1a1a6]">Ticker</label>
             <input
               type="text"
               required
               placeholder="AAPL"
               value={tickerInput}
               onChange={e => setTickerInput(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 uppercase transition-colors"
+              className="w-full h-10 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-3 text-sm text-[#ededed] focus:outline-none focus:border-[#d99b43] uppercase transition-colors"
             />
           </div>
 
-          {/* Cantidad */}
-          <div className="w-full sm:w-auto flex-1 min-w-[120px]">
-            <label className="block text-xs font-semibold text-gray-400 mb-1.5 tracking-wide uppercase">Cantidad</label>
+          <div className="w-full sm:w-auto flex-1 min-w-[120px] space-y-1.5">
+            <label className="block text-xs text-[#a1a1a6]">Cantidad</label>
             <input
               type="number"
               required
@@ -543,15 +530,12 @@ export default function CedearsTracker() {
               placeholder="2"
               value={qtyInput}
               onChange={e => setQtyInput(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full h-10 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-3 text-sm font-mono text-[#ededed] focus:outline-none focus:border-[#d99b43] transition-colors"
             />
           </div>
 
-          {/* Precio ARS */}
-          <div className="w-full sm:w-auto flex-1 min-w-[150px]">
-            <label className="block text-xs font-semibold text-gray-400 mb-1.5 tracking-wide uppercase">
-              Precio (ARS)
-            </label>
+          <div className="w-full sm:w-auto flex-1 min-w-[140px] space-y-1.5">
+            <label className="block text-xs text-[#a1a1a6]">Precio (ARS)</label>
             <input
               type="number"
               step="any"
@@ -560,137 +544,124 @@ export default function CedearsTracker() {
               placeholder="50000"
               value={priceInput}
               onChange={e => setPriceInput(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full h-10 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-3 text-sm font-mono text-[#ededed] focus:outline-none focus:border-[#d99b43] transition-colors"
             />
           </div>
 
-          {/* Fecha */}
-          <div className="w-full sm:w-auto flex-1 min-w-[150px]">
-            <label className="block text-xs font-semibold text-gray-400 mb-1.5 tracking-wide uppercase">Fecha</label>
+          <div className="w-full sm:w-auto flex-1 min-w-[140px] space-y-1.5">
+            <label className="block text-xs text-[#a1a1a6]">Fecha</label>
             <input
               type="date"
               required
               value={dateInput}
               onChange={e => setDateInput(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors cursor-pointer"
+              className="w-full h-10 bg-[#232325] border border-[rgba(237,237,237,0.08)] rounded-lg px-3 text-sm font-mono text-[#ededed] focus:outline-none focus:border-[#d99b43] transition-colors cursor-pointer"
             />
           </div>
 
-          {/* Submit Button */}
           <div className="w-full lg:w-auto shrink-0">
             <button
               type="submit"
               className={clsx(
-                "w-full lg:w-auto text-white font-bold py-2.5 px-6 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95",
-                operationType === "compra" 
-                  ? "bg-blue-600 hover:bg-blue-500 shadow-blue-500/20" 
-                  : "bg-rose-600 hover:bg-rose-500 shadow-rose-500/20"
+                "w-full lg:w-auto h-10 font-medium text-sm px-5 rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer",
+                operationType === "compra"
+                  ? "bg-[#d99b43] hover:bg-[#e3a852] text-[#141415]"
+                  : "bg-[#e5484d] hover:bg-[#eb5e63] text-[#ededed]"
               )}
             >
-              {operationType === "compra" ? <Plus className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-              {operationType === "compra" ? "Registrar Compra" : "Registrar Venta"}
+              {operationType === "compra" ? <Plus className="w-4 h-4" strokeWidth={1.5} /> : <TrendingDown className="w-4 h-4" strokeWidth={1.5} />}
+              {operationType === "compra" ? "Registrar compra" : "Registrar venta"}
             </button>
           </div>
         </form>
       </div>
 
-      {/* ROW 3: Mis Posiciones & Unified Chart Side-by-Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Positions Table */}
-        <div className="glass-panel p-6 rounded-2xl lg:col-span-2 border-blue-500/10 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-gray-100 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-blue-400" /> Mis Posiciones
-              </h2>
-              <button 
-                onClick={refreshMarketData} 
-                disabled={isLoading} 
-                className="p-2 text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg transition-colors flex items-center gap-2 text-sm disabled:opacity-50"
+      {/* ROW 3: Mis Posiciones & Chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] p-6 rounded-xl lg:col-span-2 flex flex-col justify-between space-y-6">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-medium text-[#ededed]">Mis posiciones</h2>
+              <button
+                onClick={refreshMarketData}
+                disabled={isLoading}
+                className="h-9 px-3 text-[#a1a1a6] hover:text-[#ededed] bg-[#232325] hover:bg-[#2c2c2f] border border-[rgba(237,237,237,0.08)] rounded-lg transition-colors flex items-center gap-2 text-xs font-medium disabled:opacity-50 cursor-pointer"
               >
-                <RefreshCw className={clsx("w-4 h-4", isLoading && "animate-spin")} />
-                <span className="hidden sm:inline font-semibold">Actualizar Precios</span>
+                <RefreshCw className={clsx("w-3.5 h-3.5", isLoading && "animate-spin")} strokeWidth={1.5} />
+                <span className="hidden sm:inline">Actualizar precios</span>
               </button>
             </div>
-            
+
             {positions.length === 0 ? (
-              <div className="text-center py-12 text-gray-500 flex flex-col items-center gap-3">
-                <Upload className="w-8 h-8 text-gray-600" />
-                <div className="text-sm">Importá tu CSV de Cocos o añadí una compra manualmente en la sección de arriba.</div>
+              <div className="text-center py-12 text-[#85858b] flex flex-col items-center gap-2">
+                <Upload className="w-5 h-5" strokeWidth={1.5} />
+                <div className="text-sm">Importá tu CSV de Cocos o registrá una compra arriba.</div>
               </div>
             ) : (
-              <div className="overflow-x-auto custom-scrollbar">
+              <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse min-w-[500px]">
                   <thead>
-                    <tr className="border-b border-white/10 text-gray-400 text-xs uppercase tracking-wider">
-                      <th className="pb-3 px-2 font-semibold">Activo</th>
-                      <th className="pb-3 px-2 font-semibold text-right">Cant.</th>
-                      <th className="pb-3 px-2 font-semibold text-right hidden lg:table-cell">PPC</th>
-                      <th className="pb-3 px-2 font-semibold text-right">Precio Actual</th>
-                      <th className="pb-3 px-2 font-semibold text-right">Tenencia</th>
-                      <th className="pb-3 px-2 font-semibold text-right">Resultados (PnL)</th>
+                    <tr className="border-b border-[rgba(237,237,237,0.08)] text-[#85858b] text-xs">
+                      <th className="pb-3 px-2 font-medium">Activo</th>
+                      <th className="pb-3 px-2 font-medium text-right">Cant.</th>
+                      <th className="pb-3 px-2 font-medium text-right hidden lg:table-cell">PPC</th>
+                      <th className="pb-3 px-2 font-medium text-right">Precio actual</th>
+                      <th className="pb-3 px-2 font-medium text-right">Tenencia</th>
+                      <th className="pb-3 px-2 font-medium text-right">Resultado</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody className="divide-y divide-[rgba(237,237,237,0.06)]">
                     {positions.map(p => {
                       const valueToUse = p.hasData ? p.currentValue : p.invested;
                       const percentOfPortfolio = globalStats.totalValue > 0 ? (valueToUse / globalStats.totalValue) * 100 : 0;
                       return (
-                        <tr key={p.ticker} className="hover:bg-white/5 transition-colors group">
-                          {/* Activo */}
+                        <tr key={p.ticker} className="hover:bg-[#232325]/50 transition-colors">
                           <td className="py-3 px-2">
-                            <span className="font-bold text-gray-200">{p.ticker.replace('.BA', '')}</span>
-                            <div className="text-xs text-gray-500 lg:hidden mt-0.5">
-                              ${p.avgPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} avg
+                            <span className="font-medium text-sm text-[#ededed]">{p.ticker.replace('.BA', '')}</span>
+                            <div className="text-xs font-mono text-[#85858b] lg:hidden mt-0.5 tabular">
+                              ${p.avgPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} prom.
                             </div>
                           </td>
-                          {/* Cant. */}
-                          <td className="py-3 px-2 text-right text-gray-300 font-medium">
+                          <td className="py-3 px-2 text-right font-mono text-sm text-[#a1a1a6] tabular">
                             {p.totalQty.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                           </td>
-                          {/* PPC (ARS Only) */}
-                          <td className="py-3 px-2 text-right text-gray-400 hidden lg:table-cell">
-                            <div className="font-medium text-gray-200">
-                              ${p.avgPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} <span className="text-[9px] text-gray-500 font-bold uppercase">ARS</span>
-                            </div>
+                          <td className="py-3 px-2 text-right font-mono text-sm text-[#85858b] hidden lg:table-cell tabular">
+                            ${p.avgPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} <span className="text-xs">ARS</span>
                           </td>
-                          {/* Precio Actual */}
-                          <td className="py-3 px-2 text-right">
+                          <td className="py-3 px-2 text-right font-mono tabular">
                             {p.hasData ? (
                               <div>
-                                <div className="font-semibold text-blue-100">
-                                  ${p.currentPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} <span className="text-[9px] text-gray-500 font-bold uppercase">ARS</span>
+                                <div className="text-sm text-[#ededed]">
+                                  ${p.currentPrice.toLocaleString('es-AR', { maximumFractionDigits: 0 })} <span className="text-xs text-[#85858b]">ARS</span>
                                 </div>
-                                <div className="text-[10px] text-gray-400 mt-0.5">
+                                <div className="text-xs text-[#85858b] mt-0.5">
                                   ${p.currentPriceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
                                 </div>
                               </div>
                             ) : (
-                              <span className="text-gray-500 text-xs">Cargando...</span>
+                              <span className="text-[#85858b] text-xs">Cargando...</span>
                             )}
                           </td>
-                          {/* Tenencia */}
-                          <td className="py-3 px-2 text-right">
-                            <div className="font-bold text-gray-200">{percentOfPortfolio.toFixed(1)}%</div>
-                            <div className="text-[10px] text-gray-500 mt-0.5">
+                          <td className="py-3 px-2 text-right font-mono tabular">
+                            <div className="text-sm font-medium text-[#ededed]">{percentOfPortfolio.toFixed(1)}%</div>
+                            <div className="text-xs text-[#85858b] mt-0.5">
                               ${valueToUse.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS
                             </div>
-                            <div className="text-[9px] text-gray-600">
+                            <div className="text-xs text-[#85858b]">
                               ${(valueToUse / usdUala).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} USD
                             </div>
                           </td>
-                          {/* PnL */}
-                          <td className="py-3 px-2 text-right">
+                          <td className="py-3 px-2 text-right font-mono tabular">
                             {p.hasData && (
-                              <div className={clsx("flex flex-col items-end", p.pnlValue >= 0 ? "text-emerald-400" : "text-red-400")}>
-                                <span className="font-bold text-sm">
+                              <div className={clsx("flex flex-col items-end", p.pnlValue >= 0 ? "text-[#4cc38a]" : "text-[#e5484d]")}>
+                                <span className="text-sm font-medium">
                                   {p.pnlValue > 0 ? "+" : ""}{p.pnlPercent.toFixed(2)}%
                                 </span>
-                                <div className="text-[10px] mt-0.5">
-                                  ${p.pnlValue > 0 ? "+" : ""}{p.pnlValue.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS
+                                <div className="text-xs mt-0.5 opacity-85">
+                                  {p.pnlValue > 0 ? "+" : ""}${Math.abs(p.pnlValue).toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS
                                 </div>
-                                <div className="text-[9px] opacity-75">
-                                  ${p.pnlValue > 0 ? "+" : ""}{(p.pnlValue / usdUala).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                                <div className="text-xs opacity-75">
+                                  {p.pnlValue > 0 ? "+" : ""}${(Math.abs(p.pnlValue) / usdUala).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
                                 </div>
                               </div>
                             )}
@@ -704,32 +675,30 @@ export default function CedearsTracker() {
             )}
           </div>
 
-          {/* Individual Purchases History inside table card */}
           {purchases.length > 0 && (
-            <div className="mt-8 pt-6 border-t border-white/10">
-              <h3 className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider">Historial de Operaciones</h3>
-              <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
-                {[...purchases].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(p => {
+            <div className="pt-6 border-t border-[rgba(237,237,237,0.08)] space-y-3">
+              <h3 className="text-xs font-medium text-[#85858b]">Historial de operaciones</h3>
+              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                {[...purchases].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(p => {
                   const cleanTicker = p.ticker.replace('.BA', '');
                   return (
-                    <div key={p.id} className="grid grid-cols-12 gap-1 items-center text-[10px] sm:text-xs bg-black/20 p-2 sm:p-3 rounded-xl border border-white/5 hover:bg-white/5 transition-colors group">
-                      <div className="col-span-3 text-gray-400 truncate">{new Date(p.date).toLocaleDateString('es-AR')}</div>
-                      <span className={clsx("col-span-2 font-bold truncate transition-colors", p.quantity > 0 ? "text-blue-300" : "text-rose-300")}>{cleanTicker}</span>
-                      <div className={clsx("col-span-3 text-center font-mono font-bold truncate", p.quantity > 0 ? "text-emerald-400" : "text-rose-400")}>
+                    <div key={p.id} className="grid grid-cols-12 gap-2 items-center text-xs bg-[#141415] px-3 py-2.5 rounded-lg border border-[rgba(237,237,237,0.06)] hover:bg-[#232325]/50 transition-colors">
+                      <div className="col-span-3 font-mono text-[#85858b] truncate tabular">{new Date(p.date).toLocaleDateString('es-AR')}</div>
+                      <span className="col-span-2 font-medium text-[#ededed] truncate">{cleanTicker}</span>
+                      <div className={clsx("col-span-3 text-right font-mono tabular truncate", p.quantity > 0 ? "text-[#4cc38a]" : "text-[#e5484d]")}>
                         {p.quantity > 0 ? "+" : ""}{p.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                       </div>
-                      <div className="col-span-3 text-right text-gray-400 truncate">
-                        <span>${p.purchasePrice.toLocaleString()}</span>
-                        <span className="text-[9px] ml-1 opacity-70 font-semibold font-mono">{p.currency}</span>
+                      <div className="col-span-3 text-right font-mono text-[#a1a1a6] truncate tabular">
+                        ${p.purchasePrice.toLocaleString('es-AR')} {p.currency}
                       </div>
-                      <div className="col-span-1 flex justify-end items-center gap-1 sm:gap-2">
-                        {p.nroTicket && <span className="bg-white/10 text-gray-400 px-1.5 py-0.5 rounded text-[9px] hidden md:block">CSV</span>}
-                        <button 
-                          onClick={() => removePurchase(p.id)} 
-                          className="text-gray-500 hover:text-red-400 transition-colors p-1" 
+                      <div className="col-span-1 flex justify-end items-center gap-1.5">
+                        {p.nroTicket && <span className="text-[#85858b] font-mono text-[10px] hidden md:block">CSV</span>}
+                        <button
+                          onClick={() => removePurchase(p.id)}
+                          className="text-[#85858b] hover:text-[#e5484d] transition-colors p-1 cursor-pointer"
                           title="Eliminar registro"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
                         </button>
                       </div>
                     </div>
@@ -740,27 +709,24 @@ export default function CedearsTracker() {
           )}
         </div>
 
-        {/* Holdings Pie Chart Card - Compact layout */}
-        <div className="glass-panel p-6 rounded-2xl lg:col-span-1 border-blue-500/10 flex flex-col h-full">
+        {/* Holdings Pie Chart Card */}
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] p-6 rounded-xl lg:col-span-1 flex flex-col justify-between space-y-4">
           <div>
-            <h2 className="text-lg font-bold text-gray-100 mb-1 flex items-center gap-2">
-              <PieChart className="w-5 h-5 text-blue-400" /> Distribución
-            </h2>
-            <div className="text-[11px] text-gray-500 mb-2">Porcentaje de tenencia actual</div>
+            <h2 className="text-base font-medium text-[#ededed]">Distribución</h2>
+            <div className="text-xs text-[#85858b] mt-0.5">Participación actual por activo</div>
           </div>
-          
+
           {positions.length > 0 ? (
-            <div className="flex flex-col items-center gap-2">
-              {/* Graphic container */}
-              <div className="h-[270px] w-full relative flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="h-[240px] w-full relative flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <RePieChart margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                    <Pie 
-                      data={positions} 
-                      dataKey="currentValue" 
-                      innerRadius={70} 
-                      outerRadius={100} 
-                      paddingAngle={3}
+                    <Pie
+                      data={positions}
+                      dataKey="currentValue"
+                      innerRadius={66}
+                      outerRadius={94}
+                      paddingAngle={2}
                       cx="50%"
                       cy="50%"
                     >
@@ -768,36 +734,34 @@ export default function CedearsTracker() {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(0,0,0,0)" />
                       ))}
                     </Pie>
-                    <ReTooltip 
-                      formatter={(val: unknown) => `$${Number(val).toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS`} 
-                      contentStyle={{ backgroundColor: "rgba(0,0,0,0.9)", borderColor: "rgba(255,255,255,0.1)", borderRadius: "12px", color: "#fff" }}
+                    <ReTooltip
+                      formatter={(val: unknown) => `$${Number(val).toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS`}
+                      contentStyle={{ backgroundColor: "#19191b", borderColor: "rgba(237,237,237,0.12)", borderRadius: "8px", color: "#ededed", fontSize: "12px" }}
                     />
                   </RePieChart>
                 </ResponsiveContainer>
-                
-                {/* Sleek center donut label */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-[9px] text-gray-400 font-semibold tracking-wider uppercase">Cartera Total</span>
-                  <span className="text-lg font-black text-white mt-0.5">
+
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none font-mono tabular">
+                  <span className="text-xs text-[#85858b]">Total</span>
+                  <span className="text-base font-medium text-[#ededed] mt-0.5">
                     ${globalStats.totalValue.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
                   </span>
-                  <span className="text-[9px] text-emerald-400 font-bold mt-0.5">
+                  <span className="text-xs text-[#a1a1a6] mt-0.5">
                     USD ${(globalStats.totalValueUSD).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </span>
                 </div>
               </div>
-              
-              {/* Legend showing all items (no max-height/scroll) */}
-              <div className="w-full space-y-1.5 mt-2">
+
+              <div className="w-full space-y-1.5">
                 {positions.map((p, i) => {
                   const percent = globalStats.totalValue > 0 ? (p.currentValue / globalStats.totalValue) * 100 : 0;
                   return (
-                    <div key={p.ticker} className="flex items-center justify-between text-xs text-gray-300 bg-white/5 px-2.5 py-1 rounded-lg border border-white/5 hover:bg-white/10 transition-colors">
-                      <div className="flex items-center gap-1.5">
+                    <div key={p.ticker} className="flex items-center justify-between text-xs bg-[#141415] px-3 py-2 rounded-lg border border-[rgba(237,237,237,0.06)]">
+                      <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                        <span className="font-bold">{p.ticker.replace('.BA', '')}</span>
+                        <span className="font-medium text-[#ededed]">{p.ticker.replace('.BA', '')}</span>
                       </div>
-                      <div className="text-right font-bold text-gray-200">
+                      <div className="font-mono text-[#a1a1a6] tabular">
                         {percent.toFixed(1)}%
                       </div>
                     </div>
@@ -806,21 +770,21 @@ export default function CedearsTracker() {
               </div>
             </div>
           ) : (
-            <div className="text-gray-500 gap-2 py-8 flex flex-col items-center justify-center">
-              <PieChart className="w-8 h-8 text-gray-600 animate-pulse" />
+            <div className="text-[#85858b] gap-2 py-12 flex flex-col items-center justify-center">
+              <PieChart className="w-5 h-5" strokeWidth={1.5} />
               <span className="text-sm">Sin posiciones activas</span>
             </div>
           )}
         </div>
       </div>
 
-      {/* ROW 4: Cocos CSV Import Zone & CSV Imports List */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* ROW 4: Cocos CSV Import Zone */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
           <div
             className={clsx(
-              "relative border-2 border-dashed rounded-2xl p-6 transition-all cursor-pointer h-full flex items-center justify-center min-h-[120px]", 
-              isDragging ? "border-blue-400 bg-blue-500/10" : "border-white/10 hover:border-blue-500/40 hover:bg-white/5"
+              "relative border border-dashed rounded-xl p-6 transition-colors cursor-pointer h-full flex items-center justify-center min-h-[120px]",
+              isDragging ? "border-[#d99b43] bg-[#232325]" : "border-[rgba(237,237,237,0.14)] bg-[#19191b] hover:bg-[#1e1e21]"
             )}
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
@@ -829,31 +793,31 @@ export default function CedearsTracker() {
           >
             <input ref={fileInputRef} type="file" accept=".csv" multiple className="hidden" onChange={onFileChange} />
             <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
-              <div className={clsx("p-3 rounded-xl shrink-0", isDragging ? "bg-blue-500/20" : "bg-blue-500/10")}>
-                {isImporting ? <RefreshCw className="w-6 h-6 text-blue-400 animate-spin" /> : <FileUp className="w-6 h-6 text-blue-400" />}
+              <div className="w-10 h-10 rounded-lg bg-[#232325] border border-[rgba(237,237,237,0.08)] flex items-center justify-center shrink-0">
+                {isImporting ? <RefreshCw className="w-4 h-4 text-[#d99b43] animate-spin" strokeWidth={1.5} /> : <FileUp className="w-4 h-4 text-[#d99b43]" strokeWidth={1.5} />}
               </div>
               <div className="text-center sm:text-left flex-1 min-w-0">
-                <div className="font-bold text-gray-200">
-                  {isImporting ? "Importando archivo(s)..." : "Importar CSV de Cocos"}
+                <div className="text-sm font-medium text-[#ededed]">
+                  {isImporting ? "Importando archivos..." : "Importar CSV de Cocos"}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Arrastrá o haz clic para subir múltiples archivos. Se omiten operaciones anteriores a Febrero 2025.
+                <div className="text-xs text-[#85858b] mt-0.5">
+                  Arrastrá o hacé clic para subir archivos. Se omiten operaciones anteriores a febrero 2025.
                 </div>
               </div>
               {importResult && !isImporting && (
-                <div className="flex items-center gap-2.5 text-xs shrink-0 bg-white/5 px-3 py-2 rounded-xl border border-white/5">
-                  <div className="flex items-center gap-1 text-emerald-400 font-bold">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-2.5 text-xs shrink-0 bg-[#141415] px-3 py-2 rounded-lg border border-[rgba(237,237,237,0.08)] font-mono tabular">
+                  <div className="flex items-center gap-1 text-[#4cc38a]">
+                    <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.5} />
                     <span>{importResult.imported} importados</span>
                   </div>
                   {importResult.skipped > 0 && (
-                    <span className="text-gray-400 font-medium font-mono">{importResult.skipped} omitidos</span>
+                    <span className="text-[#85858b]">{importResult.skipped} omitidos</span>
                   )}
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); setImportResult(null); }} 
-                    className="text-gray-500 hover:text-gray-300 p-0.5"
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setImportResult(null); }}
+                    className="text-[#85858b] hover:text-[#ededed] p-0.5 cursor-pointer"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className="w-3.5 h-3.5" strokeWidth={1.5} />
                   </button>
                 </div>
               )}
@@ -862,38 +826,37 @@ export default function CedearsTracker() {
         </div>
 
         <div className="lg:col-span-1">
-          {/* List of imported files */}
-          <div className="glass-panel p-5 rounded-2xl border-white/5 h-full max-h-[140px] lg:max-h-full overflow-y-auto custom-scrollbar">
-            <h3 className="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wider">Archivos CSV Importados ({csvImports.length})</h3>
+          <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] p-5 rounded-xl h-full max-h-[160px] lg:max-h-full overflow-y-auto space-y-3">
+            <h3 className="text-xs font-medium text-[#85858b]">Archivos CSV importados ({csvImports.length})</h3>
             {csvImports.length > 0 ? (
-              <div className="space-y-2">
-                {[...csvImports].sort((a,b) => new Date(b.importedAt).getTime() - new Date(a.importedAt).getTime()).map(imp => (
-                  <div key={imp.id} className="bg-black/30 border border-white/5 rounded-xl p-2.5 flex justify-between items-center group text-xs hover:bg-white/5 transition-colors">
+              <div className="space-y-1.5">
+                {[...csvImports].sort((a, b) => new Date(b.importedAt).getTime() - new Date(a.importedAt).getTime()).map(imp => (
+                  <div key={imp.id} className="bg-[#141415] border border-[rgba(237,237,237,0.06)] rounded-lg p-2.5 flex justify-between items-center group text-xs hover:bg-[#232325]/50 transition-colors">
                     <div className="min-w-0 flex-1 pr-2">
-                      <div className="font-bold text-blue-300 truncate" title={imp.filename}>
+                      <div className="font-medium text-[#ededed] truncate" title={imp.filename}>
                         {imp.filename}
                       </div>
-                      <div className="text-[10px] text-gray-500 mt-0.5">
-                        {new Date(imp.periodStart).toLocaleDateString('es-AR')} - {new Date(imp.periodEnd).toLocaleDateString('es-AR')}
+                      <div className="text-xs font-mono text-[#85858b] mt-0.5 tabular">
+                        {new Date(imp.periodStart).toLocaleDateString('es-AR')} – {new Date(imp.periodEnd).toLocaleDateString('es-AR')}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[10px] text-gray-400 bg-white/5 px-2 py-0.5 rounded-lg font-bold font-mono">
+                      <span className="text-xs text-[#a1a1a6] bg-[#232325] px-2 py-0.5 rounded font-mono tabular">
                         {imp.rowCount}
                       </span>
-                      <button 
-                        onClick={() => removeCsvImport(imp.id)} 
-                        className="text-gray-500 hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                      <button
+                        onClick={() => removeCsvImport(imp.id)}
+                        className="text-[#85858b] hover:text-[#e5484d] p-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                         title="Eliminar importación"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-xs text-gray-500 text-center py-6">No hay archivos CSV registrados</div>
+              <div className="text-xs text-[#85858b] text-center py-6">No hay archivos CSV registrados</div>
             )}
           </div>
         </div>
