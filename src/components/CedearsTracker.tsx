@@ -710,7 +710,7 @@ export default function CedearsTracker() {
         </div>
 
         {/* Holdings Pie Chart Card */}
-        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] p-6 rounded-xl lg:col-span-1 flex flex-col justify-between space-y-4">
+        <div className="bg-[#19191b] border border-[rgba(237,237,237,0.08)] p-6 rounded-xl lg:col-span-1 flex flex-col space-y-5 h-fit lg:sticky lg:top-24">
           <div>
             <h2 className="text-base font-medium text-[#ededed]">Distribución</h2>
             <div className="text-xs text-[#85858b] mt-0.5">Participación actual por activo</div>
